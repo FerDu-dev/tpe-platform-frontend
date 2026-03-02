@@ -1,0 +1,30 @@
+# Environment variables — NEVER commit
+.env
+.env.local
+.env.production
+.env.staging
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/settings.json
+
+# Dev-only scripts and data files
+*.py
+*.cjs
+read-excel*
+mockData.ts
+markdown/
+
+# Excel/data files used only for seeding/analysis
+*.xlsx
+*.xls
