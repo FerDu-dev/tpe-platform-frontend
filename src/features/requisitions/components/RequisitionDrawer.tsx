@@ -1,15 +1,16 @@
 import React from 'react';
-import { Drawer, Typography, Descriptions, Badge, Button, Space, Divider } from 'antd';
+import { Drawer, Typography, Descriptions, Badge, Button, Space, Divider, List, Avatar, Tag } from 'antd';
 import { Requisition } from '../../../types';
 import {
     ClockCircleOutlined,
     UsergroupAddOutlined,
     EnvironmentOutlined,
-    StopOutlined
+    StopOutlined,
+    TeamOutlined
 } from '@ant-design/icons';
 import { useAppDispatch } from '../../../app/store';
-import { setFilters } from '../../candidates/store/candidatesSlice';
-import { useNavigate } from 'react-router-dom';
+import { selectCandidate } from '../../candidates/store/candidatesSlice';
+import RequisitionApplicantsModal from './RequisitionApplicantsModal';
 
 const { Title, Text } = Typography;
 
@@ -20,18 +21,15 @@ interface RequisitionDrawerProps {
 }
 
 const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({ open, onClose, requisition }) => {
-    const navigate = useNavigate();
     const dispatch = useAppDispatch();
+    const [showApplicants, setShowApplicants] = React.useState(false);
 
     if (!requisition) return null;
 
     const daysOpen = Math.floor((new Date().getTime() - new Date(requisition.createdDate).getTime()) / (1000 * 3600 * 24));
 
     const handleViewApplicants = () => {
-        // Navigate to candidates dashboard filtering by this requisition IDX
-        dispatch(setFilters({ idx: requisition.idx }));
-        navigate('/dashboard');
-        onClose();
+        setShowApplicants(true);
     };
 
     return (
@@ -77,10 +75,19 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({ open, onClose, re
                     <EnvironmentOutlined /> {requisition.location}
                 </Descriptions.Item>
                 {requisition.zone && (
-                    <Descriptions.Item label="Zona">{requisition.zone}</Descriptions.Item>
+                    <Descriptions.Item label="Zona" span={2}>
+                        <Space direction="vertical" size={0}>
+                            <Text strong>{typeof requisition.zone === 'string' ? requisition.zone : requisition.zone.name}</Text>
+                            {typeof requisition.zone !== 'string' && (
+                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    {requisition.zone.region} | Coor: {requisition.zone.coordinator}
+                                </Text>
+                            )}
+                        </Space>
+                    </Descriptions.Item>
                 )}
                 {requisition.route && (
-                    <Descriptions.Item label="Ruta">{requisition.route}</Descriptions.Item>
+                    <Descriptions.Item label="Ruta" span={2}>{requisition.route}</Descriptions.Item>
                 )}
             </Descriptions>
 
@@ -90,10 +97,56 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({ open, onClose, re
                     {requisition.applicants}
                 </Descriptions.Item>
                 <Descriptions.Item label="Entrevistados">
-                    {/* Mock data for interviewed */}
                     {Math.floor(requisition.applicants * 0.4)}
                 </Descriptions.Item>
             </Descriptions>
+
+            {requisition.matchingCandidates && requisition.matchingCandidates.length > 0 && (
+                <div style={{ marginTop: 32 }}>
+                    <Divider orientation="left">
+                        <Space>
+                            <TeamOutlined />
+                            <span>Candidatos Sugeridos (Misma Zona)</span>
+                            <Badge count={requisition.matchingCandidates.length} style={{ backgroundColor: '#52c41a' }} />
+                        </Space>
+                    </Divider>
+                    <List
+                        itemLayout="horizontal"
+                        dataSource={requisition.matchingCandidates}
+                        renderItem={(candidate) => (
+                            <List.Item
+                                actions={[
+                                    <Button 
+                                        key="view" 
+                                        type="link" 
+                                        onClick={() => {
+                                            dispatch(selectCandidate(candidate));
+                                            onClose();
+                                        }}
+                                    >
+                                        Ver Perfil
+                                    </Button>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    avatar={<Avatar style={{ backgroundColor: '#2b457c' }}>{candidate.firstName?.[0]}</Avatar>}
+                                    title={<Text strong>{candidate.firstName} {candidate.lastName}</Text>}
+                                    description={
+                                        <Space split={<Divider type="vertical" />}>
+                                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                                                Etapa Actual: <Tag color="blue">{candidate.applications?.[0]?.subStatus || 'N/A'}</Tag>
+                                            </Text>
+                                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                                                {candidate.phone}
+                                            </Text>
+                                        </Space>
+                                    }
+                                />
+                            </List.Item>
+                        )}
+                    />
+                </div>
+            )}
 
             <div style={{ marginTop: 48, background: '#fff1f0', padding: 24, borderRadius: 8, border: '1px solid #ffa39e' }}>
                 <Title level={5} type="danger">Zona de Peligro</Title>
@@ -102,6 +155,11 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({ open, onClose, re
                     <Button danger icon={<StopOutlined />}>Cerrar Requisición</Button>
                 </div>
             </div>
+            <RequisitionApplicantsModal
+                open={showApplicants}
+                onClose={() => setShowApplicants(false)}
+                requisition={requisition}
+            />
         </Drawer>
     );
 };

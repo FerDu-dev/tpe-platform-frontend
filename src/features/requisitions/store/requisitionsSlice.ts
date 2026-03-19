@@ -35,6 +35,17 @@ export const loadRequisitions = createAsyncThunk(
     }
 );
 
+export const createRequisition = createAsyncThunk(
+    'requisitions/create',
+    async (data: Partial<Requisition>, { rejectWithValue }) => {
+        try {
+            return await requisitionService.createRequisition(data);
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || error.message);
+        }
+    }
+);
+
 const requisitionsSlice = createSlice({
     name: 'requisitions',
     initialState,
@@ -63,6 +74,9 @@ const requisitionsSlice = createSlice({
             .addCase(loadRequisitions.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
+            })
+            .addCase(createRequisition.fulfilled, (state, action: PayloadAction<Requisition>) => {
+                state.requisitions.unshift(action.payload);
             });
     },
 });

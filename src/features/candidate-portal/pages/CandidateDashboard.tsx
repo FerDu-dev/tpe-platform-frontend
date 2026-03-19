@@ -1,20 +1,60 @@
-import React from 'react';
-import { Card, Typography, Steps, Result, Button, Alert, Space, Divider, List } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Card, Typography, Result, Button, Alert, Space, Tag, Upload, message } from 'antd';
 import {
     CheckCircleOutlined,
     VideoCameraOutlined,
     FormOutlined,
-    FileSearchOutlined,
-    LinkOutlined
+    LinkOutlined,
+    LockOutlined,
+    TeamOutlined,
+    MedicineBoxOutlined,
+    AuditOutlined,
+    TrophyOutlined,
+    ClockCircleOutlined,
 } from '@ant-design/icons';
 import { useAppSelector } from '../../../app/store';
 import { selectCurrentUser } from '../../auth/store/authSlice';
+import { candidateService } from '../../../services/candidateService';
+import { Candidate } from '../../../types';
 
 const { Title, Text, Paragraph } = Typography;
 
 const CandidateDashboard: React.FC = () => {
     const currentUser = useAppSelector(selectCurrentUser);
+    const [profile, setProfile] = useState<Candidate | null>(null);
+    const [uploadingDoc, setUploadingDoc] = useState<'CV' | 'Video' | null>(null);
     const process = currentUser?.currentProcess;
+
+    const fetchProfile = async () => {
+        try {
+            const response = await candidateService.fetchCandidates({ nationalId: currentUser?.id });
+            if (response.data.length > 0) {
+                setProfile(response.data[0]);
+            }
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (currentUser) {
+            fetchProfile();
+        }
+    }, [currentUser]);
+
+    const handleUpload = async (type: 'CV' | 'Video', file: File) => {
+        if (!profile) return;
+        setUploadingDoc(type);
+        try {
+            await candidateService.uploadCandidateDocument(profile.id, type, file);
+            message.success(`${type} cargado exitosamente`);
+            await fetchProfile(); // recargar el perfil
+        } catch (error: any) {
+            message.error(error.response?.data?.message || `Error al subir el ${type}. Intenta de nuevo.`);
+        } finally {
+            setUploadingDoc(null);
+        }
+    };
 
     if (!process) {
         return (
@@ -31,85 +71,147 @@ const CandidateDashboard: React.FC = () => {
         );
     }
 
-    const { stage, testUrl } = process;
+    const { stage, testUrl, testCode } = process;
     const stageId = stage?.id || 1;
+
+    // Blind Recruitment: Hide job details until stage 8
+    const isHired = stageId === 8;
+    const displayJobTitle = isHired ? process.jobTitle : "Proceso de Selección TuPróximoEmpleo";
+
+    const stages = [
+        { title: 'Bienvenida', icon: <CheckCircleOutlined /> },
+        { title: 'Video', icon: <VideoCameraOutlined /> },
+        { title: 'P. Psicotécnica', icon: <FormOutlined /> },
+        { title: 'Entrevista', icon: <TeamOutlined /> },
+        { title: 'Entrevista Técnica', icon: <FormOutlined /> },
+        { title: 'Verificaciones', icon: <MedicineBoxOutlined /> },
+        { title: 'Oferta', icon: <AuditOutlined /> },
+        { title: 'Contratación', icon: <TrophyOutlined /> },
+    ];
 
     // Helper to render stage-specific content
     const renderStageContent = () => {
         switch (stageId) {
-            case 1: // Aplicado
+            case 1: // Bienvenida
                 return (
                     <Alert
-                        message="Tu postulación ha sido recibida"
-                        description="Nuestro equipo de reclutamiento está revisando tu perfil. Te notificaremos pronto por este medio y por correo."
-                        type="success"
+                        message="¡Bienvenido a TuPróximoEmpleo!"
+                        description="Tu perfil ha sido recibido con éxito. En breve un reclutador revisará tu información y te notificaremos si avanzas a la siguiente etapa."
+                        type="info"
                         showIcon
                     />
                 );
-            case 2: // Elegible (Video Request)
+            case 2: // Video
                 return (
                     <Card
                         title={<Space><VideoCameraOutlined /> Presentación de Video</Space>}
-                        style={{ borderLeft: '4px solid #1890ff' }}
+                        style={{ borderLeft: '4px solid #1890ff', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
                     >
                         <Paragraph>
-                            ¡Felicidades! Has pasado el primer filtro. Para conocerte mejor, por favor carga tu video de presentación.
+                            ¡Felicidades! Has pasado el primer filtro. Para conocerte mejor, por favor carga tu video de presentación siguiendo las pautas enviadas a tu correo.
                         </Paragraph>
-                        <Button type="primary" icon={<VideoCameraOutlined />}>
-                            Cargar mi Video
-                        </Button>
+                        {profile?.videoUrl ? (
+                            <Alert
+                                type="success"
+                                message="Video enviado"
+                                description="Tu video ha sido cargado. Nuestro equipo lo revisará pronto."
+                                showIcon
+                                icon={<CheckCircleOutlined />}
+                            />
+                        ) : (
+                            <Upload
+                                accept="video/*"
+                                showUploadList={false}
+                                beforeUpload={(file) => {
+                                    handleUpload('Video', file);
+                                    return false;
+                                }}
+                            >
+                                <Button type="primary" size="large" icon={<VideoCameraOutlined />} loading={uploadingDoc === 'Video'}>
+                                    Cargar mi Video de Presentación
+                                </Button>
+                            </Upload>
+                        )}
                     </Card>
                 );
             case 3: // Prueba Psicotécnica
                 return (
                     <Card
                         title={<Space><FormOutlined /> Prueba Psicotécnica</Space>}
-                        style={{ borderLeft: '4px solid #faad14' }}
+                        style={{ borderLeft: '4px solid #faad14', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
                     >
                         <Paragraph>
-                            Has sido seleccionado para realizar una prueba psicotécnica.
+                            Has avanzado a la etapa de pruebas psicotécnicas. Es fundamental que cuentes con al menos 90 minutos de tranquilidad para completarlas.
                         </Paragraph>
                         {testUrl ? (
-                            <div style={{ padding: '16px', background: '#fffbe6', borderRadius: '8px', border: '1px solid #ffe58f' }}>
-                                <Paragraph strong>Sigue este enlace para realizar la prueba:</Paragraph>
-                                <Button
-                                    type="primary"
-                                    icon={<LinkOutlined />}
-                                    href={testUrl}
-                                    target="_blank"
-                                    block
-                                >
-                                    Realizar Prueba Ahora
-                                </Button>
+                            <div style={{ padding: '24px', background: '#fffbe6', borderRadius: '12px', border: '1px solid #ffe58f' }}>
+                                <Space direction="vertical" size="middle" style={{ width: '100%', textAlign: 'center' }}>
+                                    <Text strong style={{ fontSize: '16px' }}>Enlace de la prueba:</Text>
+                                    <Button
+                                        type="primary"
+                                        size="large"
+                                        icon={<LinkOutlined />}
+                                        href={testUrl}
+                                        target="_blank"
+                                        block
+                                        style={{ height: '50px', fontSize: '18px' }}
+                                    >
+                                        Ir a la Prueba Psicotécnica
+                                    </Button>
+                                    
+                                    {testCode && (
+                                        <div style={{ marginTop: '16px', padding: '12px', border: '2px dashed #faad14', borderRadius: '8px' }}>
+                                            <Text type="secondary" style={{ display: 'block' }}>Usa este código si se solicita:</Text>
+                                            <Title level={3} style={{ margin: 0, color: '#d48806' }}>{testCode}</Title>
+                                        </div>
+                                    )}
+
+                                    <Alert
+                                        type="info"
+                                        message="Aviso"
+                                        description="Una vez finalizada la prueba, el reclutador será notificado automáticamente (o validará tus resultados externamente). No necesitas realizar ninguna otra acción aquí."
+                                        style={{ textAlign: 'left', marginTop: '16px' }}
+                                    />
+                                </Space>
                             </div>
                         ) : (
                             <Alert
                                 type="warning"
-                                message="Enlace pendiente"
-                                description="El reclutador te asignará un enlace para la prueba muy pronto."
+                                message="Esperando Enlace"
+                                description="Un reclutador te proporcionará el enlace y código de acceso muy pronto."
+                                showIcon
                             />
-                        )}
-                        {stage?.config?.instructions && (
-                            <div style={{ marginTop: '16px' }}>
-                                <Text strong>Instrucciones:</Text>
-                                <Paragraph>{stage.config.instructions}</Paragraph>
-                            </div>
                         )}
                     </Card>
                 );
             case 4: // Entrevista
+            case 5:
                 return (
-                    <Card title={<Space><TeamOutlined /> Entrevista</Space>}>
+                    <Card title={<Space><TeamOutlined /> Fase de Entrevistas</Space>} style={{ borderRadius: '12px' }}>
                         <Paragraph>
-                            Estamos agendando una entrevista contigo. Pronto verás aquí los detalles de fecha y hora.
+                            ¡Excelente! Estás en la fase de entrevistas. Nuestro equipo de RRHH / Líderes de área se pondrá en contacto contigo vía WhatsApp o correo para agendar la cita.
                         </Paragraph>
+                        <Alert
+                            type="info"
+                            message="Mantente atento"
+                            description="Asegúrate de revisar tus mensajes de WhatsApp y correo electrónico."
+                            showIcon
+                        />
                     </Card>
+                );
+            case 8: // Contratación
+                return (
+                    <Result
+                        status="success"
+                        title="¡Felicidades! Has completado el proceso"
+                        subTitle={`Bienvenido a bordo de ${process.jobTitle}. Estamos felices de tenerte con nosotros.`}
+                    />
                 );
             default:
                 return (
                     <Alert
                         message="Proceso en curso"
-                        description={`Estás en la etapa: ${stage?.name || 'En revisión'}. Te mantendremos informado.`}
+                        description={`Estás en la etapa: ${stage?.name || 'En revisión'}. Te mantendremos informado por este medio.`}
                         type="info"
                         showIcon
                     />
@@ -118,51 +220,80 @@ const CandidateDashboard: React.FC = () => {
     };
 
     return (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-                <Title level={2}>¡Hola, {currentUser?.firstName}!</Title>
-                <Text type="secondary">Sigue el estado de tu postulación para <strong>{process.jobTitle}</strong></Text>
-            </div>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px 0' }}>
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                    <Title level={2} style={{ marginBottom: '4px' }}>¡Hola, {currentUser?.firstName}!</Title>
+                    <Space direction="vertical" size={0}>
+                        <Text strong style={{ fontSize: '18px', color: '#595959' }}>{displayJobTitle}</Text>
+                        {!isHired && (
+                            <Tag icon={<LockOutlined />} color="default" style={{ marginTop: '8px' }}>
+                                Detalles Confidenciales hasta el cierre
+                            </Tag>
+                        )}
+                    </Space>
+                </div>
 
-            <Card bordered={false} style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                <Steps
-                    current={stageId - 1}
-                    size="small"
-                    responsive={true}
-                    items={[
-                        { title: 'Aplicado', icon: stageId > 1 ? <CheckCircleOutlined /> : null },
-                        { title: 'Video', icon: stageId > 2 ? <CheckCircleOutlined /> : null },
-                        { title: 'Pruebas', icon: stageId > 3 ? <CheckCircleOutlined /> : null },
-                        { title: 'Entrevista', icon: stageId > 4 ? <CheckCircleOutlined /> : null },
-                        { title: 'Decisión' },
-                    ]}
-                />
-            </Card>
+                <Card style={{ borderRadius: '16px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
+                    <Title level={4} style={{ marginBottom: '24px', textAlign: 'center' }}>Tu Progreso</Title>
+                    {/* Custom Progress Tracker */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '8px 0' }}>
+                        {stages
+                            .filter((_, idx) => idx <= stageId - 1)
+                            .map((s, idx) => {
+                                const isCurrent = idx === stageId - 1;
+                                const isPast = idx < stageId - 1;
+                                const isLast = idx === stageId - 1;
 
-            <Divider orientation="left">Actividades Pendientes</Divider>
+                                const circleColor = isPast ? '#52c41a' : '#fa8c16';
+                                const textColor = isPast ? '#52c41a' : '#fa8c16';
+                                const boxShadow = isCurrent ? '0 0 0 4px rgba(250,140,22,0.2)' : 'none';
 
-            {renderStageContent()}
+                                return (
+                                    <React.Fragment key={idx}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 50 }}>
+                                            <div style={{
+                                                width: 34, height: 34, borderRadius: '50%',
+                                                backgroundColor: circleColor,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                flexShrink: 0, boxShadow,
+                                            }}>
+                                                {isCurrent
+                                                    ? <ClockCircleOutlined style={{ color: '#fff', fontSize: 17 }} />
+                                                    : React.cloneElement(s.icon as React.ReactElement, { style: { color: '#fff', fontSize: 17 } })
+                                                }
+                                            </div>
+                                            <span style={{ fontSize: 10, color: textColor, fontWeight: isCurrent ? 700 : 500, whiteSpace: 'nowrap', textAlign: 'center' }}>
+                                                {s.title}
+                                            </span>
+                                        </div>
+                                        {!isLast && (
+                                            <div style={{
+                                                flex: 1, height: 2, marginTop: 16, minWidth: 6,
+                                                backgroundColor: '#52c41a',
+                                            }} />
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+                    </div>
+                </Card>
 
-            <Card title="Historial de Actividad" size="small" style={{ marginTop: '16px' }}>
-                <List
-                    size="small"
-                    dataSource={[
-                        { date: 'Hoy', text: `Entraste a la etapa: ${stage?.name}` },
-                        { date: 'Ayer', text: 'Perfil revisado por reclutamiento' },
-                    ]}
-                    renderItem={(item) => (
-                        <List.Item>
-                            <Text type="secondary" style={{ width: '60px' }}>{item.date}</Text>
-                            <Text>{item.text}</Text>
-                        </List.Item>
-                    )}
-                />
-            </Card>
-        </Space>
+                <div style={{ marginTop: '16px' }}>
+                    {renderStageContent()}
+                </div>
+
+                {isHired && (
+                    <Card title="Detalles de tu Vacante" size="small">
+                        <Paragraph>
+                            Has sido seleccionado para la posición de <strong>{process.jobTitle}</strong>. 
+                            Próximamente recibirás detalles sobre tu Onboarding.
+                        </Paragraph>
+                    </Card>
+                )}
+            </Space>
+        </div>
     );
 };
-
-// Placeholder for missing icons
-const TeamOutlined = (props: any) => <FileSearchOutlined {...props} />;
 
 export default CandidateDashboard;

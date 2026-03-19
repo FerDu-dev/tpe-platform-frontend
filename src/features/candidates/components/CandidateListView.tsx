@@ -3,6 +3,7 @@ import { Table, Tag, Button, Space, Typography, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, CarOutlined } from '@ant-design/icons';
 import type { Candidate } from '../../../types';
+import { STAGE_COLORS } from '../../../services/candidateService';
 
 const { Text } = Typography;
 
@@ -21,7 +22,17 @@ const CandidateListView: React.FC<CandidateListViewProps> = ({ candidates, onVie
             dataIndex: 'name',
             key: 'name',
             width: 200,
-            render: (_, record) => <Text strong>{record.firstName} {record.lastName}</Text>,
+            render: (_, record) => (
+                <div>
+                    <Text strong style={{ display: 'block' }}>{record.firstName} {record.lastName}</Text>
+                    {record.requisitionZoneName && (
+                        <Text type="secondary" style={{ fontSize: '11px', fontWeight: 600, color: '#2b457c' }}>
+                            📍 ZONA: {record.requisitionZoneName}
+                        </Text>
+                    )}
+                </div>
+            ),
+
         },
         {
             title: 'Cédula',
@@ -54,15 +65,10 @@ const CandidateListView: React.FC<CandidateListViewProps> = ({ candidates, onVie
             dataIndex: 'stage',
             key: 'stage',
             width: 150,
-            render: (tag: string, record: Candidate) => {
-                const config: Record<string, { label: string; color: string }> = {
-                    applied: { label: 'Elegible', color: '#1890ff' },
-                    psychotechnical: { label: 'P. Psicotécnica', color: '#faad14' },
-                    interview: { label: 'Entrevista', color: '#2b457c' },
-                    decision: { label: 'Decisión / Oferta', color: '#52c41a' },
-                };
-
-                if (record.applications?.[0]?.status === 'REJECTED') {
+            render: (_, record: Candidate) => {
+                const isRejected = record.applications?.[0]?.status === 'REJECTED';
+                
+                if (isRejected) {
                     return (
                         <Tag color="error" style={{ borderRadius: '4px', fontWeight: 500 }}>
                             {record.subStatus === 'No Elegible' ? 'No Elegible' : 'Rechazado'}
@@ -70,10 +76,11 @@ const CandidateListView: React.FC<CandidateListViewProps> = ({ candidates, onVie
                     );
                 }
 
-                const item = config[tag] || { label: tag, color: 'default' };
+                const color = record.currentStageId ? STAGE_COLORS[record.currentStageId] : '#1890ff';
+                
                 return (
-                    <Tag color={item.color} style={{ borderRadius: '4px', fontWeight: 500 }}>
-                        {item.label}
+                    <Tag color={color} style={{ borderRadius: '4px', fontWeight: 500 }}>
+                        {record.currentStageName || 'Postulado'}
                     </Tag>
                 );
             }

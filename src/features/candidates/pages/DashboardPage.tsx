@@ -13,6 +13,7 @@ import {
     selectFilters,
     setFilters,
 } from '../store/candidatesSlice';
+import { loadStages } from '../../../store/workflowSlice';
 import type { Candidate } from '../../../types';
 
 const { Title } = Typography;
@@ -23,45 +24,50 @@ const DashboardPage: React.FC = () => {
     const filters = useAppSelector(selectFilters);
     const meta = useAppSelector(state => state.candidates.meta);
     const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
-    const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
+    const [viewMode, setViewMode] = useState<'board' | 'list'>('list');
     const [category, setCategory] = useState<'eligible' | 'not_eligible' | 'rejected'>('eligible');
 
-    // Load candidates on mount or when filters change
-    // Load candidates on mount or when filters change
+    // Load workflow stages on mount
     useEffect(() => {
-        dispatch(loadCandidates({ page: 1, limit: meta?.limit || 10 }));
-    }, [dispatch, filters]);
-    // Actually, setFilters updates state, but doesn't trigger load. 
-    // We should probably trigger load when filters change. 
-    // Or simpler: just load on mount, and let FilterBar trigger load.
-    // For now, let's assume FilterBar just sets filters. We need to react to filter change.
+        dispatch(loadStages(1));
+    }, [dispatch]);
+
+    // Load candidates on mount or when filters/category change
+    useEffect(() => {
+        const typeMap = {
+            eligible: 'active',
+            not_eligible: 'notSelectable',
+            rejected: 'rejected'
+        } as const;
+
+        dispatch(loadCandidates({
+            page: 1,
+            limit: meta?.limit || 10,
+            type: typeMap[category]
+        }));
+    }, [dispatch, filters, category]);
 
     const handlePageChange = (page: number, pageSize?: number) => {
-        dispatch(loadCandidates({ page, limit: pageSize || meta?.limit || 10 }));
+        const typeMap = {
+            eligible: 'active',
+            not_eligible: 'notSelectable',
+            rejected: 'rejected'
+        } as const;
+
+        dispatch(loadCandidates({
+            page,
+            limit: pageSize || meta?.limit || 10,
+            type: typeMap[category]
+        }));
     };
 
-    // Auto-switch to List view when filtering by status
-    useEffect(() => {
-        if (filters.status && viewMode === 'board') {
-            setViewMode('list');
-        }
-    }, [filters.status, viewMode]);
-
-    // Categories are now handled as individual toggles
+    // Categories are managed by local state only — no filter flags needed in Redux
     const handleToggleCategory = (targetCategory: 'not_eligible' | 'rejected') => {
-        if (category === targetCategory) {
-            // Already active, toggle OFF back to eligible
-            setCategory('eligible');
-            dispatch(setFilters({ ...filters, isNotEligible: false, isManualRejected: false, isRejected: false }));
-        } else {
-            // Toggle ON
-            setCategory(targetCategory);
-            if (targetCategory === 'not_eligible') {
-                dispatch(setFilters({ ...filters, isNotEligible: true, isManualRejected: false, isRejected: false }));
-            } else {
-                dispatch(setFilters({ ...filters, isNotEligible: false, isManualRejected: true, isRejected: false }));
-            }
-        }
+        const nextCategory = category === targetCategory ? 'eligible' : targetCategory;
+        setCategory(nextCategory);
+
+        // Reset filters when switching category so no stale params carry over
+        dispatch(setFilters({}));
     };
 
     return (
@@ -109,10 +115,10 @@ const DashboardPage: React.FC = () => {
                 </Space>
             </div>
 
-            <FilterBar />
+            <FilterBar category={category} />
 
             {/* Filters Active Alert */}
-            {(filters.name || filters.profession || filters.location || filters.hasVehicle !== undefined || filters.status) && (
+            {(filters.name || filters.profession || filters.location || filters.hasVehicle !== undefined || filters.search) && (
                 <div style={{ marginTop: 8, marginBottom: 8 }}>
                     <Alert
                         message={`Filtros activos: Mostrando ${meta?.total || candidates.length} resultados`}
@@ -128,6 +134,7 @@ const DashboardPage: React.FC = () => {
                     <div style={{ flex: 1, overflowY: 'auto' }}>
                         <RejectedCandidatesView
                             candidates={candidates}
+                            category={category as 'not_eligible' | 'rejected'}
                             onViewCandidate={setSelectedCandidate}
                         />
                     </div>

@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Row, Col, Typography, Card, Alert } from 'antd';
+import { Form, Input, Button, Row, Col, Typography, Alert, Card } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { loginUser, clearError, selectAuthLoading, selectAuthError, selectIsAuthenticated } from '../store/authSlice';
 import type { AuthCredentials } from '../../../types';
+import logoSvg from '../../../assets/logo.svg';
 
 const { Title, Text } = Typography;
 
@@ -33,14 +34,35 @@ const LoginPage: React.FC = () => {
 
     return (
         <Row style={{ minHeight: '100vh' }}>
-            {/* Left side - Login Form */}
-            <Col xs={24} md={12} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
-                <Card style={{ width: '100%', maxWidth: '400px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+            {/* Left side - Login Form only */}
+            <Col
+                xs={24}
+                md={12}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '40px',
+                    background: '#fff',
+                }}
+            >
+                <Card
+                    style={{
+                        width: '100%',
+                        maxWidth: '440px',
+                        borderRadius: '16px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
+                        padding: '8px',
+                        border: '1px solid #f0f0f0',
+                    }}
+                >
                     <div style={{ marginBottom: '32px' }}>
-                        <Title level={2} style={{ marginBottom: '8px' }}>
-                            Login 👋
+                        <Title level={2} style={{ marginBottom: '6px', color: '#1a1a2e' }}>
+                            Bienvenido 👋
                         </Title>
-                        <Text type="secondary">Bienvenido a Tu Próximo Empleo</Text>
+                        <Text type="secondary" style={{ fontSize: '15px' }}>
+                            Inicia sesión en el Portal de Reclutadores
+                        </Text>
                     </div>
 
                     {error && (
@@ -62,94 +84,116 @@ const LoginPage: React.FC = () => {
                         <Form.Item
                             label="Email"
                             name="username"
-                            rules={[{ required: true, message: 'Please input your email!' }]}
+                            rules={[{ required: true, message: 'Por favor ingresa tu email' }]}
                         >
                             <Input
                                 prefix={<UserOutlined />}
                                 placeholder="admin@tuproximoempleo.com"
+                                style={{ borderRadius: '8px', height: '48px' }}
                             />
                         </Form.Item>
 
                         <Form.Item
-                            label="Password"
+                            label="Contraseña"
                             name="password"
-                            rules={[{ required: true, message: 'Please input your password!' }]}
+                            rules={[{ required: true, message: 'Por favor ingresa tu contraseña' }]}
                         >
                             <Input.Password
                                 prefix={<LockOutlined />}
-                                placeholder="Enter your password"
+                                placeholder="••••••••"
+                                style={{ borderRadius: '8px', height: '48px' }}
                             />
                         </Form.Item>
 
-                        <Form.Item>
+                        <Form.Item style={{ marginTop: '8px' }}>
                             <Button
                                 type="primary"
                                 htmlType="submit"
                                 loading={loading}
                                 block
-                                style={{ height: '48px', fontSize: '16px', fontWeight: 500 }}
+                                style={{
+                                    height: '52px',
+                                    fontSize: '16px',
+                                    fontWeight: 600,
+                                    borderRadius: '8px',
+                                    background: 'linear-gradient(135deg, #2B5BB6, #1a3d8f)',
+                                    border: 'none',
+                                }}
                             >
-                                Login
+                                Iniciar Sesión
                             </Button>
                         </Form.Item>
                     </Form>
-
-                    {/* <div style={{ marginTop: '16px', padding: '12px', background: '#f0f2f5', borderRadius: '6px' }}>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                            <strong>Demo Credentials:</strong><br />
-                            Email: admin@tuproximoempleo.com<br />
-                            Password: admin123
-                        </Text>
-                    </div> */}
                 </Card>
             </Col>
 
-            {/* Right side - Hero Section */}
+            {/* Right side - Logo centered + hero text */}
             <Col
                 xs={0}
                 md={12}
                 style={{
-                    background: 'linear-gradient(135deg, #2b457c 0%, #4a6fa5 100%)',
+                    background: 'linear-gradient(160deg, #1a3d8f 0%, #2B5BB6 60%, #3a6fd8 100%)',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: '40px',
+                    padding: '60px 48px',
                     position: 'relative',
                     overflow: 'hidden',
+                    textAlign: 'center',
                 }}
             >
-                <div style={{ textAlign: 'center', color: 'white', zIndex: 1 }}>
-                    <Title level={1} style={{ color: 'white', fontSize: '48px', marginBottom: '16px' }}>
-                        Encuentra al talento<br />ideal para tu equipo 👌
-                    </Title>
-                    <Title level={3} style={{ color: 'white', fontWeight: 400 }}>
-                        Portal de Reclutadores
-                    </Title>
+                {/* Decorative background circles */}
+                <div style={{
+                    position: 'absolute',
+                    width: '420px',
+                    height: '420px',
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.05)',
+                    top: '-120px',
+                    right: '-130px',
+                }} />
+                <div style={{
+                    position: 'absolute',
+                    width: '280px',
+                    height: '280px',
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.06)',
+                    bottom: '-60px',
+                    left: '-80px',
+                }} />
+
+                {/* Logo centered */}
+                <div style={{ marginBottom: '40px', zIndex: 1 }}>
+                    <img
+                        src={logoSvg}
+                        alt="TuPróximoEmpleo.com"
+                        style={{
+                            height: '80px',
+                            width: 'auto',
+                            filter: 'brightness(0) invert(1)',
+                        }}
+                    />
                 </div>
 
-                {/* Decorative circles */}
-                <div
-                    style={{
-                        position: 'absolute',
-                        width: '300px',
-                        height: '300px',
-                        borderRadius: '50%',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        top: '-100px',
-                        right: '-100px',
-                    }}
-                />
-                <div
-                    style={{
-                        position: 'absolute',
-                        width: '200px',
-                        height: '200px',
-                        borderRadius: '50%',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        bottom: '-50px',
-                        left: '-50px',
-                    }}
-                />
+                {/* Hero text */}
+                <div style={{ zIndex: 1 }}>
+                    <Title
+                        level={1}
+                        style={{
+                            color: 'white',
+                            fontSize: '42px',
+                            lineHeight: 1.2,
+                            marginBottom: '20px',
+                        }}
+                    >
+                        Encuentra al talento<br />
+                        <span style={{ color: '#E91E8C' }}>ideal</span> para tu equipo
+                    </Title>
+                    <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: '18px' }}>
+                        Plataforma ATS de Selección y Reclutamiento
+                    </Text>
+                </div>
             </Col>
         </Row>
     );

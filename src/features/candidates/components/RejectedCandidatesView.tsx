@@ -1,33 +1,18 @@
 import React from 'react';
-import { Table, Tag, Button, Typography, Space, Alert, message } from 'antd';
+import { Table, Tag, Typography, Space, Alert } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { EyeOutlined, ReloadOutlined, StopOutlined, CarOutlined, ToolOutlined } from '@ant-design/icons';
+import { EyeOutlined, StopOutlined, CarOutlined, ToolOutlined } from '@ant-design/icons';
 import type { Candidate } from '../../../types';
-import { useAppDispatch } from '../../../app/store';
-import { updateCandidateStage } from '../store/candidatesSlice';
 
 const { Text } = Typography;
 
 interface RejectedCandidatesViewProps {
     candidates: Candidate[];
+    category: 'not_eligible' | 'rejected';
     onViewCandidate: (candidate: Candidate) => void;
 }
 
-const RejectedCandidatesView: React.FC<RejectedCandidatesViewProps> = ({ candidates, onViewCandidate }) => {
-    const dispatch = useAppDispatch();
-
-    const handleRescue = (candidateId: string) => {
-        // Moves candidate to 'applied' and potentially clears rejection reason (logic depends on backend, here we just move stage)
-        // For mock, simply updating stage to 'applied' allows them to show up in board if logic permits, 
-        // but we might need to handle the 'rejectionReason' display logic so they don't appear rejected anymore.
-        // Ideally we would update the candidate object to remove rejectionReason. 
-        // Since our slice might not support partial updates easily without api, we assume 'updateCandidateStage' is enough 
-        // and we'll handle the UI to ignore rejectionReason if manually moved.
-
-        dispatch(updateCandidateStage({ id: candidateId, newStage: 'applied' }));
-        message.success('Candidato rescatado y movido a Elegible');
-    };
-
+const RejectedCandidatesView: React.FC<RejectedCandidatesViewProps> = ({ candidates, category, onViewCandidate }) => {
     const columns: ColumnsType<Candidate> = [
         {
             title: 'Candidato',
@@ -41,13 +26,13 @@ const RejectedCandidatesView: React.FC<RejectedCandidatesViewProps> = ({ candida
             )
         },
         {
-            title: 'Motivo de Rechazo',
+            title: category === 'rejected' ? 'Motivo de Rechazo' : 'Razón de Inelegibilidad',
             dataIndex: 'rejectionReason',
             key: 'rejectionReason',
             width: 300,
-            render: (reason) => (
-                <Tag color="error" icon={<StopOutlined />}>
-                    {reason || 'Filtro Automático'}
+            render: (_, record) => (
+                <Tag color={category === 'rejected' ? 'error' : 'warning'} icon={<StopOutlined />}>
+                    {record.applications?.[0]?.rejectionReason || 'Filtro Automático'}
                 </Tag>
             )
         },
@@ -61,38 +46,23 @@ const RejectedCandidatesView: React.FC<RejectedCandidatesViewProps> = ({ candida
             }
         },
         {
-            title: 'Acciones',
-            key: 'actions',
+            title: '',
+            key: 'view',
             align: 'right',
-            render: (_, record) => (
-                <Space>
-                    <Button
-                        size="small"
-                        icon={<EyeOutlined />}
-                        onClick={() => onViewCandidate(record)}
-                    >
-                        Ver
-                    </Button>
-                    <Button
-                        type="primary"
-                        style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-                        size="small"
-                        icon={<ReloadOutlined />}
-                        onClick={() => handleRescue(record.id)}
-                    >
-                        Rescatar
-                    </Button>
-                </Space>
-            ),
-        },
+            render: () => <EyeOutlined style={{ color: '#bfbfbf' }} />
+        }
     ];
 
     return (
         <div style={{ marginTop: 16 }}>
             <Alert
-                message="Zona de Rescate"
-                description="Estos candidatos fueron filtrados automáticamente por el sistema. Revísalos y rescata a aquellos que consideres aptos."
-                type="warning"
+                message={category === 'rejected' ? 'Candidatos Rechazados' : 'Candidatos No Elegibles'}
+                description={
+                    category === 'rejected'
+                        ? 'Estos candidatos fueron rechazados manualmente por un reclutador. Puedes revisar el motivo y rescatarlos si es necesario.'
+                        : 'Estos candidatos fueron filtrados automáticamente por el sistema. Revísalos y rescata a aquellos que consideres aptos.'
+                }
+                type={category === 'rejected' ? 'error' : 'warning'}
                 showIcon
                 style={{ marginBottom: 16 }}
             />
@@ -100,9 +70,13 @@ const RejectedCandidatesView: React.FC<RejectedCandidatesViewProps> = ({ candida
                 columns={columns}
                 dataSource={candidates}
                 rowKey="id"
-                pagination={{ pageSize: 5 }}
+                pagination={false}
                 size="small"
                 style={{ background: '#fff', borderRadius: 8 }}
+                onRow={(record) => ({
+                    onClick: () => onViewCandidate(record),
+                    style: { cursor: 'pointer' }
+                })}
             />
         </div>
     );

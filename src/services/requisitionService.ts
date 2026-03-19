@@ -26,4 +26,25 @@ export const requisitionService = {
             meta
         };
     },
+    async createRequisition(data: Partial<Requisition>): Promise<Requisition> {
+        const response = await api.post('/requisitions', data);
+        const r = response.data;
+        return {
+            id: r.id,
+            idx: r.id,
+            company: r.company?.name || 'Compañía',
+            title: r.title,
+            priority: r.priority,
+            status: r.status === 'OPEN' ? 'activa' : (r.status === 'CLOSED' ? 'cerrada' : 'suspendida'),
+            applicants: 0,
+            createdDate: r.createdAt,
+            department: 'Ventas',
+            location: r.municipality ? `${r.municipality.name} - ${r.state?.name || ''}` : (r.state?.name || 'N/A'),
+            zone: r.zone?.name || 'N/A',
+            route: 'N/A',
+            stateId: r.stateId,
+            municipalityId: r.municipalityId,
+            requestedBy: r.requestedBy,
+        } as Requisition;
+    },
 };

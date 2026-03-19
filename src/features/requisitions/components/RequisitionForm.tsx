@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, Form, Select, Input, Button, Divider, message, Space } from 'antd';
+import React, { useState } from 'react';
+import { Modal, Form, Select, Input, Button, Divider, message, Space, Card, Descriptions } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import {
-    selectCompanies, selectPositions, selectZones,
-    addCompany, addPosition, addZone
+    selectPositions,
+    addCompany, addPosition
 } from '../../../store/masterDataSlice';
-import { addRequisition } from '../store/requisitionsSlice';
-import { municipalityService } from '../../../services/municipalityService';
-import type { Requisition, RequisitionStatus, Priority, State, Municipality } from '../../../types';
+import { createRequisition } from '../store/requisitionsSlice';
+import { VENEZUELA_STATES } from '../../../constants/venezuela';
+import type { Priority, Zone } from '../../../types';
+import { zonesService } from '../../../services/zonesService';
 
 const { Option } = Select;
 
@@ -20,72 +21,97 @@ interface RequisitionFormProps {
 const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
     const [form] = Form.useForm();
     const dispatch = useAppDispatch();
+    const selectedZoneId = Form.useWatch('zoneId', form);
+    const selectedCompanyId = Form.useWatch('companyId', form);
 
     // Master Data from Store
-    const companies = useAppSelector(selectCompanies);
     const positions = useAppSelector(selectPositions);
-    const zones = useAppSelector(selectZones);
 
-    const [states, setStates] = useState<State[]>([]);
-    const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
-    const [selectedStateId, setSelectedStateId] = useState<number | undefined>();
+    const [municipalities, setMunicipalities] = useState<{ id: number; name: string }[]>([]);
+    const [zones, setZones] = useState<Zone[]>([]);
+    const [loadingZones, setLoadingZones] = useState(false);
+
+    const COMPANIES = [
+        { id: 1, name: 'Febeca' },
+        { id: 2, name: 'Beval' },
+        { id: 3, name: 'Sillaca' },
+        { id: 4, name: 'Grupo' },
+    ];
 
     // Temp state for new items
     const [newItemName, setNewItemName] = useState('');
 
-    useEffect(() => {
-        municipalityService.getStates().then(setStates).catch(console.error);
-    }, []);
-
-    useEffect(() => {
-        if (selectedStateId) {
-            municipalityService.getMunicipalities(selectedStateId).then(setMunicipalities).catch(console.error);
-        } else {
-            setMunicipalities([]);
-        }
-    }, [selectedStateId]);
+    const handleStateChange = (stateId: number) => {
+        form.setFieldValue('municipalityId', undefined);
+        const found = VENEZUELA_STATES.find(s => s.id === stateId);
+        setMunicipalities(found ? found.municipalities : []);
+    };
 
     const handleCreateNew = (type: 'company' | 'position' | 'zone') => {
         if (!newItemName.trim()) return;
 
         if (type === 'company') dispatch(addCompany(newItemName));
         else if (type === 'position') dispatch(addPosition(newItemName));
-        else if (type === 'zone') dispatch(addZone(newItemName));
 
         message.success(`${newItemName} añadido correctamente`);
         setNewItemName('');
     };
 
-    const handleStateChange = (value: number) => {
-        setSelectedStateId(value);
-        form.setFieldsValue({ municipalityId: undefined });
+
+    const handleCompanyChange = (companyId: number) => {
+        setLoadingZones(true);
+        zonesService.fetchZones(companyId)
+            .then(setZones)
+            .catch(() => message.error('Error al cargar zonas'))
+            .finally(() => setLoadingZones(false));
+        form.setFieldsValue({ zoneId: undefined });
     };
 
-    const handleSubmit = (values: any) => {
-        const stateObj = states.find(s => s.id === values.stateId);
-        const muniObj = municipalities.find(m => m.id === values.municipalityId);
+    const handleCreateNewZone = async () => {
+        if (!newItemName.trim()) return;
+        const companyId = form.getFieldValue('companyId');
+        if (!companyId) return message.error('Selecciona una empresa primero para añadir una zona');
 
-        const newReq: Requisition = {
-            id: `req-${Date.now()}`,
-            idx: `${values.company}-${values.position}-${values.zone}`,
-            company: values.company,
-            title: values.position,
-            priority: values.priority as Priority,
-            status: 'activa' as RequisitionStatus,
-            applicants: 0,
-            createdDate: new Date().toISOString(),
-            department: 'Ventas',
-            location: muniObj ? `${muniObj.name} - ${stateObj?.name || ''}` : (stateObj?.name || 'N/A'),
-            zone: values.zone,
-            route: values.route || '',
-            stateId: values.stateId,
-            municipalityId: values.municipalityId
-        };
+        try {
+            const newZone = await zonesService.createZone({
+                name: newItemName,
+                companyId: companyId
+            });
+            setZones(prev => [...prev, newZone]);
+            form.setFieldsValue({ zoneId: newZone.id });
+            message.success(`Zona ${newItemName} añadida correctamente`);
+            setNewItemName('');
+        } catch (e) {
+            message.error('Error al crear la zona');
+        }
+    };
 
-        dispatch(addRequisition(newReq));
-        message.success('Requisición creada con éxito');
-        form.resetFields();
-        onClose();
+    const handleSubmit = async (values: any) => {
+        try {
+            const selectedState = VENEZUELA_STATES.find(s => s.id === values.stateId);
+            const selectedMuni = municipalities.find(m => m.id === values.municipalityId);
+
+            const requisitionData: any = {
+                title: values.position,
+                priority: values.priority as Priority,
+                companyId: values.companyId,
+                zoneId: values.zoneId,
+                stateId: values.stateId,
+                municipalityId: values.municipalityId,
+                stateName: selectedState?.name,
+                municipalityName: selectedMuni?.name,
+                requestedBy: values.requestedBy,
+                requiresVehicle: false,
+                vacanciesCount: 1,
+            };
+
+            await dispatch(createRequisition(requisitionData)).unwrap();
+            message.success('Requisición creada con éxito');
+            form.resetFields();
+            onClose();
+        } catch (error: any) {
+            message.error(error || 'Error al crear la requisición');
+        }
     };
 
     const renderDropdown = (menu: React.ReactElement, type: 'company' | 'position' | 'zone') => (
@@ -99,7 +125,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
                     onChange={(e) => setNewItemName(e.target.value)}
                     onKeyDown={(e) => e.stopPropagation()}
                 />
-                <Button type="text" icon={<PlusOutlined />} onClick={() => handleCreateNew(type)}>
+                 <Button type="text" icon={<PlusOutlined />} onClick={() => type === 'zone' ? handleCreateNewZone() : handleCreateNew(type)}>
                     Añadir
                 </Button>
             </Space>
@@ -118,10 +144,14 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
         >
             <Form form={form} layout="vertical" onFinish={handleSubmit}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <Form.Item name="company" label="Empresa" rules={[{ required: true }]}>
-                        <Select dropdownRender={(menu) => renderDropdown(menu, 'company')}>
-                            {companies.map(c => <Option key={c} value={c}>{c}</Option>)}
+                    <Form.Item name="companyId" label="Empresa" rules={[{ required: true }]}>
+                        <Select onChange={handleCompanyChange}>
+                            {COMPANIES.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
                         </Select>
+                    </Form.Item>
+
+                    <Form.Item name="requestedBy" label="Solicitado por">
+                        <Input placeholder="Nombre de la persona que solicita" />
                     </Form.Item>
 
                     <Form.Item name="priority" label="Prioridad" rules={[{ required: true }]}>
@@ -140,26 +170,47 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
 
                     <Form.Item name="stateId" label="Estado" rules={[{ required: true }]}>
                         <Select showSearch onChange={handleStateChange}>
-                            {states.map(s => <Option key={s.id} value={s.id}>{s.name}</Option>)}
+                            {VENEZUELA_STATES.map(s => <Option key={s.id} value={s.id}>{s.name}</Option>)}
                         </Select>
                     </Form.Item>
 
                     <Form.Item name="municipalityId" label="Municipio" rules={[{ required: true }]}>
-                        <Select showSearch disabled={!selectedStateId}>
+                        <Select showSearch disabled={municipalities.length === 0}>
                             {municipalities.map(m => <Option key={m.id} value={m.id}>{m.name}</Option>)}
                         </Select>
                     </Form.Item>
 
-                    <Form.Item name="zone" label="Zona" rules={[{ required: true }]}>
-                        <Select dropdownRender={(menu) => renderDropdown(menu, 'zone')}>
-                            {zones.map(z => <Option key={z} value={z}>{z}</Option>)}
+                    <Form.Item name="zoneId" label="Zona" rules={[{ required: true }]} style={{ gridColumn: 'span 2' }}>
+                        <Select 
+                            loading={loadingZones} 
+                            disabled={!selectedCompanyId}
+                            dropdownRender={(menu) => renderDropdown(menu, 'zone')}
+                            showSearch
+                            optionFilterProp="children"
+                        >
+                            {zones.map(z => <Option key={z.id} value={z.id}>{z.name}</Option>)}
                         </Select>
                     </Form.Item>
-
-                    <Form.Item name="route" label="Ruta">
-                        <Input placeholder="Ej: Caracas-Guarenas" />
-                    </Form.Item>
                 </div>
+
+                {selectedZoneId && zones.find(z => z.id === selectedZoneId) && (
+                    <Card size="small" style={{ marginTop: '16px', background: '#f0f5ff' }}>
+                        <Descriptions title="Detalles de la Zona Seleccionada" column={2} size="small">
+                            <Descriptions.Item label="Región">
+                                {zones.find(z => z.id === selectedZoneId)?.region || 'N/A'}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Coordinación">
+                                {zones.find(z => z.id === selectedZoneId)?.coordinator || 'N/A'}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Nro. Coord">
+                                {zones.find(z => z.id === selectedZoneId)?.coordinatorNum || 'N/A'}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Ruta Geográfica" span={2}>
+                                {zones.find(z => z.id === selectedZoneId)?.geographicRoute || 'N/A'}
+                            </Descriptions.Item>
+                        </Descriptions>
+                    </Card>
+                )}
             </Form>
         </Modal>
     );

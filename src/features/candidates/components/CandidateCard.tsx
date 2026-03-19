@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card, Typography, Tag, Space, Tooltip } from 'antd';
-import { ClockCircleOutlined, CarOutlined, ExclamationCircleOutlined, VideoCameraOutlined, SolutionOutlined, FolderOpenOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined, CarOutlined, ExclamationCircleOutlined, VideoCameraOutlined, SolutionOutlined, FolderOpenOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import type { Candidate } from '../../../types';
+import { STAGE_COLORS } from '../../../services/candidateService';
 
 const { Text } = Typography;
 
@@ -15,13 +16,17 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick }) => 
         if (!subStatus) return null;
 
         const config: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-            'Bienvenida Enviada | Video Solicitado': { label: 'Bienvenida | Video Pendiente', icon: <VideoCameraOutlined />, color: 'purple' },
-            'Video Solicitado': { label: 'Video Solicitado', icon: <VideoCameraOutlined />, color: 'purple' },
-            'Video Cargado': { label: 'Video Cargado', icon: <VideoCameraOutlined />, color: 'success' },
-            'En espera': { label: 'En espera', icon: <ClockCircleOutlined />, color: 'default' },
-            'Psicotécnica Solicitada': { label: 'Psic. Solicitada', icon: <SolutionOutlined />, color: 'warning' },
-            'Entrevista Agendada': { label: 'Entrevista', icon: <ClockCircleOutlined />, color: 'processing' },
-            'No Elegible': { label: 'No Elegible', icon: <ExclamationCircleOutlined />, color: 'warning' },
+            'Bienvenida': { label: 'Bienvenida', icon: <VideoCameraOutlined />, color: 'blue' },
+            'Bienvenida Enviada': { label: 'Bienvenida', icon: <VideoCameraOutlined />, color: 'blue' },
+            'Video solicitado a candidato': { label: 'Video Pendiente', icon: <VideoCameraOutlined />, color: 'purple' },
+            'Video recibido': { label: 'Video Recibido', icon: <VideoCameraOutlined />, color: 'success' },
+            'Prueba enviada a candidato': { label: 'Psic. Pendiente', icon: <SolutionOutlined />, color: 'warning' },
+            'Prueba presentada por candidato': { label: 'Psic. Presentada', icon: <SolutionOutlined />, color: 'success' },
+            'Agendar entrevista': { label: 'Agenda Pendiente', icon: <ClockCircleOutlined />, color: 'orange' },
+            'Entrevista personal realizada': { label: 'Entrevista OK', icon: <CheckCircleOutlined />, color: 'success' },
+            'Entrevista técnica realizada': { label: 'Técnica OK', icon: <CheckCircleOutlined />, color: 'success' },
+            'Oferta enviada': { label: 'Oferta', icon: <SolutionOutlined />, color: 'processing' },
+            'Contratado': { label: 'Contratado', icon: <CheckCircleOutlined />, color: 'green' },
         };
 
         const item = config[subStatus] || { label: subStatus, icon: null, color: 'default' };
@@ -52,12 +57,24 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick }) => 
                         {candidate.firstName} {candidate.lastName}
                     </Text>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        {/* <Text type="secondary" style={{ fontSize: '12px' }}>
+                        <Text type="secondary" style={{ fontSize: '11px', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {candidate.profession || 'Sin profesión'}
-                        </Text> */}
-                        <Text type="secondary" style={{ fontSize: '11px' }}>
-                            {candidate.phone}
                         </Text>
+                        <div style={{ marginTop: 4 }}>
+                            <Tag
+                                color={candidate.currentStageId ? STAGE_COLORS[candidate.currentStageId] : 'blue'}
+                                style={{ marginTop: '8px', borderRadius: '4px' }}
+                            >
+                                {candidate.currentStageName || 'En Proceso'}
+                            </Tag>
+                            {candidate.requisitionZoneName && (
+                                <div style={{ marginTop: '4px' }}>
+                                    <Text type="secondary" style={{ fontSize: '11px', fontWeight: 600, color: '#2b457c' }}>
+                                        📍 ZONA: {candidate.requisitionZoneName}
+                                    </Text>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

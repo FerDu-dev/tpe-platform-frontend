@@ -8,6 +8,7 @@ import CandidateDashboard from './features/candidate-portal/pages/CandidateDashb
 import DashboardPage from './features/candidates/pages/DashboardPage';
 import RequisitionsPage from './features/requisitions/pages/RequisitionsPage';
 import UsersPage from './features/users/pages/UsersPage';
+import HiresPage from './features/hires/pages/HiresPage';
 import ProtectedRoute from './features/auth/components/ProtectedRoute';
 import MainLayout from './components/MainLayout';
 import CandidateLayout from './components/CandidateLayout';
@@ -62,6 +63,17 @@ const App: React.FC = () => {
                         <ProtectedRoute allowedEntity="staff" redirectTo="/login">
                             <MainLayout>
                                 <UsersPage />
+                            </MainLayout>
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/hires"
+                    element={
+                        <ProtectedRoute allowedEntity="staff" redirectTo="/login">
+                            <MainLayout>
+                                <HiresPage />
                             </MainLayout>
                         </ProtectedRoute>
                     }

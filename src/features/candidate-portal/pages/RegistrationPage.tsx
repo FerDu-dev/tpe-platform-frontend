@@ -9,7 +9,6 @@ import {
     BulbOutlined, FileTextOutlined, ArrowRightOutlined,
     ArrowLeftOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
 import { api } from '../../../services/api';
 import { PROFESSIONS_ES } from '../../../constants/professions';
 import { VENEZUELA_STATES } from '../../../constants/venezuela';
@@ -19,7 +18,8 @@ const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 
 
-const JOB_REQUISITION_ID = 1;
+// Removed hardcoded JOB_REQUISITION_ID as registration is now talent-pool based (free registration)
+// const JOB_REQUISITION_ID = 1;
 
 // ─── DESKTOP: 4 sections ───────────────────────────────────────────────────
 const DESKTOP_STEPS = [
@@ -61,7 +61,6 @@ const MOBILE_STEPS = [
 
 const RegistrationPage: React.FC = () => {
     const [form] = Form.useForm();
-    const navigate = useNavigate();
 
     const [loading, setLoading] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -110,8 +109,7 @@ const RegistrationPage: React.FC = () => {
         let fields = [...step.fields];
         // Remove childrenCount if hasChildren is false
         if (!hasChildren) fields = fields.filter(f => f !== 'childrenCount');
-        // Remove vehicleDetail if no vehicle or vehicle not yet chosen
-        if (hasVehicle !== 'si') fields = fields.filter(f => f !== 'vehicleDetail' && f !== 'profession' && f !== 'salesExperience');
+        if (hasVehicle !== 'si') fields = fields.filter(f => f !== 'vehicleDetail');
         return fields;
     }, [isMobile, currentStep, hasChildren, hasVehicle]);
 
@@ -142,8 +140,8 @@ const RegistrationPage: React.FC = () => {
         setLoading(true);
         try {
             const fd = new FormData();
-            fd.append('cv', cvFile);
-            fd.append('jobRequisitionId', String(JOB_REQUISITION_ID));
+            if (cvFile) fd.append('cv', cvFile);
+            // fd.append('jobRequisitionId', String(JOB_REQUISITION_ID)); // No longer needed for free registration
             fd.append('nationalId', values.nationalId);
             fd.append('firstName', values.firstName);
             fd.append('lastName', values.lastName);
@@ -151,7 +149,14 @@ const RegistrationPage: React.FC = () => {
             fd.append('phone', values.phone);
             if (values.altPhone) fd.append('altPhone', values.altPhone);
             if (values.birthDate) fd.append('birthDate', dayjs(values.birthDate).toISOString());
+
+            // Send names to allow backend to synchronize dynamically (robustness)
+            const selectedMuni = municipalities.find(m => m.id === values.municipalityId);
+            if (selectedMuni) fd.append('municipalityName', selectedMuni.name);
             fd.append('municipalityId', String(values.municipalityId));
+
+            const selectedState = VENEZUELA_STATES.find(s => s.id === values.stateId);
+            if (selectedState) fd.append('stateName', selectedState.name);
             if (values.stateId) fd.append('stateId', String(values.stateId));
             // hasVehicle = true only if they have a vehicle AND it's their own property
             const actuallyOwnsVehicle = values.hasVehicle === 'si' && values.vehicleIsOwn === 'si';
@@ -168,8 +173,17 @@ const RegistrationPage: React.FC = () => {
             setSuccessData(res.data);
             setResult('success');
         } catch (err: any) {
-            if (err.response?.status === 409) message.warning('Ya existe una postulación con ese correo o cédula.');
-            else message.error('Error al enviar. Por favor intenta de nuevo.');
+            if (err.response?.data?.message) {
+                // Display the exact message returned from the backend (e.g., "Ya te encuentras en un proceso activo...")
+                const backendMsg = Array.isArray(err.response.data.message) 
+                    ? err.response.data.message[0] 
+                    : err.response.data.message;
+                message.error(backendMsg);
+            } else if (err.response?.status === 409) {
+                message.warning('Ya existe una postulación con ese correo o cédula.');
+            } else {
+                message.error('Error al enviar. Por favor intenta de nuevo.');
+            }
         } finally {
             setLoading(false);
         }
@@ -184,20 +198,11 @@ const RegistrationPage: React.FC = () => {
                 <div style={css.resultCard}>
                     <CheckCircleOutlined style={{ fontSize: 72, color: '#52c41a', marginBottom: 24 }} />
                     <Title level={2} style={{ color: '#fff', margin: 0 }}>¡Postulación enviada!</Title>
-                    <Paragraph style={{ color: 'rgba(255,255,255,0.75)', fontSize: 16, maxWidth: 400, textAlign: 'center', marginTop: 12 }}>
-                        Recibirás un correo con tus credenciales de acceso al portal de candidatos.
+                    <Paragraph style={{ color: 'rgba(255,255,255,0.75)', fontSize: 18, maxWidth: 450, textAlign: 'center', marginTop: 16 }}>
+                        Gracias por postularte. Por favor, <strong>mantente atento a tus correos electrónicos</strong>, ya que te estaremos contactando por esa vía para los siguientes pasos.
                     </Paragraph>
-                    <div style={css.credBox}>
-                        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>Contraseña temporal</Text>
-                        <br />
-                        <Text code style={{ background: 'rgba(255,255,255,0.1)', color: '#52c41a', fontSize: 22, letterSpacing: 2 }}>
-                            {successData.tempPassword}
-                        </Text>
-                        <br />
-                        <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Guarda esta contraseña para acceder al portal</Text>
-                    </div>
-                    <Button type="primary" size="large" style={{ marginTop: 28 }} onClick={() => navigate('/candidate/login')}>
-                        Ir al Portal de Candidatos →
+                    <Button type="primary" size="large" style={{ marginTop: 32, height: 50, padding: '0 40px' }} onClick={() => window.location.href = 'https://tuproximoempleo.com'}>
+                        Volver al inicio
                     </Button>
                 </div>
             </div>
@@ -680,22 +685,27 @@ const RegistrationPage: React.FC = () => {
 
                     <Divider style={{ margin: '24px 0 20px' }} />
 
-                    {/* Navigation — atrás a la izquierda, continuar a la derecha */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
+                    {/* Navigation — responsive layout */}
+                    <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '12px'
+                    }}>
+                        <div style={{ flex: isMobile ? '1 1 100%' : '0 0 auto', order: isMobile ? 2 : 1 }}>
                             {currentStep > 0 && (
-                                <Button size="large" onClick={handleBack} icon={<ArrowLeftOutlined />} style={{ minWidth: 120 }}>
+                                <Button size="large" onClick={handleBack} icon={<ArrowLeftOutlined />} style={{ width: isMobile ? '100%' : 120 }}>
                                     Atrás
                                 </Button>
                             )}
                         </div>
-                        <div>
+                        <div style={{ flex: isMobile ? '1 1 100%' : '0 0 auto', order: isMobile ? 1 : 2 }}>
                             {!isLastStep ? (
                                 <Button
                                     type="primary" size="large" onClick={handleNext}
-                                    disabled={hasVehicle === 'no'}
                                     icon={<ArrowRightOutlined />} iconPosition="end"
-                                    style={{ minWidth: 160, fontWeight: 600 }}
+                                    style={{ width: isMobile ? '100%' : 160, fontWeight: 600 }}
                                 >
                                     Continuar
                                 </Button>
@@ -703,6 +713,8 @@ const RegistrationPage: React.FC = () => {
                                 <Button
                                     type="primary" size="large" loading={loading}
                                     onClick={handleSubmit} icon={<RocketOutlined />}
+                                    disabled={!cvFile}
+                                    title={!cvFile ? 'Debes subir tu CV para finalizar' : ''}
                                     style={{ minWidth: 180, fontWeight: 700, height: 50 }}
                                 >
                                     Enviar Postulación
@@ -798,14 +810,6 @@ const css: Record<string, React.CSSProperties> = {
         alignItems: 'center',
         maxWidth: 480,
         textAlign: 'center',
-    },
-    credBox: {
-        background: 'rgba(255,255,255,0.08)',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: 16,
-        padding: '20px 36px',
-        marginTop: 20,
     },
 };
 

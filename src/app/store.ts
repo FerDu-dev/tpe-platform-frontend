@@ -5,6 +5,7 @@ import candidatesReducer from '../features/candidates/store/candidatesSlice';
 import requisitionsReducer from '../features/requisitions/store/requisitionsSlice';
 import usersReducer from '../features/users/store/usersSlice';
 import masterDataReducer from '../store/masterDataSlice';
+import workflowReducer from '../store/workflowSlice';
 
 export const store = configureStore({
     reducer: {
@@ -13,6 +14,7 @@ export const store = configureStore({
         requisitions: requisitionsReducer,
         users: usersReducer,
         masterData: masterDataReducer,
+        workflow: workflowReducer,
     },
 });
 

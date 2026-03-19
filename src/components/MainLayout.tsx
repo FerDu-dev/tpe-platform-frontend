@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import logoSvg from '../assets/logo.svg';
 import { Layout, Menu, Avatar, Dropdown, Typography, Button, Space } from 'antd';
 import {
     UserOutlined,
@@ -8,6 +9,7 @@ import {
     TeamOutlined,
     FileTextOutlined,
     UsergroupAddOutlined, // For Candidates
+    TrophyOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/store';
@@ -69,6 +71,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             label: 'Usuarios',
             onClick: () => navigate('/users'),
         },
+        {
+            key: '/hires',
+            icon: <TrophyOutlined style={{ fontSize: '18px' }} />,
+            label: 'Contrataciones',
+            onClick: () => navigate('/hires'),
+        },
     ];
 
     return (
@@ -89,8 +97,34 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     zIndex: 100,
                 }}
             >
-                <div className="sider-logo">
-                    {collapsed ? 'TPE' : 'Tu Próximo Empleo'}
+                <div className="sider-logo" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: collapsed ? 'center' : 'flex-start',
+                    padding: collapsed ? '20px 0' : '16px 20px',
+                    transition: 'all 0.2s',
+                    overflow: 'hidden',
+                }}>
+                    {collapsed ? (
+                        /* Mini icon when collapsed: blue square with white briefcase */
+                        <svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="36" height="36" rx="6" fill="#2B5BB6" />
+                            <rect x="8" y="13" width="20" height="16" rx="2" fill="white" opacity="0.9" />
+                            <rect x="13" y="9" width="10" height="6" rx="2" fill="none" stroke="white" strokeWidth="2" />
+                            <rect x="10" y="21" width="16" height="1.5" rx="0.75" fill="#2B5BB6" />
+                        </svg>
+                    ) : (
+                        <img
+                            src={logoSvg}
+                            alt="TuPróximoEmpleo.com"
+                            style={{
+                                height: '52px',
+                                width: 'auto',
+                                maxWidth: '210px',
+                                filter: 'brightness(0) invert(1)',
+                            }}
+                        />
+                    )}
                 </div>
                 <Menu
                     theme="dark"

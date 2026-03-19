@@ -24,11 +24,20 @@ const initialState: CandidatesState = {
 // Async thunk to load candidates
 export const loadCandidates = createAsyncThunk(
     'candidates/load',
-    async (params: { page?: number; limit?: number } = {}, { getState, rejectWithValue }) => {
+    async (params: { page?: number; limit?: number; type?: 'active' | 'rejected' | 'notSelectable' } = {}, { getState, rejectWithValue }) => {
         const state = getState() as RootState;
         const filters = state.candidates.filters;
+        const { type = 'active', ...restParams } = params;
+
         try {
-            const response = await candidateService.fetchCandidates({ ...filters, ...params });
+            let response;
+            if (type === 'rejected') {
+                response = await candidateService.fetch_candidates_rejected({ ...filters, ...restParams });
+            } else if (type === 'notSelectable') {
+                response = await candidateService.fetch_candidates_notSelectable({ ...filters, ...restParams });
+            } else {
+                response = await candidateService.fetch_candidates_active({ ...filters, ...restParams });
+            }
             return response;
         } catch (error) {
             return rejectWithValue((error as Error).message);
@@ -49,6 +58,18 @@ export const updateCandidateStage = createAsyncThunk(
     }
 );
 
+// Async thunk to load a single candidate by ID
+export const loadCandidateById = createAsyncThunk(
+    'candidates/loadById',
+    async (id: string, { rejectWithValue }) => {
+        try {
+            return await candidateService.fetchCandidateById(id);
+        } catch (error) {
+            return rejectWithValue((error as Error).message);
+        }
+    }
+);
+
 const candidatesSlice = createSlice({
     name: 'candidates',
     initialState,
@@ -61,6 +82,11 @@ const candidatesSlice = createSlice({
         },
         clearFilters: (state) => {
             state.filters = {};
+        },
+        removeCandidate: (state, action: PayloadAction<string>) => {
+            // Optimistically remove a candidate from the list by ID (e.g. after rejection)
+            state.candidates = state.candidates.filter(c => c.id !== action.payload);
+            if (state.meta) state.meta.total = Math.max(0, state.meta.total - 1);
         },
     },
     extraReducers: (builder) => {
@@ -85,11 +111,32 @@ const candidatesSlice = createSlice({
                 if (index !== -1) {
                     state.candidates[index] = action.payload;
                 }
+                if (state.selectedCandidate?.id === action.payload.id) {
+                    state.selectedCandidate = action.payload;
+                }
+            })
+            // Load candidate by ID
+            .addCase(loadCandidateById.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(loadCandidateById.fulfilled, (state, action: PayloadAction<Candidate>) => {
+                state.loading = false;
+                state.selectedCandidate = action.payload;
+                // Also update in list if present
+                const index = state.candidates.findIndex(c => c.id === action.payload.id);
+                if (index !== -1) {
+                    state.candidates[index] = action.payload;
+                }
+            })
+            .addCase(loadCandidateById.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
             });
     },
 });
 
-export const { setFilters, selectCandidate, clearFilters } = candidatesSlice.actions;
+export const { setFilters, selectCandidate, clearFilters, removeCandidate } = candidatesSlice.actions;
 
 // Selectors
 export const selectAllCandidates = (state: RootState) => state.candidates.candidates;

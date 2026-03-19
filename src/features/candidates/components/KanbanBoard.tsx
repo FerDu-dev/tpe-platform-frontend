@@ -1,7 +1,10 @@
 import React, { useMemo } from 'react';
 import { Typography, Empty, Skeleton, Space } from 'antd';
 import CandidateCard from './CandidateCard';
-import type { Candidate, KanbanStage } from '../../../types';
+import { useAppSelector } from '../../../app/store';
+import { selectStages } from '../../../store/workflowSlice';
+import type { Candidate } from '../../../types';
+import { STAGE_COLORS } from '../../../services/candidateService';
 
 const { Title, Text } = Typography;
 
@@ -11,32 +14,27 @@ interface KanbanBoardProps {
     onCardClick?: (candidate: Candidate) => void;
 }
 
-const stages: Array<{ key: KanbanStage; title: string; color: string }> = [
-    { key: 'applied', title: 'Elegible', color: '#1890ff' },
-    { key: 'psychotechnical', title: 'P. Psicotécnica', color: '#faad14' },
-    { key: 'interview', title: 'Entrevista', color: '#2b457c' },
-    { key: 'decision', title: 'Decisión / Oferta', color: '#52c41a' },
-];
-
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ candidates, loading = false, onCardClick }) => {
+    const stages = useAppSelector(selectStages);
 
     const candidatesByStage = useMemo(() => {
-        const groups: Record<string, Candidate[]> = {
-            applied: [],
-            eligible: [],
-            psychotechnical: [],
-            interview: [],
-            decision: [],
-        };
+        const groups: Record<number, Candidate[]> = {};
+
+        stages.forEach(s => {
+            groups[s.id] = [];
+        });
 
         candidates.forEach(c => {
-            // Only show active candidates in the Kanban board
-            if (c.stage && groups[c.stage] && c.applications?.[0]?.status === 'ACTIVE') {
-                groups[c.stage].push(c);
+            const currentApp = c.applications?.[0];
+            if (currentApp && currentApp.status === 'ACTIVE') {
+                const stageId = currentApp.currentStageId;
+                if (groups[stageId]) {
+                    groups[stageId].push(c);
+                }
             }
         });
         return groups;
-    }, [candidates]);
+    }, [candidates, stages]);
 
     return (
         <div
@@ -50,12 +48,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ candidates, loading = false, 
                 cursor: 'grab'
             }}
         >
-            {stages.map(stage => {
-                const stageCandidates = candidatesByStage[stage.key] || [];
+            {stages.map((stage) => {
+                const stageCandidates = candidatesByStage[stage.id] || [];
+                const color = STAGE_COLORS[stage.id] || '#d9d9d9';
 
                 return (
                     <div
-                        key={stage.key}
+                        key={stage.id}
                         style={{
                             flex: '0 0 320px',
                             background: '#f5f5f5',
@@ -74,12 +73,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ candidates, loading = false, 
                                 alignItems: 'center',
                                 marginBottom: '16px',
                                 paddingBottom: '12px',
-                                borderBottom: `3px solid ${stage.color}`,
+                                borderBottom: `3px solid ${color}`,
                             }}
                         >
                             <Space size={8}>
                                 <Title level={5} style={{ margin: 0 }}>
-                                    {stage.title}
+                                    {stage.name}
                                 </Title>
                                 <span style={{ color: '#8c8c8c', fontSize: '14px' }}>
                                     {stageCandidates.length}
@@ -87,7 +86,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ candidates, loading = false, 
                             </Space>
                             <div
                                 style={{
-                                    background: stage.color,
+                                    background: color,
                                     width: '8px',
                                     height: '8px',
                                     borderRadius: '50%',

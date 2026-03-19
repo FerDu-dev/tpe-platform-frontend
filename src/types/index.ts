@@ -2,6 +2,18 @@
 
 export type KanbanStage = 'applied' | 'eligible' | 'psychotechnical' | 'interview' | 'decision';
 
+export interface Stage {
+    id: number;
+    workflowId: number;
+    name: string;
+    order: number;
+    emailTemplate?: string;
+    requiresVideoUpload: boolean;
+    config?: any;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export type CandidateSubStatus = 'Video Solicitado' | 'Video Cargado' | 'En espera' | 'Psicotécnica Solicitada' | 'Entrevista Agendada';
 
 export interface ApplicationLog {
@@ -31,6 +43,17 @@ export interface Municipality {
     state?: State;
 }
 
+export interface Zone {
+  id: number;
+  name: string;
+  companyId: number;
+  region?: string;
+  coordinator?: string;
+  coordinatorNum?: string;
+  geographicRoute?: string;
+  stateId?: number;
+}
+
 export interface User {
     id: string; // nationalId for candidates, UUID for staff
     username: string;
@@ -48,6 +71,7 @@ export interface User {
         jobTitle: string;
         stage: any;
         testUrl?: string;
+        testCode?: string;
     } | null;
 }
 
@@ -61,7 +85,8 @@ export interface Candidate {
     phone: string;
 
     // Optional / Nullable fields from backend
-    dob?: string;
+    birthDate?: string;
+    altPhone?: string;
     address?: string;
     // Location data
     municipalityId?: number;
@@ -77,23 +102,36 @@ export interface Candidate {
     videoUrl?: string;
     driveFolderUrl?: string;
 
+    metadata?: {
+        gender?: string;
+        hasChildren?: boolean;
+        childrenCount?: number;
+        maritalStatus?: string;
+        salesExperience?: boolean;
+    };
+
     // Computed / Extended fields
-    stage?: KanbanStage; // Derived from applications[0].currentStage
+    stage: KanbanStage; // Derived from STAGE_MAPPING for Kanban board
+    currentStageId?: number; // Raw ID from backend (1-8)
+    currentStageName?: string; // Raw name from backend (e.g., "Video")
     subStatus?: string;
     daysInStage?: number;
     testUrl?: string;
+    testCode?: string;
     testScore?: number;
     interviewDate?: string;
+    appliedDate?: string;
 
     // Extended properties for UI
     applications?: any[];
     logs?: ApplicationLog[];
-    zone?: string;
-    location?: string;
-    rejectionReason?: string;
-
-    createdAt: string;
-    updatedAt: string;
+  zoneId?: number;
+  zone?: any; // Can be string or Zone object
+  location?: string;
+  rejectionReason?: string;
+  requisitionZoneName?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CandidateFilters {
@@ -103,14 +141,11 @@ export interface CandidateFilters {
     location?: string;
     zone?: string;
     hasVehicle?: boolean;
-    status?: KanbanStage;
-    isRejected?: boolean;
-    isNotEligible?: boolean;
-    isManualRejected?: boolean;
+    stageId?: number;
+    jobRequisitionId?: number;
     stateId?: number;
     municipalityId?: number;
-    idx?: string; // Filter by requisition idx
-    // Legacy support if needed, but prefer search
+    idx?: string;
     name?: string;
 }
 
@@ -125,10 +160,16 @@ export interface Requisition {
     createdDate: string;
     department: string;
     location: string;
-    zone?: string;
+    zone?: any;
+    zoneId: number;
+    companyId: number;
     route?: string;
     stateId?: number;
     municipalityId?: number;
+    stateName?: string;
+    municipalityName?: string;
+    requestedBy?: string;
+    matchingCandidates?: Candidate[];
 }
 
 export interface RequisitionFilters {
@@ -138,6 +179,7 @@ export interface RequisitionFilters {
     zone?: string;
     stateId?: number;
     municipalityId?: number;
+    search?: string;
 }
 
 export interface PaginationMeta {

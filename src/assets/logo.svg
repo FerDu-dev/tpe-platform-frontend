@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" role="img" aria-label="TuPróximoEmpleo.com">
+  <!-- Briefcase icon (blue square with handle) -->
+  <rect x="220" y="14" width="52" height="42" rx="4" ry="4" fill="#2B5BB6"/>
+  <rect x="233" y="8" width="26" height="10" rx="3" ry="3" fill="none" stroke="#2B5BB6" stroke-width="4"/>
+  <!-- Briefcase inner white cutout / detail -->
+  <rect x="228" y="28" width="36" height="3" rx="1.5" fill="white" opacity="0.6"/>
+  <rect x="240" y="24" width="12" height="12" rx="2" fill="white" opacity="0.5"/>
+
+  <!-- Logo Text -->
+  <!-- Tu -->
+  <text x="0" y="56" font-family="'Arial', 'Helvetica Neue', sans-serif" font-size="38" font-weight="600" fill="#555555">Tu</text>
+  <!-- próximo -->
+  <text x="48" y="56" font-family="'Arial', 'Helvetica Neue', sans-serif" font-size="38" font-weight="700" fill="#2B5BB6">próximo</text>
+  <!-- empleo -->
+  <text x="48" y="76" font-family="'Arial', 'Helvetica Neue', sans-serif" font-size="22" font-weight="700" fill="#E91E8C">empleo</text>
+  <!-- .com -->
+  <text x="152" y="76" font-family="'Arial', 'Helvetica Neue', sans-serif" font-size="22" font-weight="400" fill="#888888">.com</text>
+</svg>
