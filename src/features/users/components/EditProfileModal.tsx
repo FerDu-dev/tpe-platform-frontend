@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Modal, Form, Input, Button, message } from 'antd';
+import { Modal, Form, Input, Button, message, Row, Col } from 'antd';
 import { UserOutlined, PhoneOutlined, LockOutlined } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
-import { updateUserProfile } from '../store/usersSlice';
+import { updateUser } from '../store/usersSlice';
 import { selectCurrentUser } from '../../auth/store/authSlice';
 import type { User } from '../../../types';
 
@@ -33,11 +33,14 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         setLoading(true);
         try {
             await dispatch(
-                updateUserProfile({
+                updateUser({
                     id: user.id,
-                    fullName: values.fullName,
-                    phone: values.phone,
-                    ...(values.newPassword && { password: values.newPassword }),
+                    data: {
+                        firstName: values.firstName,
+                        lastName: values.lastName,
+                        phone: values.phone,
+                        ...(values.newPassword && { password: values.newPassword }),
+                    }
                 })
             ).unwrap();
 
@@ -64,25 +67,33 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 layout="vertical"
                 onFinish={handleSubmit}
                 initialValues={{
-                    fullName: user.fullName,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
                     email: user.email,
                     phone: user.phone,
-                    role: user.role,
+                    role: (user.role as any)?.name || user.role,
                 }}
             >
-                <Form.Item
-                    label="Nombre Completo"
-                    name="fullName"
-                    rules={[
-                        { required: true, message: 'Por favor ingresa tu nombre completo' },
-                    ]}
-                >
-                    <Input
-                        prefix={<UserOutlined />}
-                        placeholder="Ej: María Fernanda González"
-                        disabled={!isCurrentUser}
-                    />
-                </Form.Item>
+                <Row gutter={16}>
+                    <Col span={12}>
+                        <Form.Item
+                            label="Nombre"
+                            name="firstName"
+                            rules={[{ required: true, message: 'Requerido' }]}
+                        >
+                            <Input prefix={<UserOutlined />} disabled={!isCurrentUser} />
+                        </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                        <Form.Item
+                            label="Apellido"
+                            name="lastName"
+                            rules={[{ required: true, message: 'Requerido' }]}
+                        >
+                            <Input prefix={<UserOutlined />} disabled={!isCurrentUser} />
+                        </Form.Item>
+                    </Col>
+                </Row>
 
                 <Form.Item label="Correo Electrónico" name="email">
                     <Input prefix={<UserOutlined />} disabled />

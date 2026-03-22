@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Drawer, Typography, Descriptions, Tag, Button, Space, Divider, message, Timeline, Modal, Input, Badge, Row, Col, Card, Tooltip, Select, Spin } from 'antd';
+import { Drawer, Typography, Descriptions, Tag, Button, Space, Divider, message, Timeline, Modal, Input, Badge, Row, Col, Card, Tooltip, Select, Spin, DatePicker, Upload } from 'antd';
 import {
     FilePdfOutlined,
     VideoCameraOutlined,
@@ -12,26 +12,32 @@ import {
     WhatsAppOutlined,
     SearchOutlined,
     TrophyOutlined,
+    BulbOutlined, CarOutlined, BankOutlined,
+    TeamOutlined,
+    UploadOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import type { Candidate, Requisition } from '../../../types';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
-import { loadCandidateById, selectSelectedCandidate } from '../store/candidatesSlice';
+import { loadCandidateById, selectSelectedCandidate, removeCandidate } from '../store/candidatesSlice';
 import { selectStages } from '../../../store/workflowSlice';
 import { candidateService, STAGE_COLORS } from '../../../services/candidateService';
 
 import { requisitionService } from '../../../services/requisitionService';
+import HiringAnimation from './HiringAnimation';
+import PermissionGuard from '../../../components/PermissionGuard';
 
 const { Title, Text, Paragraph } = Typography;
+// ... (lines 31-525) ...: I will use multi_replace for this if its too big, but let's try to target the footer carefully.
 
 interface CandidateDrawerProps {
     open: boolean;
     onClose: () => void;
     candidate: Candidate | null;
-    hireMode?: boolean;
     requisition?: Requisition | null;
 }
 
-const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candidate, hireMode, requisition }) => {
+const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candidate, requisition }) => {
     const dispatch = useAppDispatch();
     const stages = useAppSelector(selectStages);
     const richCandidate = useAppSelector(selectSelectedCandidate);
@@ -42,8 +48,13 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     const [submitting, setSubmitting] = useState(false);
     const [infoModalOpen, setInfoModalOpen] = useState(false);
     const [historyModalOpen, setHistoryModalOpen] = useState(false);
+    const [hireModalOpen, setHireModalOpen] = useState(false);
+    const [hireComment, setHireComment] = useState('');
     const [requisitions, setRequisitions] = useState<Requisition[]>([]);
     const [loadingRequisitions, setLoadingRequisitions] = useState(false);
+    const [isAnimatingHire, setIsAnimatingHire] = useState(false);
+    const [hireCompleted, setHireCompleted] = useState(false);
+    const [effectiveStartDate, setEffectiveStartDate] = useState<any>(null);
 
     useEffect(() => {
         if (open && candidate?.id) {
@@ -54,7 +65,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     useEffect(() => {
         if (open) {
             setLoadingRequisitions(true);
-            requisitionService.fetchRequisitions({ limit: 5 })
+            requisitionService.fetchRequisitions({ limit: 5, status: 'OPEN' })
                 .then(res => setRequisitions(res.data))
                 .catch(() => message.error('Error al cargar vacantes'))
                 .finally(() => setLoadingRequisitions(false));
@@ -64,7 +75,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     const handleSearchRequisitions = async (value: string) => {
         setLoadingRequisitions(true);
         try {
-            const filters: any = { limit: value ? 10 : 5 };
+            const filters: any = { limit: value ? 10 : 5, status: 'OPEN' };
             if (value) filters.search = value;
             const res = await requisitionService.fetchRequisitions(filters);
             setRequisitions(res.data);
@@ -86,6 +97,27 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     const currentStageId = currentApp?.currentStageId;
     const currentStepIndex = stages.findIndex(s => s.id === currentStageId);
 
+    const targetRequisition = requisition || currentApp?.jobRequisition;
+    const companyDisplay = typeof targetRequisition?.company === 'object' ? targetRequisition.company.name : (targetRequisition?.company || 'N/A');
+    const zoneDisplay = typeof targetRequisition?.zone === 'object' ? targetRequisition.zone.name : (targetRequisition?.zone || 'N/A');
+    const idxDisplay = targetRequisition?.idx || targetRequisition?.id || 'N/A';
+
+    const handlePsychTestUpload = async (info: any) => {
+        const { file } = info;
+        if (!activeCandidate) return;
+
+        setSubmitting(true);
+        try {
+            await candidateService.uploadCandidateDocument(activeCandidate.id, 'PsychTest', file);
+            message.success('Prueba psicotécnica cargada exitosamente');
+            await dispatch(loadCandidateById(activeCandidate.id));
+        } catch (error: any) {
+            message.error(error.response?.data?.message || 'Error al cargar la prueba');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     const handleAction = async (actionFn: () => Promise<any>) => {
         setSubmitting(true);
         try {
@@ -103,9 +135,16 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
         const nextStage = stages[currentStepIndex + 1];
         if (!nextStage) return;
 
-        // Validation: Must have a requisition to advance from Stage 1 (Bienvenida)
-        if (currentStageId === 1 && !currentApp?.jobRequisitionId) {
-            return message.error('Debe asignar una vacante antes de avanzar de la etapa de Bienvenida.');
+        // Validation: Must have a requisition to advance
+        if (!currentApp?.jobRequisitionId) {
+            return message.error('La vacante que tenía este candidato ya no está disponible. Por favor, asigne una nueva vacante para continuar.');
+        }
+
+        // Validation: Assigned requisition must be OPEN to advance at any stage (except rejection/hire)
+        if (currentApp?.jobRequisition?.status !== 'OPEN') {
+            const statusLabel = currentApp?.jobRequisition?.status === 'PAUSED' ? 'Pausada' : 
+                               currentApp?.jobRequisition?.status === 'CANCELLED' ? 'Cancelada' : 'Cerrada';
+            return message.error(`No se puede avanzar: La vacante asignada está ${statusLabel}. Por favor, asigne una nueva vacante abierta.`);
         }
 
         if (nextStage.id === 3) {
@@ -223,74 +262,46 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
 
     const handleHire = () => {
         const targetRequisition = requisition || activeCandidate.applications?.[0]?.jobRequisition;
-
         if (!targetRequisition) {
             return message.error('No se puede contratar sin una requisición asignada.');
         }
+        setEffectiveStartDate(null); // Reset date
+        setHireModalOpen(true);
+    };
 
-        Modal.confirm({
-            title: null,
-            icon: null,
-            width: 700,
-            className: 'premium-hire-modal',
-            content: (
-                <div style={{ padding: '24px 0' }}>
-                    <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                        <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
-                        <Title level={3} style={{ margin: 0 }}>Confirmar Contratación</Title>
-                        <Text type="secondary">Estás a punto de finalizar el proceso de selección</Text>
-                    </div>
+    const confirmHire = async () => {
+        const targetRequisition = requisition || activeCandidate.applications?.[0]?.jobRequisition;
+        if (!targetRequisition || !activeCandidate || !effectiveStartDate) {
+            return message.error('Por favor selecciona una fecha de inicio efectiva');
+        }
 
-                    <Row gutter={24}>
-                        <Col span={11}>
-                            <Card size="small" title="Candidato" bordered={false} style={{ background: '#f6ffed' }}>
-                                <Space direction="vertical" size={2}>
-                                    <Text strong style={{ fontSize: 16 }}>{activeCandidate.firstName} {activeCandidate.lastName}</Text>
-                                    <Text type="secondary">{activeCandidate.nationalId}</Text>
-                                    <Tag color="green">{activeCandidate.profession}</Tag>
-                                </Space>
-                            </Card>
-                        </Col>
-                        <Col span={2} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <ArrowRightOutlined style={{ fontSize: 20, color: '#bfbfbf' }} />
-                        </Col>
-                        <Col span={11}>
-                            <Card size="small" title="Requisición / Vacante" bordered={false} style={{ background: '#e6f7ff' }}>
-                                <Space direction="vertical" size={2}>
-                                    <Text strong style={{ fontSize: 16 }}>{targetRequisition.title}</Text>
-                                    <Text type="secondary">{targetRequisition.company}</Text>
-                                    <Tag color="blue">{targetRequisition.idx}</Tag>
-                                </Space>
-                            </Card>
-                        </Col>
-                    </Row>
+        setIsAnimatingHire(true);
+        try {
+            // Backend hire call
+            await candidateService.hireCandidate(
+                activeCandidate.id,
+                effectiveStartDate.toISOString(),
+                hireComment || 'Contratación formalizada exitosamente.'
+            );
+            // We don't close here, we let the animation run and signal onComplete
+            setHireCompleted(true);
+        } catch (e) {
+            setIsAnimatingHire(false);
+            console.error(e);
+            message.error('Error al procesar la contratación');
+        }
+    };
 
-                    <div style={{ marginTop: 24, padding: 16, background: '#fffbe6', borderRadius: 8, border: '1px solid #ffe58f' }}>
-                        <Text strong>Detalle Final:</Text>
-                        <Paragraph style={{ margin: '8px 0 0' }}>
-                            Al confirmar, el candidato será marcado como <strong>Contratado</strong> y vinculado permanentemente a esta requisición. Se generará un registro en el historial de contrataciones.
-                        </Paragraph>
-                    </div>
+    const finalizeHire = () => {
+        setHireModalOpen(false);
+        setIsAnimatingHire(false);
+        setHireCompleted(false);
+        message.success('Candidato contratado exitosamente');
 
-                    <div style={{ marginTop: 20 }}>
-                        <Text strong>Comentario de cierre (opcional):</Text>
-                        <Input.TextArea id="hire-comment-input" rows={2} placeholder="Excelente perfil, contratado exitosamente..." style={{ marginTop: 8 }} />
-                    </div>
-                </div>
-            ),
-            okText: 'Confirmar Contratación 🎉',
-            okButtonProps: { size: 'large', style: { backgroundColor: '#52c41a', borderColor: '#52c41a' } },
-            cancelText: 'Volver',
-            onOk: async () => {
-                const comment = (document.getElementById('hire-comment-input') as HTMLTextAreaElement).value;
-                await handleAction(async () => {
-                    // Stage 8 is "Contratación"
-                    await candidateService.updateCandidateStage(activeCandidate.id, 8, {
-                        comment: comment || 'Contratación formalizada exitosamente.'
-                    });
-                });
-            }
-        });
+        // Update candidate data, remove from active list, and close drawer
+        dispatch(loadCandidateById(activeCandidate.id));
+        dispatch(removeCandidate(activeCandidate.id));
+        onClose();
     };
 
     const renderInfoModal = () => (
@@ -301,45 +312,94 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             footer={[<Button key="close" type="primary" onClick={() => setInfoModalOpen(false)}>Cerrar</Button>]}
             width={850}
         >
-            <div style={{ padding: '20px' }}>
+            <div style={{ padding: '0px 20px 20px' }}>
                 <Row gutter={[24, 24]}>
                     <Col span={12}>
-                        <Card title="Datos Personales" size="small" variant="borderless" style={{ background: '#f5f5f5' }}>
+                        <Card title={<Space><UserOutlined /> Datos Personales</Space>} size="small" variant="borderless" style={{ background: '#f5f5f5', borderRadius: 12 }}>
                             <Descriptions column={1} size="small">
                                 <Descriptions.Item label="Nombre">{activeCandidate.firstName} {activeCandidate.lastName}</Descriptions.Item>
                                 <Descriptions.Item label="Cédula">{activeCandidate.nationalId}</Descriptions.Item>
+                                <Descriptions.Item label="Nivel Académico">{activeCandidate.educationLevel || 'N/A'}</Descriptions.Item>
                                 <Descriptions.Item label="Email">{activeCandidate.email}</Descriptions.Item>
-                                <Descriptions.Item label="Teléfono">
-                                    <Space>
-                                        {activeCandidate.phone}
-                                        <Tooltip title="Contactar por WhatsApp">
-                                            <Button
-                                                type="text"
-                                                icon={<WhatsAppOutlined style={{ color: '#25D366', fontSize: '18px' }} />}
-                                                href={`https://wa.me/${activeCandidate.phone.replace(/\D/g, '')}`}
-                                                target="_blank"
-                                                size="small"
-                                            />
-                                        </Tooltip>
-                                    </Space>
-                                </Descriptions.Item>
+                                <Descriptions.Item label="Teléfono">{activeCandidate.phone}</Descriptions.Item>
                                 <Descriptions.Item label="Teléfono Alt.">{activeCandidate.altPhone || 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Fecha Nacimiento">{activeCandidate.birthDate ? new Date(activeCandidate.birthDate).toLocaleDateString() : 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Género">{activeCandidate.metadata?.gender || 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Estado Civil">{activeCandidate.metadata?.maritalStatus || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Fecha Nacimiento">{activeCandidate.birthDate ? dayjs(activeCandidate.birthDate).format('DD/MM/YYYY') : 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Género">{activeCandidate.gender || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Estado Civil">{activeCandidate.maritalStatus || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Hijos">{activeCandidate.hasChildren ? `Sí (${activeCandidate.childrenCount || 0})` : 'No'}</Descriptions.Item>
                             </Descriptions>
                         </Card>
                     </Col>
+
                     <Col span={12}>
-                        <Card title="Perfil y Ubicación" size="small" variant="borderless" style={{ background: '#f5f5f5' }}>
+                        <Card title={<Space><BulbOutlined /> Experiencia en Ventas</Space>} size="small" variant="borderless" style={{ background: '#f5f5f5', borderRadius: 12 }}>
                             <Descriptions column={1} size="small">
+                                <Descriptions.Item label="Exp. Ventas">{activeCandidate.salesExperienceYears ? 'Sí' : 'No'}</Descriptions.Item>
+                                {activeCandidate.salesExperienceYears && (
+                                    <>
+                                        <Descriptions.Item label="Años">{activeCandidate.salesExperienceYears} años</Descriptions.Item>
+                                        <Descriptions.Item label="Tipos">{Array.isArray(activeCandidate.salesExperienceTypes) ? activeCandidate.salesExperienceTypes.join(', ') : (activeCandidate.salesExperienceTypes || 'N/A')}</Descriptions.Item>
+                                        <Descriptions.Item label="Bienes">{Array.isArray(activeCandidate.commercializedGoodsTypes) ? activeCandidate.commercializedGoodsTypes.join(', ') : (activeCandidate.commercializedGoodsTypes || 'N/A')}</Descriptions.Item>
+                                    </>
+                                )}
                                 <Descriptions.Item label="Profesión">{activeCandidate.profession || 'Sin especificar'}</Descriptions.Item>
-                                <Descriptions.Item label="Vehículo">{activeCandidate.hasVehicle ? `Sí (${activeCandidate.vehicleDetail || 'No especificado'})` : 'No'}</Descriptions.Item>
-                                <Descriptions.Item label="Estado">{activeCandidate.municipality?.state?.name || 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Municipio">{activeCandidate.municipality?.name || 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Hijos">{activeCandidate.metadata?.hasChildren ? `Sí (${activeCandidate.metadata?.childrenCount || 0})` : 'No'}</Descriptions.Item>
-                                <Descriptions.Item label="Exp. Ventas">{activeCandidate.metadata?.salesExperience ? 'Sí' : 'No'}</Descriptions.Item>
                             </Descriptions>
+                        </Card>
+                    </Col>
+
+                    <Col span={12}>
+                        <Card title={<Space><CarOutlined /> Vehículo</Space>} size="small" variant="borderless" style={{ background: '#f5f5f5', borderRadius: 12 }}>
+                            <Descriptions column={1} size="small">
+                                <Descriptions.Item label="¿Tiene vehículo?">{activeCandidate.hasVehicle ? 'Sí' : 'No'}</Descriptions.Item>
+                                {activeCandidate.hasVehicle && (
+                                    <>
+                                        <Descriptions.Item label="Tipo">{activeCandidate.vehicleType || 'N/A'}</Descriptions.Item>
+                                        <Descriptions.Item label="Modelo">{activeCandidate.vehicleBrandModelYear || 'N/A'}</Descriptions.Item>
+                                        <Descriptions.Item label="¿Es propio?">{activeCandidate.isVehicleOwner ? 'Sí' : 'No'}</Descriptions.Item>
+                                        {!activeCandidate.isVehicleOwner && (
+                                            <Descriptions.Item label="Relación dueño">{activeCandidate.vehicleOwnerRelationship || 'N/A'}</Descriptions.Item>
+                                        )}
+                                    </>
+                                )}
+                            </Descriptions>
+                        </Card>
+                    </Col>
+
+                    <Col span={12}>
+                        <Card title={<Space><BankOutlined /> Situación Económica y Laboral</Space>} size="small" variant="borderless" style={{ background: '#f5f5f5', borderRadius: 12 }}>
+                            <Descriptions column={1} size="small">
+                                <Descriptions.Item label="Empresa Actual">{activeCandidate.currentCompany || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Empresas Previas">{activeCandidate.previousCompanies || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Ingreso Actual">{activeCandidate.currentMonthlyIncome ? `${activeCandidate.currentMonthlyIncome} USD` : 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Aspiración">{activeCandidate.salaryAspiration ? `${activeCandidate.salaryAspiration} USD` : 'N/A'}</Descriptions.Item>
+                            </Descriptions>
+                        </Card>
+                    </Col>
+
+                    <Col span={24}>
+                        <Card title={<Space><TeamOutlined /> Referencias</Space>} size="small" variant="borderless" style={{ background: '#f0f2f5', borderRadius: 12 }}>
+                            <Row gutter={24}>
+                                <Col span={12}>
+                                    <Title level={5} style={{ fontSize: 13, color: '#2b457c' }}>Personales</Title>
+                                    {(Array.isArray(activeCandidate.personalReferences) ? activeCandidate.personalReferences : []).map((ref: any, i: number) => (
+                                        <div key={i} style={{ marginBottom: 12, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
+                                            <Text strong style={{ fontSize: 12 }}>{ref.name}</Text><br />
+                                            <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref.phone} {ref.company ? `| 🏢 ${ref.company}` : ''}</Text>
+                                        </div>
+                                    ))}
+                                    {(!activeCandidate.personalReferences || (activeCandidate.personalReferences as any[]).length === 0) && <Text type="secondary">Sin referencias</Text>}
+                                </Col>
+                                <Col span={12}>
+                                    <Title level={5} style={{ fontSize: 13, color: '#2b457c' }}>Laborales</Title>
+                                    {(Array.isArray(activeCandidate.workReferences) ? activeCandidate.workReferences : []).map((ref: any, i: number) => (
+                                        <div key={i} style={{ marginBottom: 12, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
+                                            <Text strong style={{ fontSize: 12 }}>{ref.name}</Text><br />
+                                            <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref.phone} {ref.company ? `| 🏢 ${ref.company}` : ''}</Text>
+                                        </div>
+                                    ))}
+                                    {(!activeCandidate.workReferences || (activeCandidate.workReferences as any[]).length === 0) && <Text type="secondary">Sin referencias</Text>}
+                                </Col>
+                            </Row>
                         </Card>
                     </Col>
                 </Row>
@@ -368,7 +428,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
 
                         let displayStatus = log.status;
                         if (log.status === 'ACTIVE') {
-                            displayStatus = isLatest ? 'ACTUAL' : 'COMPLETADO';
+                            displayStatus = 'COMPLETADO';
                         } else if (log.status === 'REJECTED') {
                             displayStatus = 'RECHAZADO';
                         } else if (log.status === 'HIRED') {
@@ -383,7 +443,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                             {date.toLocaleDateString()} - {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </Text>
                                         {isLatest && log.status === 'ACTIVE' && (
-                                            <Badge status="processing" color="orange" text={<Text strong style={{ fontSize: '10px', color: '#fa8c16' }}>ETAPA ACTUAL</Text>} />
+                                            <Badge status="processing" color="orange" text={<Text strong style={{ fontSize: '10px', color: '#fa8c16' }}>ETAPA ANTERIOR</Text>} />
                                         )}
                                     </div>
                                     <Card size="small" style={{ borderLeft: `4px solid ${statusColor}`, boxShadow: isLatest ? '0 2px 8px rgba(250, 140, 22, 0.15)' : 'none' }}>
@@ -410,6 +470,9 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     );
 
     const handleRescue = () => {
+        const appId = activeCandidate.applications?.[0]?.id;
+        if (!appId) return message.error('No se encontró una aplicación para rescatar');
+
         Modal.confirm({
             title: '¿Rescatar este candidato?',
             content: 'El candidato volverá a estar activo en el proceso.',
@@ -417,7 +480,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             cancelText: 'Cancelar',
             onOk: async () => {
                 await handleAction(async () => {
-                    await candidateService.updateCandidateStage(activeCandidate.id, stages[0]?.id || 1, { comment: 'Candidato rescatado manualmente' });
+                    await candidateService.rescueCandidate(appId);
                     message.success('Candidato rescatado exitosamente');
                 });
             }
@@ -470,55 +533,84 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '10px 0' }}>
                     <Space size="large">
                         {activeCandidate.rejectionReason || activeCandidate.applications?.[0]?.status === 'REJECTED' ? (
-                            <Button
-                                type="primary"
-                                size="large"
-                                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', minWidth: 200 }}
-                                onClick={handleRescue}
-                            >
-                                Rescatar Candidato
-                            </Button>
+                            <PermissionGuard module="candidates" action="update">
+                                <Button
+                                    type="primary"
+                                    size="large"
+                                    style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', minWidth: 200 }}
+                                    onClick={handleRescue}
+                                >
+                                    Rescatar Candidato
+                                </Button>
+                            </PermissionGuard>
                         ) : (
                             <>
-                                <Button danger size="large" onClick={handleReject} style={{ minWidth: 120 }}>Rechazar</Button>
-
-                                {currentStepIndex > 0 && (
-                                    <Button
-                                        size="large"
-                                        icon={<ArrowLeftOutlined />}
-                                        onClick={handleBack}
-                                        style={{ minWidth: 120 }}
-                                    >
-                                        Etapa Anterior
-                                    </Button>
+                                {currentApp?.status !== 'HIRED' && (
+                                    <PermissionGuard module="candidates" action="reject">
+                                        <Button danger size="large" onClick={handleReject} style={{ minWidth: 120 }}>Rechazar</Button>
+                                    </PermissionGuard>
                                 )}
 
-                                {currentStepIndex < stages.length - 1 && (
-                                    hireMode && currentStageId >= 7 ? (
+                                {currentStepIndex > 0 && currentApp?.status === 'ACTIVE' && (
+                                    <PermissionGuard module="candidates" action="update">
                                         <Button
-                                            type="primary"
                                             size="large"
-                                            onClick={handleHire}
-                                            loading={submitting}
-                                            icon={<TrophyOutlined />}
-                                            style={{ minWidth: 160, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                                            icon={<ArrowLeftOutlined />}
+                                            onClick={handleBack}
+                                            style={{ minWidth: 120 }}
                                         >
-                                            Contratar 🎉
+                                            Etapa Anterior
                                         </Button>
+                                    </PermissionGuard>
+                                )}
+
+                                {currentApp?.status === 'ACTIVE' && (
+                                    currentStageId >= 7 ? (
+                                        <PermissionGuard module="candidates" action="hire">
+                                            <Button
+                                                type="primary"
+                                                size="large"
+                                                onClick={handleHire}
+                                                loading={submitting}
+                                                icon={<TrophyOutlined />}
+                                                style={{ minWidth: 160, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                                            >
+                                                Contratar 🎉
+                                            </Button>
+                                        </PermissionGuard>
                                     ) : (
-                                        <Button
-                                            type="primary"
-                                            size="large"
-                                            onClick={handleAdvance}
-                                            loading={submitting}
-                                            icon={<ArrowRightOutlined />}
-                                            disabled={currentStageId === 2 && !activeCandidate.videoUrl}
-                                            title={currentStageId === 2 && !activeCandidate.videoUrl ? 'El candidato debe subir su video para avanzar' : ''}
-                                            style={{ minWidth: 160, backgroundColor: '#2b457c', borderColor: '#2b457c' }}
-                                        >
-                                            Siguiente Etapa
-                                        </Button>
+                                        currentStepIndex < stages.length - 1 && (
+                                            <PermissionGuard module="candidates" action="advance">
+                                                <Button
+                                                    type="primary"
+                                                    size="large"
+                                                    onClick={handleAdvance}
+                                                    loading={submitting}
+                                                    icon={<ArrowRightOutlined />}
+                                                    disabled={
+                                                        (currentStageId === 2 && !activeCandidate.videoUrl) || 
+                                                        (currentStageId === 3 && !activeCandidate.psychTestUrl)
+                                                    }
+                                                    title={
+                                                        currentStageId === 2 && !activeCandidate.videoUrl 
+                                                            ? 'El candidato debe subir su video para avanzar' 
+                                                            : currentStageId === 3 && !activeCandidate.psychTestUrl
+                                                                ? 'Debe subir los resultados de la prueba (PDF) para avanzar'
+                                                                : ''
+                                                    }
+                                                    style={{ minWidth: 160, backgroundColor: '#2b457c', borderColor: '#2b457c' }}
+                                                >
+                                                    Siguiente Etapa
+                                                </Button>
+                                            </PermissionGuard>
+                                        )
                                     )
+                                )}
+
+                                {currentApp?.status === 'HIRED' && (
+                                    <Tag color="green" style={{ fontSize: 16, padding: '8px 16px', borderRadius: 8 }}>
+                                        <TrophyOutlined /> CANDIDATO CONTRATADO
+                                    </Tag>
                                 )}
                             </>
                         )}
@@ -562,7 +654,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                         style={{ width: '100%' }}
                         placeholder="Buscar por nombre, empresa o ID de vacante..."
                         loading={loadingRequisitions}
-                        value={currentApp?.jobRequisitionId}
+                        value={requisitions.some(r => r.id === (currentApp?.jobRequisitionId as any)) ? currentApp?.jobRequisitionId : (currentApp?.jobRequisition?.status === 'OPEN' ? currentApp?.jobRequisitionId : undefined)}
                         onChange={handleRequisitionChange}
                         onSearch={handleSearchRequisitions}
                         suffixIcon={<SearchOutlined />}
@@ -570,7 +662,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                         notFoundContent={loadingRequisitions ? <Spin size="small" /> : 'No se encontraron vacantes'}
                         options={requisitions.map(r => ({
                             value: r.id,
-                            label: `ZONA: ${r.zone} | ${r.title} - ${r.company}`
+                            label: `ZONA: ${typeof r.zone === 'object' ? r.zone?.name : r.zone} | ${r.title} - ${r.company}`
                         }))}
                         dropdownStyle={{ maxHeight: 300, overflow: 'auto' }}
                     />
@@ -636,6 +728,54 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                         Video Presentación
                     </Button>
                 )}
+                {/* PsychTest Results - Stage 3 specific or global view if exists */}
+                {activeCandidate.psychTestUrl ? (
+                    <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+                        <Button 
+                            block 
+                            icon={<FilePdfOutlined />} 
+                            href={activeCandidate.psychTestUrl} 
+                            target="_blank"
+                            style={{ textAlign: 'left' }}
+                        >
+                            Resultados Prueba Psicotécnica (PDF)
+                        </Button>
+                        {currentStageId === 3 && (
+                            <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                                <Upload
+                                    accept=".pdf"
+                                    showUploadList={false}
+                                    customRequest={handlePsychTestUpload}
+                                >
+                                    <Button type="link" size="small" loading={submitting}>Actualizar Resultados (PDF)</Button>
+                                </Upload>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    currentStageId === 3 && (
+                        <Upload
+                            accept=".pdf"
+                            showUploadList={false}
+                            customRequest={handlePsychTestUpload}
+                        >
+                            <Button 
+                                block 
+                                icon={<UploadOutlined />} 
+                                loading={submitting}
+                                style={{ 
+                                    marginTop: '8px', 
+                                    height: '45px', 
+                                    border: '2px dashed #2b457c',
+                                    color: '#2b457c',
+                                    fontWeight: 600
+                                }}
+                            >
+                                Subir Resultados Prueba (PDF)
+                            </Button>
+                        </Upload>
+                    )
+                )}
 
                 {currentStageId === 4 && (
                     <Button
@@ -662,6 +802,105 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
 
             {renderInfoModal()}
             {renderHistoryModal()}
+
+            <Modal
+                title={null}
+                footer={null}
+                open={hireModalOpen}
+                onCancel={() => !isAnimatingHire && setHireModalOpen(false)}
+                width={700}
+                className="premium-hire-modal"
+                centered
+            >
+                <div style={{ padding: '24px 0' }}>
+                    {isAnimatingHire ? (
+                        <HiringAnimation
+                            candidate={activeCandidate}
+                            requisition={targetRequisition as any}
+                            onComplete={finalizeHire}
+                            isBackendReady={hireCompleted}
+                        />
+                    ) : (
+                        <>
+                            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                                <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
+                                <Title level={3} style={{ margin: 0 }}>Confirmar Contratación</Title>
+                                <Text type="secondary">Estás a punto de finalizar el proceso de selección</Text>
+                            </div>
+
+                            <Row gutter={24}>
+                                <Col span={11}>
+                                    <Card size="small" title="Candidato" bordered={false} style={{ background: '#f6ffed' }}>
+                                        <Space direction="vertical" size={2}>
+                                            <Text strong style={{ fontSize: 16 }}>{activeCandidate.firstName} {activeCandidate.lastName}</Text>
+                                            <Text type="secondary">{activeCandidate.nationalId}</Text>
+                                            <Tag color="green">{activeCandidate.profession}</Tag>
+                                        </Space>
+                                    </Card>
+                                </Col>
+                                <Col span={2} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <ArrowRightOutlined style={{ fontSize: 20, color: '#bfbfbf' }} />
+                                </Col>
+                                <Col span={11}>
+                                    <Card size="small" title="Requisición / Vacante" bordered={false} style={{ background: '#e6f7ff' }}>
+                                        <Space direction="vertical" size={2}>
+                                            <Text strong style={{ fontSize: 16 }}>{targetRequisition?.title || 'N/A'}</Text>
+                                            <Text type="secondary">{companyDisplay}</Text>
+                                            <Space>
+                                                <Tag color="blue">{idxDisplay}</Tag>
+                                                <Tag color="orange">{zoneDisplay}</Tag>
+                                            </Space>
+                                        </Space>
+                                    </Card>
+                                </Col>
+                            </Row>
+
+                            <div style={{ marginTop: 24, padding: 16, background: '#fffbe6', borderRadius: 8, border: '1px solid #ffe58f' }}>
+                                <Text strong>Detalle Final:</Text>
+                                <Paragraph style={{ margin: '8px 0 0' }}>
+                                    Al confirmar, el candidato será marcado como <strong>Contratado</strong> y vinculado permanentemente a esta requisición. Se generará un registro en el historial de contrataciones.
+                                </Paragraph>
+                            </div>
+
+                            <Row gutter={16} style={{ marginTop: 24 }}>
+                                <Col span={12}>
+                                    <Text strong>Fecha de Inicio Efectiva:</Text>
+                                    <DatePicker
+                                        style={{ width: '100%', marginTop: 8 }}
+                                        placeholder="Selecciona fecha..."
+                                        onChange={(date) => setEffectiveStartDate(date)}
+                                        value={effectiveStartDate}
+                                    />
+                                </Col>
+                                <Col span={12}>
+                                    <Text strong>Comentario de cierre (opcional):</Text>
+                                    <Input.TextArea
+                                        rows={1}
+                                        placeholder="Perfil excelente..."
+                                        style={{ marginTop: 8 }}
+                                        value={hireComment}
+                                        onChange={(e) => setHireComment(e.target.value)}
+                                    />
+                                </Col>
+                            </Row>
+
+                            <div style={{ marginTop: 32, textAlign: 'right' }}>
+                                <Space>
+                                    <Button onClick={() => setHireModalOpen(false)}>Cancelar</Button>
+                                    <Button
+                                        type="primary"
+                                        size="large"
+                                        onClick={confirmHire}
+                                        style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                                    >
+                                        Confirmar Contratación 🎉
+                                    </Button>
+                                </Space>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </Modal>
         </Drawer>
     );
 };

@@ -10,14 +10,21 @@ export const authService = {
 
         const { user, token } = response.data;
 
+        const fullName = user.firstName && user.lastName 
+            ? `${user.firstName} ${user.lastName}` 
+            : (user.fullName || user.email);
+
         const authorizedUser: User = {
             id: user.id,
             username: user.email,
             email: user.email,
-            role: user.role.name,
+            role: user.role, // Store the full role object { id, name, permissions }
             token: token,
             entityType: 'staff',
-            fullName: 'Admin User',
+            fullName,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            isActive: user.isActive,
         };
 
         localStorage.setItem('user', JSON.stringify(authorizedUser));
@@ -36,7 +43,7 @@ export const authService = {
             id: user.nationalId,
             username: user.email,
             email: user.email,
-            role: user.role.name,
+            role: user.role, // Store full role object
             token: token,
             entityType: 'candidate',
             firstName: user.firstName,

@@ -21,9 +21,9 @@ const CandidateLayout: React.FC<CandidateLayoutProps> = ({ children }) => {
     const dispatch = useAppDispatch();
     const currentUser = useAppSelector(selectCurrentUser);
 
-    const handleLogout = () => {
-        dispatch(logoutUser());
-        navigate('/candidate/login');
+    const handleLogout = async () => {
+        await dispatch(logoutUser());
+        navigate('/candidate/login', { replace: true });
     };
 
     const userMenuItems = [

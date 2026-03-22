@@ -9,21 +9,29 @@ interface RequisitionsState {
     meta: PaginationMeta | null;
     loading: boolean;
     error: string | null;
+    analytics: {
+        totalParticipants: number;
+        countsByStage: Record<number, number>;
+        countsByState: Record<string, number>;
+        advanceRate?: number;
+    } | null;
+    analyticsLoading: boolean;
 }
 
 const initialState: RequisitionsState = {
     requisitions: [],
-    filters: {},
+    filters: { status: 'OPEN' },
     meta: null,
     loading: false,
     error: null,
+    analytics: null,
+    analyticsLoading: false,
 };
 
 // Async thunk to load requisitions
-// Now accepts params optionally
 export const loadRequisitions = createAsyncThunk(
     'requisitions/load',
-    async (params: { page?: number; limit?: number } = {}, { getState, rejectWithValue }) => {
+    async (params: { page?: number; limit?: number; status?: string } & RequisitionFilters = {}, { getState, rejectWithValue }) => {
         const state = getState() as RootState;
         const filters = state.requisitions.filters;
         try {
@@ -46,15 +54,24 @@ export const createRequisition = createAsyncThunk(
     }
 );
 
+// Async thunk to load recruitment analytics
+export const loadRecruitmentAnalytics = createAsyncThunk(
+    'requisitions/loadAnalytics',
+    async (params: { companyId?: number; stateId?: number; status?: string; jobRequisitionId?: number } = {}, { rejectWithValue }) => {
+        try {
+            return await requisitionService.fetchRecruitmentAnalytics(params);
+        } catch (error) {
+            return rejectWithValue((error as Error).message);
+        }
+    }
+);
+
 const requisitionsSlice = createSlice({
     name: 'requisitions',
     initialState,
     reducers: {
         setFilters: (state, action: PayloadAction<RequisitionFilters>) => {
             state.filters = action.payload;
-            // When filters change, we sort of need to reload. 
-            // In a real app we might want to trigger loadRequisitions here or in the component.
-            // For now just setting state.
         },
         addRequisition: (state, action: PayloadAction<Requisition>) => {
             state.requisitions.unshift(action.payload);
@@ -77,6 +94,17 @@ const requisitionsSlice = createSlice({
             })
             .addCase(createRequisition.fulfilled, (state, action: PayloadAction<Requisition>) => {
                 state.requisitions.unshift(action.payload);
+            })
+            // Analytics
+            .addCase(loadRecruitmentAnalytics.pending, (state) => {
+                state.analyticsLoading = true;
+            })
+            .addCase(loadRecruitmentAnalytics.fulfilled, (state, action: PayloadAction<any>) => {
+                state.analyticsLoading = false;
+                state.analytics = action.payload;
+            })
+            .addCase(loadRecruitmentAnalytics.rejected, (state) => {
+                state.analyticsLoading = false;
             });
     },
 });
@@ -89,5 +117,7 @@ export const selectRequisitionsLoading = (state: RootState) => state.requisition
 export const selectRequisitionsError = (state: RootState) => state.requisitions.error;
 export const selectRequisitionsMeta = (state: RootState) => state.requisitions.meta;
 export const selectRequisitionsFilters = (state: RootState) => state.requisitions.filters;
+export const selectRecruitmentAnalytics = (state: RootState) => state.requisitions.analytics;
+export const selectAnalyticsLoading = (state: RootState) => state.requisitions.analyticsLoading;
 
 export default requisitionsSlice.reducer;

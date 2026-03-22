@@ -1,5 +1,17 @@
 // Global TypeScript type definitions
 
+export interface PaginationMeta {
+    total: number;
+    page: number;
+    lastPage: number;
+    limit: number;
+}
+
+export interface PaginatedResponse<T> {
+    data: T[];
+    meta: PaginationMeta;
+}
+
 export type KanbanStage = 'applied' | 'eligible' | 'psychotechnical' | 'interview' | 'decision';
 
 export interface Stage {
@@ -29,7 +41,7 @@ export interface ApplicationLog {
 
 export type Priority = 'A' | 'B' | 'C';
 
-export type RequisitionStatus = 'activa' | 'cerrada' | 'suspendida';
+export type RequisitionStatus = 'OPEN' | 'CLOSED' | 'SUSPENDED' | 'PAUSED' | 'CANCELLED';
 
 export interface State {
     id: number;
@@ -54,17 +66,28 @@ export interface Zone {
   stateId?: number;
 }
 
+export interface Permissions {
+    [module: string]: string[];
+}
+
+export interface Role {
+    id: number;
+    name: string;
+    permissions: Permissions;
+}
+
 export interface User {
-    id: string; // nationalId for candidates, UUID for staff
+    id: string;
     username: string;
     email: string;
-    role: string;
+    role: Role | string;
     token: string;
     entityType?: 'staff' | 'candidate';
     firstName?: string;
     lastName?: string;
     fullName?: string;
     phone?: string;
+    isActive?: boolean;
     createdDate?: string;
     currentProcess?: {
         applicationId: string;
@@ -76,44 +99,47 @@ export interface User {
 }
 
 export interface Candidate {
-    id: string; // Internal UUID (though backend uses nationalId as ID sometimes, but let's keep string)
+    id: string;
     firstName: string;
     lastName: string;
-    idx?: string; // Relation to requisition
-    nationalId: string; // Cédula
+    idx?: string;
+    nationalId: string;
     email: string;
     phone: string;
-
-    // Optional / Nullable fields from backend
     birthDate?: string;
     altPhone?: string;
     address?: string;
-    // Location data
     municipalityId?: number;
     municipality?: Municipality;
-
     profession?: string;
     educationLevel?: string;
-
     hasVehicle: boolean;
     vehicleDetail?: string;
-
     cvUrl?: string;
     videoUrl?: string;
+    psychTestUrl?: string;
     driveFolderUrl?: string;
-
-    metadata?: {
-        gender?: string;
-        hasChildren?: boolean;
-        childrenCount?: number;
-        maritalStatus?: string;
-        salesExperience?: boolean;
-    };
-
-    // Computed / Extended fields
-    stage: KanbanStage; // Derived from STAGE_MAPPING for Kanban board
-    currentStageId?: number; // Raw ID from backend (1-8)
-    currentStageName?: string; // Raw name from backend (e.g., "Video")
+    gender?: string;
+    hasChildren?: boolean;
+    childrenCount?: number;
+    maritalStatus?: string;
+    metadata?: any;
+    salesExperienceYears?: number;
+    salesExperienceTypes?: string[];
+    commercializedGoodsTypes?: string[];
+    vehicleType?: string;
+    vehicleBrandModelYear?: string;
+    isVehicleOwner?: boolean;
+    vehicleOwnerRelationship?: string;
+    currentMonthlyIncome?: number;
+    salaryAspiration?: number;
+    currentCompany?: string;
+    previousCompanies?: string;
+    personalReferences?: any[];
+    workReferences?: any[];
+    stage: KanbanStage;
+    currentStageId?: number;
+    currentStageName?: string;
     subStatus?: string;
     daysInStage?: number;
     testUrl?: string;
@@ -121,17 +147,15 @@ export interface Candidate {
     testScore?: number;
     interviewDate?: string;
     appliedDate?: string;
-
-    // Extended properties for UI
     applications?: any[];
     logs?: ApplicationLog[];
-  zoneId?: number;
-  zone?: any; // Can be string or Zone object
-  location?: string;
-  rejectionReason?: string;
-  requisitionZoneName?: string;
-  createdAt: string;
-  updatedAt: string;
+    zoneId?: number;
+    zone?: any;
+    location?: string;
+    rejectionReason?: string;
+    requisitionZoneName?: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface CandidateFilters {
@@ -143,10 +167,12 @@ export interface CandidateFilters {
     hasVehicle?: boolean;
     stageId?: number;
     jobRequisitionId?: number;
+    companyId?: number;
     stateId?: number;
     municipalityId?: number;
     idx?: string;
     name?: string;
+    currentStageId?: number;
 }
 
 export interface Requisition {
@@ -170,6 +196,8 @@ export interface Requisition {
     municipalityName?: string;
     requestedBy?: string;
     matchingCandidates?: Candidate[];
+    statusReason?: string;
+    statusUpdatedAt?: string;
 }
 
 export interface RequisitionFilters {
@@ -180,21 +208,11 @@ export interface RequisitionFilters {
     stateId?: number;
     municipalityId?: number;
     search?: string;
-}
-
-export interface PaginationMeta {
-    total: number;
-    page: number;
-    lastPage: number;
-    limit: number;
+    page?: number;
+    limit?: number;
 }
 
 export interface AuthCredentials {
     username: string;
     password: string;
-}
-
-export interface PaginatedResponse<T> {
-    data: T[];
-    meta: PaginationMeta;
 }

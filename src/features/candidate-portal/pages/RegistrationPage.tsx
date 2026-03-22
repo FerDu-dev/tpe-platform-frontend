@@ -7,7 +7,8 @@ import {
     UserOutlined, MailOutlined, PhoneOutlined, IdcardOutlined,
     UploadOutlined, CarOutlined, RocketOutlined, CheckCircleOutlined,
     BulbOutlined, FileTextOutlined, ArrowRightOutlined,
-    ArrowLeftOutlined,
+    ArrowLeftOutlined, PlusOutlined, DeleteOutlined,
+    DollarOutlined, BankOutlined, TeamOutlined,
 } from '@ant-design/icons';
 import { api } from '../../../services/api';
 import { PROFESSIONS_ES } from '../../../constants/professions';
@@ -26,7 +27,7 @@ const DESKTOP_STEPS = [
     {
         title: 'Datos Personales',
         icon: <UserOutlined />,
-        fields: ['firstName', 'lastName', 'nationalId', 'birthDate', 'maritalStatus', 'gender', 'hasChildren', 'childrenCount'],
+        fields: ['firstName', 'lastName', 'nationalId', 'birthDate', 'maritalStatus', 'gender', 'educationLevel', 'hasChildren', 'childrenCount'],
     },
     {
         title: 'Contacto',
@@ -34,9 +35,24 @@ const DESKTOP_STEPS = [
         fields: ['email', 'phone', 'altPhone', 'stateId', 'municipalityId'],
     },
     {
-        title: 'Requisitos',
+        title: 'Perfil y Ventas',
+        icon: <BulbOutlined />,
+        fields: ['profession', 'salesExperience', 'salesExperienceYears', 'salesExperienceTypes', 'commercializedGoodsTypes'],
+    },
+    {
+        title: 'Vehículo',
         icon: <CarOutlined />,
-        fields: ['hasVehicle', 'vehicleDetail', 'profession', 'salesExperience'],
+        fields: ['hasVehicle', 'vehicleIsOwn', 'vehicleType', 'vehicleBrandModelYear', 'vehicleOwnerRelationship'],
+    },
+    {
+        title: 'Laboral y Econ.',
+        icon: <BankOutlined />,
+        fields: ['currentCompany', 'previousCompanies', 'currentMonthlyIncome', 'salaryAspiration'],
+    },
+    {
+        title: 'Referencias',
+        icon: <TeamOutlined />,
+        fields: ['personalReferences', 'workReferences'],
     },
     {
         title: 'Tu CV',
@@ -49,13 +65,18 @@ const DESKTOP_STEPS = [
 const MOBILE_STEPS = [
     { label: 'Nombres', fields: ['firstName', 'lastName'] },
     { label: 'Identidad', fields: ['nationalId', 'birthDate'] },
-    { label: 'Personal', fields: ['maritalStatus', 'gender'] },
+    { label: 'Personal', fields: ['maritalStatus', 'gender', 'educationLevel'] },
     { label: 'Familia', fields: ['hasChildren', 'childrenCount'] },
     { label: 'Email', fields: ['email', 'phone'] },
     { label: 'Teléfono alt', fields: ['altPhone'] },
     { label: 'Ubicación', fields: ['stateId', 'municipalityId'] },
-    { label: 'Vehículo', fields: ['hasVehicle', 'vehicleDetail'] },
-    { label: 'Perfil', fields: ['profession', 'salesExperience'] },
+    { label: 'Perfil', fields: ['profession'] },
+    { label: 'Ventas', fields: ['salesExperience', 'salesExperienceYears', 'salesExperienceTypes', 'commercializedGoodsTypes'] },
+    { label: 'Vehículo', fields: ['hasVehicle', 'vehicleIsOwn', 'vehicleType', 'vehicleBrandModelYear', 'vehicleOwnerRelationship'] },
+    { label: 'Laboral', fields: ['currentCompany', 'previousCompanies'] },
+    { label: 'Económico', fields: ['currentMonthlyIncome', 'salaryAspiration'] },
+    { label: 'Ref. Personales', fields: ['personalReferences'] },
+    { label: 'Ref. Laborales', fields: ['workReferences'] },
     { label: 'CV', fields: [] },
 ];
 
@@ -76,6 +97,7 @@ const RegistrationPage: React.FC = () => {
     const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
     const [cvFile, setCvFile] = useState<File | null>(null);
     const [professionOptions, setProfessionOptions] = useState(PROFESSIONS_ES.map(p => ({ value: p })));
+    const [salesExperience, setSalesExperience] = useState<string | null>(null);
 
     // Result pages
     const [result, setResult] = useState<'success' | null>(null);
@@ -86,6 +108,10 @@ const RegistrationPage: React.FC = () => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    const totalSteps = isMobile ? MOBILE_STEPS.length : DESKTOP_STEPS.length;
+    const progressPercent = Math.round(((currentStep) / totalSteps) * 100);
+    const isLastStep = currentStep === totalSteps - 1;
 
     const handleStateChange = (stateId: number) => {
         setSelectedStateId(stateId);
@@ -107,11 +133,24 @@ const RegistrationPage: React.FC = () => {
         if (!step) return [];
 
         let fields = [...step.fields];
-        // Remove childrenCount if hasChildren is false
+        // Conditional logic
         if (!hasChildren) fields = fields.filter(f => f !== 'childrenCount');
-        if (hasVehicle !== 'si') fields = fields.filter(f => f !== 'vehicleDetail');
+        
+        if (hasVehicle !== 'si') {
+            fields = fields.filter(f => !['vehicleIsOwn', 'vehicleType', 'vehicleBrandModelYear', 'vehicleOwnerRelationship'].includes(f));
+        } else {
+            // If has vehicle
+            if (vehicleIsOwn === 'si') {
+                fields = fields.filter(f => f !== 'vehicleOwnerRelationship');
+            }
+        }
+
+        if (salesExperience !== 'si') {
+            fields = fields.filter(f => !['salesExperienceYears', 'salesExperienceTypes', 'commercializedGoodsTypes'].includes(f));
+        }
+
         return fields;
-    }, [isMobile, currentStep, hasChildren, hasVehicle]);
+    }, [isMobile, currentStep, hasChildren, hasVehicle, vehicleIsOwn, salesExperience]);
 
     // ── Next step ─────────────────────────────────────────────────────────
     const handleNext = async () => {
@@ -149,6 +188,30 @@ const RegistrationPage: React.FC = () => {
             fd.append('phone', values.phone);
             if (values.altPhone) fd.append('altPhone', values.altPhone);
             if (values.birthDate) fd.append('birthDate', dayjs(values.birthDate).toISOString());
+
+            // --- New Fields ---
+            if (values.educationLevel) fd.append('educationLevel', values.educationLevel);
+            if (values.salesExperienceYears) fd.append('salesExperienceYears', values.salesExperienceYears);
+            if (values.salesExperienceTypes) fd.append('salesExperienceTypes', JSON.stringify(values.salesExperienceTypes));
+            if (values.commercializedGoodsTypes) fd.append('commercializedGoodsTypes', JSON.stringify(values.commercializedGoodsTypes));
+            
+            if (values.hasVehicle === 'si') {
+                fd.append('vehicleType', values.vehicleType || '');
+                fd.append('vehicleBrandModelYear', values.vehicleBrandModelYear || '');
+                fd.append('isVehicleOwner', String(values.vehicleIsOwn === 'si'));
+                if (values.vehicleIsOwn === 'no' && values.vehicleOwnerRelationship) {
+                    fd.append('vehicleOwnerRelationship', values.vehicleOwnerRelationship);
+                }
+            }
+
+            if (values.currentMonthlyIncome) fd.append('currentMonthlyIncome', String(values.currentMonthlyIncome));
+            if (values.salaryAspiration) fd.append('salaryAspiration', String(values.salaryAspiration));
+            if (values.currentCompany) fd.append('currentCompany', values.currentCompany);
+            if (values.previousCompanies) fd.append('previousCompanies', values.previousCompanies);
+
+            if (values.personalReferences) fd.append('personalReferences', JSON.stringify(values.personalReferences));
+            if (values.workReferences) fd.append('workReferences', JSON.stringify(values.workReferences));
+            // ------------------
 
             // Send names to allow backend to synchronize dynamically (robustness)
             const selectedMuni = municipalities.find(m => m.id === values.municipalityId);
@@ -212,8 +275,6 @@ const RegistrationPage: React.FC = () => {
     // ══════════════════════════════════════════════════════════════════════
     // SHARED FORM SECTIONS (content rendered per step)
     // ══════════════════════════════════════════════════════════════════════
-    const totalSteps = isMobile ? MOBILE_STEPS.length : DESKTOP_STEPS.length;
-    const progressPercent = Math.round(((currentStep) / totalSteps) * 100);
 
     // ─── Section renderers ────────────────────────────────────────────────
     const renderPersonalData = () => (
@@ -257,6 +318,15 @@ const RegistrationPage: React.FC = () => {
                             <Radio.Button value="Masculino" style={css.radioBtn}>Masculino</Radio.Button>
                             <Radio.Button value="Femenino" style={css.radioBtn}>Femenino</Radio.Button>
                         </Radio.Group>
+                    </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                    <Form.Item name="educationLevel" label="Nivel de Instrucción Académica" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Select placeholder="Selecciona..." size="large">
+                            {['Bachiller', 'Técnico Medio', 'Técnico Superior', 'Universitario', 'Postgrado', 'Doctorado'].map(s => (
+                                <Option key={s} value={s}>{s}</Option>
+                            ))}
+                        </Select>
                     </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
@@ -325,62 +395,22 @@ const RegistrationPage: React.FC = () => {
         </>
     );
 
-    const renderRequirements = () => {
-        // hasVehicle true only when: has vehicle AND it's their own property
-        const showOwnership = hasVehicle === 'si';
-        const showVehicleType = hasVehicle === 'si' && vehicleIsOwn === 'si';
+    const renderProfessional = () => {
+        const showSalesDetails = salesExperience === 'si';
 
         return (
             <>
-                <StepHeading title="Requisitos del Cargo" subtitle="Información clave para el puesto" />
-
-                <Form.Item name="hasVehicle" label="¿Tienes vehículo disponible para el trabajo?" rules={[{ required: true, message: 'Requerido' }]}>
-                    <Radio.Group style={{ width: '100%' }}>
-                        <Row gutter={12}>
-                            <Col xs={24} sm={12}>
-                                <Radio.Button value="si" style={css.vehicleBtn}>🚗&nbsp;&nbsp;Sí, tengo vehículo</Radio.Button>
-                            </Col>
-                            <Col xs={24} sm={12}>
-                                <Radio.Button value="no" style={css.vehicleBtn}>🚶&nbsp;&nbsp;No tengo vehículo</Radio.Button>
-                            </Col>
-                        </Row>
-                    </Radio.Group>
-                </Form.Item>
-
-                {showOwnership && (
-                    <Form.Item name="vehicleIsOwn" label="¿Ese vehículo es de tu propiedad?" rules={[{ required: true, message: 'Requerido' }]}>
-                        <Radio.Group style={{ width: '100%' }}>
-                            <Row gutter={12}>
-                                <Col xs={24} sm={12}>
-                                    <Radio.Button value="si" style={css.vehicleBtn}>✅&nbsp;&nbsp;Sí, es mío</Radio.Button>
-                                </Col>
-                                <Col xs={24} sm={12}>
-                                    <Radio.Button value="no" style={css.vehicleBtn}>👥&nbsp;&nbsp;No, es de un familiar / préstamo</Radio.Button>
-                                </Col>
-                            </Row>
-                        </Radio.Group>
-                    </Form.Item>
-                )}
-
-                {showVehicleType && (
-                    <Form.Item name="vehicleDetail" label="Tipo de vehículo" rules={[{ required: true, message: 'Requerido' }]}>
-                        <Select placeholder="Selecciona..." size="large">
-                            {['Moto', 'Carro', 'Camioneta', 'Buseta', 'Otro'].map(v => <Option key={v} value={v}>{v}</Option>)}
-                        </Select>
-                    </Form.Item>
-                )}
-
-                {/* Profesión y experiencia: siempre visible, independiente del vehículo */}
+                <StepHeading title="Perfil y Experiencia" subtitle="Información clave para el puesto" />
                 <Row gutter={[16, 0]}>
-                    <Col xs={24} sm={12}>
-                        <Form.Item name="profession" label="¿Cuál es tu profesión?">
+                    <Col xs={24}>
+                        <Form.Item name="profession" label="¿Cuál es tu profesión?" rules={[{ required: true, message: 'Requerido' }]}>
                             <AutoComplete options={professionOptions} onSearch={handleProfessionSearch} filterOption={false}
                                 placeholder="Busca o escribe tu profesión...">
                                 <Input prefix={<BulbOutlined />} size="large" />
                             </AutoComplete>
                         </Form.Item>
                     </Col>
-                    <Col xs={24} sm={12}>
+                    <Col xs={24}>
                         <Form.Item name="salesExperience" label="¿Tienes experiencia previa en ventas?" rules={[{ required: true, message: 'Requerido' }]}>
                             <Radio.Group style={{ width: '100%' }}>
                                 <Row gutter={12}>
@@ -394,7 +424,183 @@ const RegistrationPage: React.FC = () => {
                             </Radio.Group>
                         </Form.Item>
                     </Col>
+                    {showSalesDetails && (
+                        <>
+                            <Col xs={24} sm={12}>
+                                <Form.Item name="salesExperienceYears" label="Años de experiencia en ventas" rules={[{ required: true, message: 'Requerido' }]}>
+                                    <Input type="number" placeholder="Ej: 5" size="large" min={0} suffix="años" />
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24} sm={12}>
+                                <Form.Item name="salesExperienceTypes" label="Tipo de vendedor" rules={[{ required: true, message: 'Requerido' }]}>
+                                    <Select mode="multiple" placeholder="Selecciona uno o varios..." size="large">
+                                        {['Interno', 'Externo', 'Televendedor', 'Servicios', 'Otro'].map(v => <Option key={v} value={v}>{v}</Option>)}
+                                    </Select>
+                                </Form.Item>
+                            </Col>
+                            <Col xs={24}>
+                                <Form.Item name="commercializedGoodsTypes" label="Bienes comercializados" rules={[{ required: true, message: 'Requerido' }]}>
+                                    <Select mode="multiple" placeholder="Selecciona..." size="large">
+                                        {['Consumo masivo', 'Especializados', 'Servicios', 'Otro'].map(v => <Option key={v} value={v}>{v}</Option>)}
+                                    </Select>
+                                </Form.Item>
+                            </Col>
+                        </>
+                    )}
                 </Row>
+            </>
+        );
+    };
+
+    const renderVehicle = () => {
+        const isNotOwner = hasVehicle === 'si' && vehicleIsOwn === 'no';
+
+        return (
+            <>
+                <StepHeading title="Vehículo" subtitle="Disponibilidad de transporte" />
+                <Form.Item name="hasVehicle" label="¿Tienes vehículo disponible para el trabajo?" rules={[{ required: true, message: 'Requerido' }]}>
+                    <Radio.Group style={{ width: '100%' }}>
+                        <Row gutter={12}>
+                            <Col xs={24} sm={12}>
+                                <Radio.Button value="si" style={css.vehicleBtn}>🚗&nbsp;&nbsp;Sí, tengo vehículo</Radio.Button>
+                            </Col>
+                            <Col xs={24} sm={12}>
+                                <Radio.Button value="no" style={css.vehicleBtn}>🚶&nbsp;&nbsp;No tengo vehículo</Radio.Button>
+                            </Col>
+                        </Row>
+                    </Radio.Group>
+                </Form.Item>
+
+                {hasVehicle === 'si' && (
+                    <Row gutter={[16, 0]}>
+                        <Col xs={24} sm={12}>
+                            <Form.Item name="vehicleType" label="Tipo de vehículo" rules={[{ required: true, message: 'Requerido' }]}>
+                                <Select placeholder="Selecciona..." size="large">
+                                    {['Moto', 'Carro', 'Camioneta', 'Buseta', 'Otro'].map(v => <Option key={v} value={v}>{v}</Option>)}
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24} sm={12}>
+                            <Form.Item name="vehicleBrandModelYear" label="Marca, modelo y año" rules={[{ required: true, message: 'Requerido' }]}>
+                                <Input placeholder="Ej: Toyota Corolla 2015" size="large" />
+                            </Form.Item>
+                        </Col>
+                        <Col xs={24}>
+                            <Form.Item name="vehicleIsOwn" label="¿Es usted el propietario?" rules={[{ required: true, message: 'Requerido' }]}>
+                                <Radio.Group style={{ width: '100%' }}>
+                                    <Row gutter={12}>
+                                        <Col xs={24} sm={12}>
+                                            <Radio.Button value="si" style={css.vehicleBtn}>✅&nbsp;&nbsp;Sí, es mío</Radio.Button>
+                                        </Col>
+                                        <Col xs={24} sm={12}>
+                                            <Radio.Button value="no" style={css.vehicleBtn}>👥&nbsp;&nbsp;No, es prestado / familiar</Radio.Button>
+                                        </Col>
+                                    </Row>
+                                </Radio.Group>
+                            </Form.Item>
+                        </Col>
+                        {isNotOwner && (
+                            <Col xs={24}>
+                                <Form.Item name="vehicleOwnerRelationship" label="Relación con el dueño" rules={[{ required: true, message: 'Requerido' }]}>
+                                    <Input placeholder="Ej: Padre, Hermano, Amigo..." size="large" />
+                                </Form.Item>
+                            </Col>
+                        )}
+                    </Row>
+                )}
+            </>
+        );
+    };
+
+    const renderEconomic = () => (
+        <>
+            <StepHeading title="Situación Económica y Laboral" subtitle="Ingresos y aspiraciones" />
+            <Row gutter={[16, 0]}>
+                <Col xs={24} sm={12}>
+                    <Form.Item name="currentMonthlyIncome" label="Ingreso mensual actual (USD)" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Input type="number" prefix={<DollarOutlined />} placeholder="0.00" size="large" />
+                    </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                    <Form.Item name="salaryAspiration" label="Aspiración salarial (USD)" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Input type="number" prefix={<DollarOutlined />} placeholder="0.00" size="large" />
+                    </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                    <Form.Item name="currentCompany" label="Empresa actual" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Input prefix={<BankOutlined />} placeholder="Nombre de la empresa" size="large" />
+                    </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                    <Form.Item name="previousCompanies" label="Empresas anteriores" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Input.TextArea placeholder="Menciona empresas anteriores..." autoSize={{ minRows: 1, maxRows: 3 }} size="large" />
+                    </Form.Item>
+                </Col>
+            </Row>
+        </>
+    );
+
+    const ReferenceFields = ({ name, label, isMobile }: { name: string, label: string, isMobile?: boolean }) => (
+        <div style={{ 
+            marginBottom: isMobile ? 12 : 32, 
+            padding: isMobile ? '12px 8px' : 20, 
+            background: 'rgba(0,0,0,0.02)', 
+            borderRadius: 12, 
+            border: '1px solid rgba(0,0,0,0.05)' 
+        }}>
+            {label && <Title level={4} style={{ marginBottom: 20, fontSize: 16 }}>{label}</Title>}
+            <Form.List name={name} initialValue={[{}]}>
+                {(fields, { add, remove }) => (
+                    <>
+                        {fields.map(({ key, name: fieldName, ...restField }) => (
+                            <div key={key} style={{ marginBottom: 24, position: 'relative', padding: isMobile ? '8px' : 0 }}>
+                                <Row gutter={12}>
+                                    <Col xs={24} sm={12}>
+                                        <Form.Item {...restField} name={[fieldName, 'name']} label="Nombre completo" rules={[{ required: true, message: 'Requerido' }]}>
+                                            <Input placeholder="Nombre" size="large" />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={24} sm={12}>
+                                        <Form.Item {...restField} name={[fieldName, 'phone']} label="Teléfono" rules={[{ required: true, message: 'Requerido' }]}>
+                                            <Input placeholder="04140000000" size="large" />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={24} sm={12}>
+                                        <Form.Item {...restField} name={[fieldName, 'email']} label="Correo (opcional)">
+                                            <Input placeholder="correo@ejemplo.com" size="large" />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col xs={24} sm={12}>
+                                        <Form.Item {...restField} name={[fieldName, 'company']} label="Empresa">
+                                            <Input placeholder="Empresa donde labora" size="large" />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                                {fields.length > 1 && (
+                                    <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(fieldName)} 
+                                        style={{ position: 'absolute', top: isMobile ? -5 : -10, right: isMobile ? -5 : -10 }}>
+                                        {isMobile ? '' : 'Eliminar'}
+                                    </Button>
+                                )}
+                            </div>
+                        ))}
+                        {fields.length < 2 && (
+                            <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />} size="large">
+                                {isMobile ? 'Añadir otra' : 'Agregar otra referencia'}
+                            </Button>
+                        )}
+                    </>
+                )}
+            </Form.List>
+        </div>
+    );
+
+    const renderReferences = () => {
+        return (
+            <>
+                <StepHeading title="Referencias" subtitle="Mínimo 1 de cada tipo (máximo 2)" />
+                <ReferenceFields name="personalReferences" label="Referencias Personales" />
+                <ReferenceFields name="workReferences" label="Referencias Laborales" />
             </>
         );
     };
@@ -443,7 +649,6 @@ const RegistrationPage: React.FC = () => {
         </>
     );
 
-    // ─── Map step index → content ─────────────────────────────────────────
     const getStepContent = () => {
         if (isMobile) {
             // Mobile: granular steps
@@ -466,7 +671,7 @@ const RegistrationPage: React.FC = () => {
                             disabledDate={d => d && d.isAfter(dayjs().subtract(18, 'year'))} />
                     </Form.Item>
                 </MobileStep>,
-                2: <MobileStep heading="Estado civil y género" subheading="Información personal">
+                2: <MobileStep heading="Información Personal" subheading="Estado civil, género y nivel académico">
                     <Form.Item name="maritalStatus" label="Estado Civil" rules={[{ required: true, message: 'Requerido' }]}>
                         <Select placeholder="Selecciona..." size="large">
                             {['Soltero/a', 'Casado/a', 'Divorciado/a', 'Viudo/a', 'Unión estable'].map(s => <Option key={s} value={s}>{s}</Option>)}
@@ -477,6 +682,11 @@ const RegistrationPage: React.FC = () => {
                             <Radio.Button value="Masculino" style={css.radioBtn}>Masculino</Radio.Button>
                             <Radio.Button value="Femenino" style={css.radioBtn}>Femenino</Radio.Button>
                         </Radio.Group>
+                    </Form.Item>
+                    <Form.Item name="educationLevel" label="Nivel Académico" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Select placeholder="Selecciona..." size="large">
+                            {['Bachiller', 'Técnico Medio', 'Técnico Superior', 'Universitario', 'Postgrado', 'Doctorado'].map(s => <Option key={s} value={s}>{s}</Option>)}
+                        </Select>
                     </Form.Item>
                 </MobileStep>,
                 3: <MobileStep heading="¿Tienes hijos?" subheading="">
@@ -504,86 +714,134 @@ const RegistrationPage: React.FC = () => {
                         <Input prefix={<PhoneOutlined />} placeholder="04141234567" maxLength={11} size="large" />
                     </Form.Item>
                 </MobileStep>,
-                5: <MobileStep heading="¿Otro télefono?" subheading="Opcional, pero nos ayuda a contactarte">
+                5: <MobileStep heading="¿Otro télefono?" subheading="Opcional">
                     <Form.Item name="altPhone" label="Teléfono Alternativo (opcional)">
                         <Input prefix={<PhoneOutlined />} placeholder="04241234567" maxLength={11} size="large" />
                     </Form.Item>
                 </MobileStep>,
-                6: <MobileStep heading="¿Dónde resides?" subheading="Estado y municipio de Venezuela">
+                6: <MobileStep heading="¿Dónde resides?" subheading="Estado y municipio">
                     <Form.Item name="stateId" label="Estado" rules={[{ required: true, message: 'Requerido' }]}>
-                        <Select showSearch placeholder="Selecciona tu estado..." optionFilterProp="children"
+                        <Select showSearch placeholder="Selecciona..." optionFilterProp="children"
                             onChange={handleStateChange} size="large"
-                            filterOption={(input, o) => String(o?.children ?? '').toLowerCase().includes(input.toLowerCase())}>
+                            filterOption={(i, o) => String(o?.children ?? '').toLowerCase().includes(i.toLowerCase())}>
                             {VENEZUELA_STATES.map(s => <Option key={s.id} value={s.id}>{s.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="municipalityId" label="Municipio" rules={[{ required: true, message: 'Selecciona primero el Estado' }]}>
-                        <Select showSearch placeholder={selectedStateId ? 'Tu municipio...' : 'Elige el Estado primero'}
+                    <Form.Item name="municipalityId" label="Municipio" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Select showSearch placeholder={selectedStateId ? 'Tu municipio...' : 'Elige el Estado'}
                             optionFilterProp="children" disabled={!selectedStateId} size="large"
-                            filterOption={(input, o) => String(o?.children ?? '').toLowerCase().includes(input.toLowerCase())}>
+                            filterOption={(i, o) => String(o?.children ?? '').toLowerCase().includes(i.toLowerCase())}>
                             {municipalities.map(m => <Option key={m.id} value={m.id}>{m.name}</Option>)}
                         </Select>
                     </Form.Item>
                 </MobileStep>,
-                7: <MobileStep heading="¿Tienes vehículo?" subheading="Pregunta clave para este cargo">
-                    <Form.Item name="hasVehicle" label="¿Tienes vehículo disponible para el trabajo?" rules={[{ required: true, message: 'Requerido' }]}>
+                7: <MobileStep heading="Tu Profesión" subheading="">
+                    <Form.Item name="profession" label="¿Cuál es tu profesión?" rules={[{ required: true, message: 'Requerido' }]}>
+                        <AutoComplete options={professionOptions} onSearch={handleProfessionSearch} filterOption={false}
+                            placeholder="Busca o escribe...">
+                            <Input prefix={<BulbOutlined />} size="large" />
+                        </AutoComplete>
+                    </Form.Item>
+                </MobileStep>,
+                8: <MobileStep heading="Experiencia en Ventas" subheading="">
+                    <Form.Item name="salesExperience" label="¿Tienes experiencia?" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Radio.Group style={{ width: '100%' }}>
+                            <Radio.Button value="si" style={css.radioBtn}>Sí</Radio.Button>
+                            <Radio.Button value="no" style={css.radioBtn}>No</Radio.Button>
+                        </Radio.Group>
+                    </Form.Item>
+                    {salesExperience === 'si' && (
+                        <>
+                            <Form.Item name="salesExperienceYears" label="Años de experiencia" rules={[{ required: true, message: 'Requerido' }]}>
+                                <Input type="number" placeholder="Ej: 5" size="large" min={0} suffix="años" />
+                            </Form.Item>
+                            <Form.Item name="salesExperienceTypes" label="Tipo de vendedor" rules={[{ required: true, message: 'Requerido' }]}>
+                                <Select mode="multiple" placeholder="Selecciona..." size="large">
+                                    {['Interno', 'Externo', 'Televendedor', 'Servicios', 'Otro'].map(v => <Option key={v} value={v}>{v}</Option>)}
+                                </Select>
+                            </Form.Item>
+                            <Form.Item name="commercializedGoodsTypes" label="Bienes comercializados" rules={[{ required: true, message: 'Requerido' }]}>
+                                <Select mode="multiple" placeholder="Selecciona..." size="large">
+                                    {['Consumo masivo', 'Especializados', 'Servicios', 'Otro'].map(v => <Option key={v} value={v}>{v}</Option>)}
+                                </Select>
+                            </Form.Item>
+                        </>
+                    )}
+                </MobileStep>,
+                9: <MobileStep heading="Tu Vehículo" subheading="">
+                    <Form.Item name="hasVehicle" label="¿Tienes vehículo?" rules={[{ required: true, message: 'Requerido' }]}>
                         <Radio.Group style={{ width: '100%' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                <Radio.Button value="si" style={{ ...css.vehicleBtn, textAlign: 'center' }}>🚗  Sí, tengo vehículo</Radio.Button>
-                                <Radio.Button value="no" style={{ ...css.vehicleBtn, textAlign: 'center' }}>🚶  No tengo vehículo</Radio.Button>
+                                <Radio.Button value="si" style={css.vehicleBtn}>🚗  Sí</Radio.Button>
+                                <Radio.Button value="no" style={css.vehicleBtn}>🚶  No</Radio.Button>
                             </div>
                         </Radio.Group>
                     </Form.Item>
                     {hasVehicle === 'si' && (
-                        <Form.Item name="vehicleIsOwn" label="¿Ese vehículo es de tu propiedad?" rules={[{ required: true, message: 'Requerido' }]}>
-                            <Radio.Group style={{ width: '100%' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                    <Radio.Button value="si" style={{ ...css.vehicleBtn, textAlign: 'center' }}>✅  Sí, es mío</Radio.Button>
-                                    <Radio.Button value="no" style={{ ...css.vehicleBtn, textAlign: 'center' }}>👥  No, es de un familiar / préstamo</Radio.Button>
-                                </div>
-                            </Radio.Group>
-                        </Form.Item>
-                    )}
-                    {hasVehicle === 'si' && vehicleIsOwn === 'si' && (
-                        <Form.Item name="vehicleDetail" label="Tipo de vehículo" rules={[{ required: true, message: 'Requerido' }]}>
-                            <Select placeholder="¿Qué tipo de vehículo?" size="large">
-                                {['Moto', 'Carro', 'Camioneta', 'Buseta', 'Otro'].map(v => <Option key={v} value={v}>{v}</Option>)}
-                            </Select>
-                        </Form.Item>
+                        <>
+                            <Form.Item name="vehicleType" label="Tipo" rules={[{ required: true, message: 'Requerido' }]}>
+                                <Select placeholder="Moto, Carro..." size="large">
+                                    {['Moto', 'Carro', 'Camioneta', 'Buseta', 'Otro'].map(v => <Option key={v} value={v}>{v}</Option>)}
+                                </Select>
+                            </Form.Item>
+                            <Form.Item name="vehicleBrandModelYear" label="Marca/Modelo/Año" rules={[{ required: true, message: 'Requerido' }]}>
+                                <Input placeholder="Ej: Toyota Corolla 2015" size="large" />
+                            </Form.Item>
+                            <Form.Item name="vehicleIsOwn" label="¿Eres el dueño?" rules={[{ required: true, message: 'Requerido' }]}>
+                                <Radio.Group style={{ width: '100%' }}>
+                                    <Radio.Button value="si" style={css.radioBtn}>Sí</Radio.Button>
+                                    <Radio.Button value="no" style={css.radioBtn}>No</Radio.Button>
+                                </Radio.Group>
+                            </Form.Item>
+                            {vehicleIsOwn === 'no' && (
+                                <Form.Item name="vehicleOwnerRelationship" label="Relación con el dueño" rules={[{ required: true, message: 'Requerido' }]}>
+                                    <Input placeholder="Ej: Padre" size="large" />
+                                </Form.Item>
+                            )}
+                        </>
                     )}
                 </MobileStep>,
-                8: <MobileStep heading="Tu perfil profesional" subheading="Profesión y experiencia comercial">
-                    <Form.Item name="profession" label="¿Cuál es tu profesión?">
-                        <AutoComplete options={professionOptions} onSearch={handleProfessionSearch} filterOption={false}
-                            placeholder="Busca o escribe tu profesión...">
-                            <Input prefix={<BulbOutlined />} size="large" />
-                        </AutoComplete>
+                10: <MobileStep heading="Trayectoria Laboral" subheading="">
+                    <Form.Item name="currentCompany" label="Empresa actual" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Input placeholder="Empresa..." size="large" />
                     </Form.Item>
-                    <Form.Item name="salesExperience" label="¿Experiencia en ventas?" rules={[{ required: true, message: 'Requerido' }]}>
-                        <Radio.Group style={{ width: '100%' }}>
-                            <Radio.Button value="si" style={css.radioBtn}>Sí, tengo experiencia</Radio.Button>
-                            <Radio.Button value="no" style={css.radioBtn}>No, soy nuevo</Radio.Button>
-                        </Radio.Group>
+                    <Form.Item name="previousCompanies" label="Empresas pasadas" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Input.TextArea placeholder="Menciona las anteriores..." autoSize={{ minRows: 2 }} size="large" />
                     </Form.Item>
                 </MobileStep>,
-                9: <MobileStep heading="¡Casi listo!" subheading="Sube tu CV en PDF para completar la postulación">
+                11: <MobileStep heading="Datos Económicos" subheading="">
+                    <Form.Item name="currentMonthlyIncome" label="Ingreso mensual (USD)" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Input type="number" prefix={<DollarOutlined />} placeholder="0.00" size="large" />
+                    </Form.Item>
+                    <Form.Item name="salaryAspiration" label="Aspiración (USD)" rules={[{ required: true, message: 'Requerido' }]}>
+                        <Input type="number" prefix={<DollarOutlined />} placeholder="0.00" size="large" />
+                    </Form.Item>
+                </MobileStep>,
+                12: <MobileStep heading="Ref. Personales" subheading="Danos 1 o 2 contactos">
+                    <ReferenceFields name="personalReferences" label="" isMobile />
+                </MobileStep>,
+                13: <MobileStep heading="Ref. Laborales" subheading="Danos 1 o 2 contactos">
+                    <ReferenceFields name="workReferences" label="" isMobile />
+                </MobileStep>,
+                14: <MobileStep heading="¡Último paso!" subheading="Sube tu CV para terminar">
                     {renderCV()}
                 </MobileStep>,
             };
             return mobileMap[currentStep] || null;
         }
 
-        // Desktop: section by section
+        // Desktop Map
         const desktopMap: Record<number, React.ReactNode> = {
             0: renderPersonalData(),
             1: renderContact(),
-            2: renderRequirements(),
-            3: renderCV(),
+            2: renderProfessional(),
+            3: renderVehicle(),
+            4: renderEconomic(),
+            5: renderReferences(),
+            6: renderCV(),
         };
         return desktopMap[currentStep] || null;
     };
-
-    const isLastStep = currentStep === totalSteps - 1;
 
     // ══════════════════════════════════════════════════════════════════════
     // MAIN RENDER
@@ -678,6 +936,7 @@ const RegistrationPage: React.FC = () => {
                             if ('hasChildren' in changed) setHasChildren(changed.hasChildren === 'si');
                             if ('hasVehicle' in changed) { setHasVehicle(changed.hasVehicle); setVehicleIsOwn(null); form.setFieldValue('vehicleIsOwn', undefined); }
                             if ('vehicleIsOwn' in changed) setVehicleIsOwn(changed.vehicleIsOwn);
+                            if ('salesExperience' in changed) setSalesExperience(changed.salesExperience);
                         }}
                     >
                         {getStepContent()}

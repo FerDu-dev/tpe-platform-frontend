@@ -2,19 +2,18 @@ import React from 'react';
 import { Table, Tag, Button, Space, Typography, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { EyeOutlined, CarOutlined } from '@ant-design/icons';
-import type { Candidate } from '../../../types';
-import { STAGE_COLORS } from '../../../services/candidateService';
+import { Candidate } from '../../../types';
+import { STAGE_COLORS, getSoftTagStyle, getStatusTagStyle } from '../../../services/candidateService';
 
 const { Text } = Typography;
 
 interface CandidateListViewProps {
     candidates: Candidate[];
     onViewCandidate: (candidate: Candidate) => void;
+    selectedId?: number | string | null;
 }
 
-const CandidateListView: React.FC<CandidateListViewProps> = ({ candidates, onViewCandidate }) => {
-
-
+const CandidateListView: React.FC<CandidateListViewProps> = ({ candidates, onViewCandidate, selectedId }) => {
 
     const columns: ColumnsType<Candidate> = [
         {
@@ -67,7 +66,7 @@ const CandidateListView: React.FC<CandidateListViewProps> = ({ candidates, onVie
             width: 150,
             render: (_, record: Candidate) => {
                 const isRejected = record.applications?.[0]?.status === 'REJECTED';
-                
+
                 if (isRejected) {
                     return (
                         <Tag color="error" style={{ borderRadius: '4px', fontWeight: 500 }}>
@@ -77,11 +76,37 @@ const CandidateListView: React.FC<CandidateListViewProps> = ({ candidates, onVie
                 }
 
                 const color = record.currentStageId ? STAGE_COLORS[record.currentStageId] : '#1890ff';
-                
+
                 return (
-                    <Tag color={color} style={{ borderRadius: '4px', fontWeight: 500 }}>
+                    <Tag style={getSoftTagStyle(color)}>
                         {record.currentStageName || 'Postulado'}
                     </Tag>
+                );
+            }
+        },
+        {
+            title: 'Estado',
+            dataIndex: 'subStatus',
+            key: 'subStatus',
+            width: 150,
+            render: (subStatus) => {
+                if (!subStatus) return <Text type="secondary">-</Text>;
+                return (
+                    <Tooltip title={subStatus}>
+                        <Tag 
+                            style={{
+                                ...getStatusTagStyle(subStatus), 
+                                maxWidth: '180px', 
+                                display: 'inline-block',
+                                overflow: 'hidden', 
+                                textOverflow: 'ellipsis', 
+                                whiteSpace: 'nowrap',
+                                verticalAlign: 'bottom'
+                            }}
+                        >
+                            {subStatus}
+                        </Tag>
+                    </Tooltip>
                 );
             }
         },
@@ -131,7 +156,7 @@ const CandidateListView: React.FC<CandidateListViewProps> = ({ candidates, onVie
                 onClick: () => onViewCandidate(record),
                 style: { cursor: 'pointer' }
             })}
-            rowClassName="clickable-row"
+            rowClassName={(record) => String(record.id) === String(selectedId) ? 'selected-row clickable-row' : 'clickable-row'}
         />
     );
 };

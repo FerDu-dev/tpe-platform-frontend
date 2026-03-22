@@ -10,53 +10,62 @@ const { Text } = Typography;
 
 interface RequisitionsTableProps {
     onRowClick?: (record: Requisition) => void;
+    selectedId?: string | number | null;
 }
 
-const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick }) => {
+export const getPriorityColor = (priority: Priority): string => {
+    switch (priority) {
+        case 'A':
+            return '#f5222d';
+        case 'B':
+            return '#fa8c16';
+        case 'C':
+            return '#52c41a';
+        default:
+            return '#d9d9d9';
+    }
+};
+
+export const getStatusColor = (status: RequisitionStatus): string => {
+    switch (status) {
+        case 'OPEN':
+            return 'blue';
+        case 'SUSPENDED':
+            return 'orange';
+        case 'CLOSED':
+            return 'green';
+        case 'PAUSED':
+            return 'warning';
+        case 'CANCELLED':
+            return 'error';
+        default:
+            return 'default';
+    }
+};
+
+export const getStatusLabel = (status: RequisitionStatus): string => {
+    switch (status) {
+        case 'OPEN':
+            return 'ACTIVA';
+        case 'SUSPENDED':
+            return 'SUSPENDIDA';
+        case 'CLOSED':
+            return 'CERRADA';
+        case 'PAUSED':
+            return 'PAUSADA';
+        case 'CANCELLED':
+            return 'CANCELADA';
+        default:
+            return (status as string).toUpperCase();
+    }
+};
+
+const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selectedId }) => {
     const requisitions = useAppSelector(selectRequisitions);
     const loading = useAppSelector(selectRequisitionsLoading);
     const companies = useAppSelector(selectCompanies);
     const positions = useAppSelector(selectPositions);
     const zones = useAppSelector(selectZones);
-
-    const getPriorityColor = (priority: Priority): string => {
-        switch (priority) {
-            case 'A':
-                return '#f5222d';
-            case 'B':
-                return '#faad14';
-            case 'C':
-                return '#52c41a';
-            default:
-                return '#d9d9d9';
-        }
-    };
-
-    const getStatusColor = (status: RequisitionStatus): string => {
-        switch (status) {
-            case 'activa':
-                return 'blue';
-            case 'suspendida':
-                return 'orange';
-            case 'cerrada':
-                return 'green';
-            default:
-                return 'default';
-        }
-    };
-
-    const getStatusLabel = (status: RequisitionStatus): string => {
-        switch (status) {
-            case 'activa':
-                return 'ACTIVA';
-            case 'suspendida':
-                return 'SUSPENDIDA';
-            case 'cerrada':
-                return 'CERRADA';
-            default:
-                return (status as string).toUpperCase();
-        }
-    };
 
     const columns: ColumnsType<Requisition> = [
         {
@@ -98,8 +107,14 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick }) => 
             key: 'zone',
             width: 100,
             filters: zones.map(z => ({ text: z, value: z })),
-            onFilter: (value, record) => record.zone === value,
-            render: (zone: string) => <Tag color="orange">{zone}</Tag>,
+            onFilter: (value, record) => {
+                const zoneName = typeof record.zone === 'object' ? record.zone?.name : record.zone;
+                return zoneName === value;
+            },
+            render: (zone: any) => {
+                const name = typeof zone === 'object' ? zone?.name : zone;
+                return <Tag color="orange">{name || 'N/A'}</Tag>;
+            },
         },
         {
             title: 'Prioridad',
@@ -132,9 +147,11 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick }) => 
             key: 'status',
             width: 120,
             filters: [
-                { text: 'Activa', value: 'activa' },
-                { text: 'Suspendida', value: 'suspendida' },
-                { text: 'Cerrada', value: 'cerrada' },
+                { text: 'Activa', value: 'OPEN' },
+                { text: 'Suspendida', value: 'SUSPENDED' },
+                { text: 'Cerrada', value: 'CLOSED' },
+                { text: 'Pausada', value: 'PAUSED' },
+                { text: 'Cancelada', value: 'CANCELLED' },
             ],
             onFilter: (value, record) => record.status === value,
             render: (status: RequisitionStatus) => (
@@ -190,9 +207,11 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick }) => 
                     />
                 ),
             }}
-            rowClassName={(record) =>
-                record.priority === 'A' ? 'priority-a-row' : ''
-            }
+            rowClassName={(record) => {
+                let classes = record.priority === 'A' ? 'priority-a-row' : '';
+                if (String(record.id) === String(selectedId)) classes += ' selected-row';
+                return classes;
+            }}
             onRow={(record) => ({
                 onClick: () => {
                     if (onRowClick) onRowClick(record);

@@ -1,16 +1,22 @@
 import React from 'react';
-import { Drawer, Typography, Descriptions, Badge, Button, Space, Divider, List, Avatar, Tag } from 'antd';
+import { Drawer, Typography, Descriptions, Badge, Button, Space, Divider, List, Avatar, Tag, Card } from 'antd';
 import { Requisition } from '../../../types';
 import {
     ClockCircleOutlined,
     UsergroupAddOutlined,
     EnvironmentOutlined,
-    StopOutlined,
-    TeamOutlined
+    TeamOutlined,
+    PauseCircleOutlined,
+    CloseCircleOutlined,
+    PlayCircleOutlined,
+    InfoCircleOutlined
 } from '@ant-design/icons';
 import { useAppDispatch } from '../../../app/store';
 import { selectCandidate } from '../../candidates/store/candidatesSlice';
+import { getStatusTagStyle } from '../../../services/candidateService';
 import RequisitionApplicantsModal from './RequisitionApplicantsModal';
+import PermissionGuard from '../../../components/PermissionGuard';
+import { getStatusLabel, getStatusColor } from './RequisitionsTable';
 
 const { Title, Text } = Typography;
 
@@ -18,9 +24,19 @@ interface RequisitionDrawerProps {
     open: boolean;
     onClose: () => void;
     requisition: Requisition | null;
+    onPause: (requisition: Requisition) => void;
+    onCancel: (requisition: Requisition) => void;
+    onReactivate: (requisition: Requisition) => void;
 }
 
-const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({ open, onClose, requisition }) => {
+const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
+    open,
+    onClose,
+    requisition,
+    onPause,
+    onCancel,
+    onReactivate
+}) => {
     const dispatch = useAppDispatch();
     const [showApplicants, setShowApplicants] = React.useState(false);
 
@@ -35,43 +51,99 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({ open, onClose, re
     return (
         <Drawer
             title="Detalles de la Requisición"
-            width={640}
+            width={800}
             onClose={onClose}
             open={open}
             styles={{ body: { paddingBottom: 80 } }}
             extra={
                 <Space>
-                    <Button onClick={onClose}>Cancelar</Button>
-                    <Button onClick={handleViewApplicants} type="primary">
-                        Ver Postulantes
-                    </Button>
+                    {requisition.status === 'OPEN' && (
+                        <Button onClick={handleViewApplicants} type="primary" icon={<UsergroupAddOutlined />}>
+                            Ver Postulantes
+                        </Button>
+                    )}
                 </Space>
+            }
+            footer={
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
+                    {requisition.status === 'OPEN' && (
+                        <PermissionGuard module="requisition" action="edit">
+                            <Button
+                                icon={<PauseCircleOutlined />}
+                                onClick={() => onPause(requisition)}
+                            >
+                                Pausar
+                            </Button>
+                            <Button
+                                icon={<CloseCircleOutlined />}
+                                onClick={() => onCancel(requisition)}
+                                danger
+                            >
+                                Cancelar
+                            </Button>
+                        </PermissionGuard>
+                    )}
+                    {requisition.status === 'PAUSED' && (
+                        <PermissionGuard module="requisition" action="edit">
+                            <Button
+                                icon={<PlayCircleOutlined />}
+                                onClick={() => onReactivate(requisition)}
+                                type="primary"
+                            >
+                                Reactivar
+                            </Button>
+                        </PermissionGuard>
+                    )}
+                    {/* <Button onClick={onClose}>Cerrar</Button> */}
+                </div>
             }
         >
             <div style={{ marginBottom: 24 }}>
                 <Title level={3} style={{ margin: 0 }}>{requisition.title}</Title>
                 <Text type="secondary">{requisition.idx}</Text>
                 <div style={{ marginTop: 12 }}>
-                    <Badge
-                        status={requisition.status === 'activa' ? 'processing' : 'default'}
-                        text={<span style={{ textTransform: 'capitalize' }}>{requisition.status}</span>}
-                    />
+                    <Tag color={getStatusColor(requisition.status)}>
+                        {getStatusLabel(requisition.status)}
+                    </Tag>
                     <Divider type="vertical" />
                     <ClockCircleOutlined style={{ marginRight: 8 }} />
                     <Text>{daysOpen} días abierta</Text>
                 </div>
+                {requisition.statusReason && (
+                    <div style={{ marginTop: 16 }}>
+                        <Card size="small" style={{ backgroundColor: '#fffbe6', border: '1px solid #ffe58f' }}>
+                            <Space align="start">
+                                <InfoCircleOutlined style={{ color: '#faad14', marginTop: 4 }} />
+                                <div>
+                                    <Text strong>Motivo del cambio de estado:</Text>
+                                    <br />
+                                    <Text>{requisition.statusReason}</Text>
+                                    {requisition.statusUpdatedAt && (
+                                        <div style={{ marginTop: 4 }}>
+                                            <Text type="secondary" style={{ fontSize: '12px' }}>
+                                                Actualizado el: {new Date(requisition.statusUpdatedAt).toLocaleString()}
+                                            </Text>
+                                        </div>
+                                    )}
+                                </div>
+                            </Space>
+                        </Card>
+                    </div>
+                )}
             </div>
 
             <Descriptions title="Información General" bordered column={2} style={{ marginBottom: 32 }}>
                 <Descriptions.Item label="Empresa">{requisition.company}</Descriptions.Item>
-                <Descriptions.Item label="Departamento">{requisition.department}</Descriptions.Item>
                 <Descriptions.Item label="Prioridad">
                     <Badge
                         color={requisition.priority === 'A' ? '#f5222d' : requisition.priority === 'B' ? '#fa8c16' : '#52c41a'}
                         text={requisition.priority}
                     />
                 </Descriptions.Item>
-                <Descriptions.Item label="Ubicación">
+                <Descriptions.Item label="Solicitado por">
+                    {requisition.requestedBy || <span style={{ color: '#bfbfbf' }}>No especificado</span>}
+                </Descriptions.Item>
+                <Descriptions.Item label="Ubicación" span={2}>
                     <EnvironmentOutlined /> {requisition.location}
                 </Descriptions.Item>
                 {requisition.zone && (
@@ -86,20 +158,13 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({ open, onClose, re
                         </Space>
                     </Descriptions.Item>
                 )}
-                {requisition.route && (
-                    <Descriptions.Item label="Ruta" span={2}>{requisition.route}</Descriptions.Item>
-                )}
+                <Descriptions.Item label="Ruta" span={2}>
+                    {requisition.zone && typeof requisition.zone !== 'string'
+                        ? (requisition.zone.geographicRoute || <span style={{ color: '#bfbfbf' }}>No especificada</span>)
+                        : (requisition.route || <span style={{ color: '#bfbfbf' }}>No especificada</span>)}
+                </Descriptions.Item>
             </Descriptions>
 
-            <Descriptions title="Métricas" bordered column={2}>
-                <Descriptions.Item label="Postulantes Totales">
-                    <UsergroupAddOutlined style={{ marginRight: 8 }} />
-                    {requisition.applicants}
-                </Descriptions.Item>
-                <Descriptions.Item label="Entrevistados">
-                    {Math.floor(requisition.applicants * 0.4)}
-                </Descriptions.Item>
-            </Descriptions>
 
             {requisition.matchingCandidates && requisition.matchingCandidates.length > 0 && (
                 <div style={{ marginTop: 32 }}>
@@ -116,9 +181,9 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({ open, onClose, re
                         renderItem={(candidate) => (
                             <List.Item
                                 actions={[
-                                    <Button 
-                                        key="view" 
-                                        type="link" 
+                                    <Button
+                                        key="view"
+                                        type="link"
                                         onClick={() => {
                                             dispatch(selectCandidate(candidate));
                                             onClose();
@@ -134,7 +199,10 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({ open, onClose, re
                                     description={
                                         <Space split={<Divider type="vertical" />}>
                                             <Text type="secondary" style={{ fontSize: '12px' }}>
-                                                Etapa Actual: <Tag color="blue">{candidate.applications?.[0]?.subStatus || 'N/A'}</Tag>
+                                                Estado:
+                                                <Tag style={{ ...getStatusTagStyle(candidate.applications?.[0]?.subStatus), fontSize: '11px', marginLeft: 8 }}>
+                                                    {candidate.applications?.[0]?.subStatus || 'Pendiente'}
+                                                </Tag>
                                             </Text>
                                             <Text type="secondary" style={{ fontSize: '12px' }}>
                                                 {candidate.phone}
@@ -148,13 +216,7 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({ open, onClose, re
                 </div>
             )}
 
-            <div style={{ marginTop: 48, background: '#fff1f0', padding: 24, borderRadius: 8, border: '1px solid #ffa39e' }}>
-                <Title level={5} type="danger">Zona de Peligro</Title>
-                <Text>Cerrar esta requisición detendrá la recepción de nuevos postulantes.</Text>
-                <div style={{ marginTop: 16 }}>
-                    <Button danger icon={<StopOutlined />}>Cerrar Requisición</Button>
-                </div>
-            </div>
+
             <RequisitionApplicantsModal
                 open={showApplicants}
                 onClose={() => setShowApplicants(false)}

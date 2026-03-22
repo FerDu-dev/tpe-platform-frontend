@@ -62,6 +62,11 @@ const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
+        setCredentials: (state, action: PayloadAction<User>) => {
+            state.user = action.payload;
+            state.isAuthenticated = true;
+            state.error = null;
+        },
         clearError: (state) => {
             state.error = null;
         },
@@ -111,7 +116,7 @@ const authSlice = createSlice({
     },
 });
 
-export const { clearError } = authSlice.actions;
+export const { setCredentials, clearError } = authSlice.actions;
 
 // Selectors
 export const selectUser = (state: RootState) => state.auth.user;

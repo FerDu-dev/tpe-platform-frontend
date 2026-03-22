@@ -2,12 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Spin, Result, Button } from 'antd';
 import { api } from '../../../services/api';
+import { useAppDispatch } from '../../../app/store';
+import { setCredentials } from '../store/authSlice';
 
 const MagicLoginPage: React.FC = () => {
+    console.log('MagicLoginPage component rendering...');
     const [searchParams] = useSearchParams();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
 
     useEffect(() => {
         const token = searchParams.get('token');
@@ -19,27 +23,35 @@ const MagicLoginPage: React.FC = () => {
 
         const verifyToken = async () => {
             try {
-                // We use the magic-login backend endpoint
                 const response = await api.get(`/auth/candidate/magic-login?token=${token}`);
                 const { user, token: newToken } = response.data;
 
-                // Create the user object for the state
                 const authorizedUser = {
                     id: user.nationalId,
                     username: user.email,
                     email: user.email,
-                    role: user.role.name,
+                    role: user.role, // Store full role object
                     token: newToken,
-                    entityType: 'candidate',
+                    entityType: 'candidate' as const,
                     firstName: user.firstName,
                     lastName: user.lastName,
                     currentProcess: user.currentProcess,
                 };
 
-                // Store and redirect
+                console.log('Magic login successful, user data:', authorizedUser);
+
+                // 1. Sync local storage
                 localStorage.setItem('user', JSON.stringify(authorizedUser));
-                window.location.href = '/candidate/dashboard'; // Force reload to pick up state properly
+                
+                // 2. Update Redux state immediately
+                console.log('Dispatching setCredentials...');
+                dispatch(setCredentials(authorizedUser));
+                
+                // 3. Soft navigation to dashboard
+                console.log('Navigating to /candidate/dashboard...');
+                navigate('/candidate/dashboard', { replace: true });
             } catch (e: any) {
+                console.error('Magic login failed:', e);
                 setError(e.response?.data?.message || 'El enlace de acceso ha expirado o es inválido');
                 setLoading(false);
             }

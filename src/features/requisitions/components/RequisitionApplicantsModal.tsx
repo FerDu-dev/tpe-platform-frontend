@@ -3,7 +3,7 @@ import { Modal, Input, Select, Table, Tag, Button, Space, Typography, Spin, Pagi
 import { EyeOutlined, CarOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Candidate, Requisition } from '../../../types';
-import { candidateService, STAGE_COLORS } from '../../../services/candidateService';
+import { candidateService, STAGE_COLORS, getSoftTagStyle, getStatusTagStyle } from '../../../services/candidateService';
 import { useAppSelector } from '../../../app/store';
 import { selectStages } from '../../../store/workflowSlice';
 import CandidateDrawer from '../../candidates/components/CandidateDrawer';
@@ -84,11 +84,21 @@ const RequisitionApplicantsModal: React.FC<RequisitionApplicantsModalProps> = ({
         {
             title: 'Etapa',
             key: 'stage',
-            width: 160,
+            width: 140,
             render: (_, r) => {
                 const color = r.currentStageId ? STAGE_COLORS[r.currentStageId] : '#1890ff';
-                return <Tag color={color} style={{ borderRadius: 4 }}>{r.currentStageName || 'Postulado'}</Tag>;
+                return <Tag style={getSoftTagStyle(color)}>{r.currentStageName || 'Postulado'}</Tag>;
             },
+        },
+        {
+            title: 'Estado',
+            key: 'subStatus',
+            width: 160,
+            render: (_, r) => {
+                const subStatus = r.applications?.[0]?.subStatus;
+                if (!subStatus) return <Text type="secondary">-</Text>;
+                return <Tag style={getStatusTagStyle(subStatus)}>{subStatus}</Tag>;
+            }
         },
         {
             title: 'Días en etapa',
@@ -205,7 +215,6 @@ const RequisitionApplicantsModal: React.FC<RequisitionApplicantsModalProps> = ({
                         fetchCandidates(page); // refresh list after changes
                     }}
                     candidate={selectedCandidate}
-                    hireMode
                     requisition={requisition}
                 />
             )}

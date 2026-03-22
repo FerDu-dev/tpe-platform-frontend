@@ -26,7 +26,11 @@ export const hiresService = {
             data: data.map((app: any) => ({
                 id: app.id,
                 candidate: candidateService._mapCandidate(app.candidate),
-                jobRequisition: app.jobRequisition,
+                jobRequisition: {
+                    ...app.jobRequisition,
+                    company: app.jobRequisition?.company?.name || app.jobRequisition?.company || 'N/A',
+                    zone: app.jobRequisition?.zone?.name || app.jobRequisition?.zone || 'N/A'
+                },
                 hiredAt: app.hiredAt,
                 effectiveStartDate: app.effectiveStartDate,
                 status: app.status

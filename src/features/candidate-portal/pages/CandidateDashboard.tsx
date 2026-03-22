@@ -23,22 +23,23 @@ const CandidateDashboard: React.FC = () => {
     const currentUser = useAppSelector(selectCurrentUser);
     const [profile, setProfile] = useState<Candidate | null>(null);
     const [uploadingDoc, setUploadingDoc] = useState<'CV' | 'Video' | null>(null);
-    const process = currentUser?.currentProcess;
+    const [process, setProcess] = useState<any>(currentUser?.currentProcess);
 
-    const fetchProfile = async () => {
+    const fetchData = async () => {
         try {
-            const response = await candidateService.fetchCandidates({ nationalId: currentUser?.id });
-            if (response.data.length > 0) {
-                setProfile(response.data[0]);
-            }
+            const profileData = await candidateService.fetchCandidateProfile();
+            setProfile(profileData);
+
+            const processData = await candidateService.fetchCandidateCurrentProcess();
+            setProcess(processData);
         } catch (error) {
-            console.error('Error fetching profile:', error);
+            console.error('Error fetching dashboard data:', error);
         }
     };
 
     useEffect(() => {
         if (currentUser) {
-            fetchProfile();
+            fetchData();
         }
     }, [currentUser]);
 
@@ -48,7 +49,7 @@ const CandidateDashboard: React.FC = () => {
         try {
             await candidateService.uploadCandidateDocument(profile.id, type, file);
             message.success(`${type} cargado exitosamente`);
-            await fetchProfile(); // recargar el perfil
+            await fetchData(); // recargar el perfil
         } catch (error: any) {
             message.error(error.response?.data?.message || `Error al subir el ${type}. Intenta de nuevo.`);
         } finally {
@@ -71,12 +72,12 @@ const CandidateDashboard: React.FC = () => {
         );
     }
 
-    const { stage, testUrl, testCode } = process;
-    const stageId = stage?.id || 1;
+    const { currentStageId, testUrl, testCode } = process;
+    const stageId = currentStageId || 1;
 
     // Blind Recruitment: Hide job details until stage 8
     const isHired = stageId === 8;
-    const displayJobTitle = isHired ? process.jobTitle : "Proceso de Selección TuPróximoEmpleo";
+    const displayJobTitle = isHired ? (process.jobTitle || process.jobRequisition?.title) : "Proceso de Selección TuPróximoEmpleo";
 
     const stages = [
         { title: 'Bienvenida', icon: <CheckCircleOutlined /> },
@@ -158,7 +159,7 @@ const CandidateDashboard: React.FC = () => {
                                     >
                                         Ir a la Prueba Psicotécnica
                                     </Button>
-                                    
+
                                     {testCode && (
                                         <div style={{ marginTop: '16px', padding: '12px', border: '2px dashed #faad14', borderRadius: '8px' }}>
                                             <Text type="secondary" style={{ display: 'block' }}>Usa este código si se solicita:</Text>
@@ -211,7 +212,7 @@ const CandidateDashboard: React.FC = () => {
                 return (
                     <Alert
                         message="Proceso en curso"
-                        description={`Estás en la etapa: ${stage?.name || 'En revisión'}. Te mantendremos informado por este medio.`}
+                        description={`Estás en la etapa: 'En revisión'}. Te mantendremos informado por este medio.`}
                         type="info"
                         showIcon
                     />
@@ -286,7 +287,7 @@ const CandidateDashboard: React.FC = () => {
                 {isHired && (
                     <Card title="Detalles de tu Vacante" size="small">
                         <Paragraph>
-                            Has sido seleccionado para la posición de <strong>{process.jobTitle}</strong>. 
+                            Has sido seleccionado para la posición de <strong>{process.jobTitle}</strong>.
                             Próximamente recibirás detalles sobre tu Onboarding.
                         </Paragraph>
                     </Card>

@@ -8,8 +8,10 @@ import {
     MenuUnfoldOutlined,
     TeamOutlined,
     FileTextOutlined,
-    UsergroupAddOutlined, // For Candidates
+    UsergroupAddOutlined,
     TrophyOutlined,
+    GlobalOutlined,
+    SafetyCertificateOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/store';
@@ -23,6 +25,8 @@ interface MainLayoutProps {
     children: React.ReactNode;
 }
 
+import { hasPermission } from '../utils/permissions';
+
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const [collapsed, setCollapsed] = useState(false);
     const navigate = useNavigate();
@@ -30,9 +34,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const dispatch = useAppDispatch();
     const currentUser = useAppSelector(selectCurrentUser);
 
-    const handleLogout = () => {
-        dispatch(logoutUser());
-        navigate('/login');
+    const handleLogout = async () => {
+        await dispatch(logoutUser());
+        navigate('/login', { replace: true });
     };
 
     const userMenuItems = [
@@ -52,32 +56,54 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         },
     ];
 
-    const menuItems = [
+    const allMenuItems = [
         {
             key: '/dashboard',
             icon: <UsergroupAddOutlined style={{ fontSize: '18px' }} />,
             label: 'Candidatos',
+            module: 'candidates',
             onClick: () => navigate('/dashboard'),
         },
         {
             key: '/requisitions',
             icon: <FileTextOutlined style={{ fontSize: '18px' }} />,
             label: 'Requisiciones',
+            module: 'requisitions',
             onClick: () => navigate('/requisitions'),
         },
         {
-            key: '/users',
-            icon: <TeamOutlined style={{ fontSize: '18px' }} />,
-            label: 'Usuarios',
-            onClick: () => navigate('/users'),
+            key: '/zones',
+            icon: <GlobalOutlined style={{ fontSize: '18px' }} />,
+            label: 'Zonas',
+            module: 'zones',
+            onClick: () => navigate('/zones'),
         },
         {
             key: '/hires',
             icon: <TrophyOutlined style={{ fontSize: '18px' }} />,
             label: 'Contrataciones',
+            module: 'hires',
             onClick: () => navigate('/hires'),
         },
+        {
+            key: '/users',
+            icon: <TeamOutlined style={{ fontSize: '18px' }} />,
+            label: 'Usuarios',
+            module: 'users',
+            onClick: () => navigate('/users'),
+        },
+        {
+            key: '/roles',
+            icon: <SafetyCertificateOutlined style={{ fontSize: '18px' }} />,
+            label: 'Roles y Permisos',
+            module: 'roles',
+            onClick: () => navigate('/roles'),
+        },
+
+
     ];
+
+    const menuItems = allMenuItems.filter(item => hasPermission(currentUser, item.module));
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
@@ -202,8 +228,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                     style={{ backgroundColor: '#1890ff', marginRight: '12px' }}
                                 />
                                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
-                                    <Text strong style={{ fontSize: '14px' }}>{currentUser?.fullName || currentUser?.username || 'Usuario'}</Text>
-                                    <Text type="secondary" style={{ fontSize: '11px' }}>{currentUser?.role || 'Admin'}</Text>
+                                    <Text strong style={{ fontSize: '14px' }}>
+                                        {currentUser?.firstName && currentUser?.lastName
+                                            ? `${currentUser.firstName} ${currentUser.lastName}`
+                                            : (currentUser?.fullName || currentUser?.username || 'Usuario')}
+                                    </Text>
+                                    <Text type="secondary" style={{ fontSize: '11px' }}>
+                                        {typeof currentUser?.role === 'object' ? currentUser.role.name : (currentUser?.role || 'Admin')}
+                                    </Text>
                                 </div>
                             </div>
                         </Dropdown>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Space, Typography, Segmented, Alert, Pagination, Divider } from 'antd';
-import { AppstoreOutlined, BarsOutlined } from '@ant-design/icons';
+import { Button, Space, Typography, Segmented, Alert, Pagination, Divider, Row, Col } from 'antd';
+import { AppstoreOutlined, BarsOutlined, UsergroupAddOutlined } from '@ant-design/icons';
+import { motion } from 'framer-motion';
 import KanbanBoard from '../components/KanbanBoard';
 import FilterBar from '../components/FilterBar';
 import CandidateDrawer from '../components/CandidateDrawer';
@@ -16,7 +17,7 @@ import {
 import { loadStages } from '../../../store/workflowSlice';
 import type { Candidate } from '../../../types';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const DashboardPage: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -72,11 +73,19 @@ const DashboardPage: React.FC = () => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
 
             {/* Header Area */}
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Title level={4} style={{ margin: 0 }}>Gestión de Candidatos</Title>
-                <Space size="middle">
+            <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+                <Col>
+                    <Title level={3} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <UsergroupAddOutlined style={{ color: '#1890ff' }} />
+                        Gestión de Candidatos
+                    </Title>
+                    <Text type="secondary">Visualiza y gestiona el progreso de los candidatos en el pipeline</Text>
+                </Col>
+                <Col>
+                    <Space size="middle">
                     <Button
                         type={category === 'not_eligible' ? 'primary' : 'default'}
                         onClick={() => handleToggleCategory('not_eligible')}
@@ -112,8 +121,9 @@ const DashboardPage: React.FC = () => {
                             ]}
                         />
                     )}
-                </Space>
-            </div>
+                    </Space>
+                </Col>
+            </Row>
 
             <FilterBar category={category} />
 
@@ -129,29 +139,49 @@ const DashboardPage: React.FC = () => {
                 </div>
             )}
 
-            <div style={{ flex: 1, minHeight: 0, marginTop: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                {category !== 'eligible' ? (
-                    <div style={{ flex: 1, overflowY: 'auto' }}>
-                        <RejectedCandidatesView
-                            candidates={candidates}
-                            category={category as 'not_eligible' | 'rejected'}
-                            onViewCandidate={setSelectedCandidate}
-                        />
+            <Row gutter={[20, 20]} style={{ flex: 1, minHeight: 0, marginTop: 16 }}>
+                <Col span={24} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+                    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        {category !== 'eligible' ? (
+                            <div style={{ flex: 1, overflowY: 'auto' }}>
+                                <RejectedCandidatesView
+                                    candidates={candidates}
+                                    category={category as 'not_eligible' | 'rejected'}
+                                    onViewCandidate={setSelectedCandidate}
+                                />
+                            </div>
+                        ) : viewMode === 'board' ? (
+                            <KanbanBoard
+                                onCardClick={setSelectedCandidate}
+                                candidates={candidates}
+                            />
+                        ) : (
+                            <div style={{ flex: 1, overflowY: 'auto' }}>
+                                <CandidateListView
+                                    candidates={candidates}
+                                    onViewCandidate={(c) => setSelectedCandidate(c)}
+                                    selectedId={selectedCandidate?.id}
+                                />
+                            </div>
+                        )}
                     </div>
-                ) : viewMode === 'board' ? (
-                    <KanbanBoard
-                        onCardClick={setSelectedCandidate}
-                        candidates={candidates}
-                    />
-                ) : (
-                    <div style={{ flex: 1, overflowY: 'auto' }}>
-                        <CandidateListView
-                            candidates={candidates}
-                            onViewCandidate={setSelectedCandidate}
-                        />
-                    </div>
-                )}
-            </div>
+                </Col>
+            </Row>
+
+            <CandidateDrawer
+                open={!!selectedCandidate}
+                onClose={() => setSelectedCandidate(null)}
+                candidate={selectedCandidate}
+            />
+
+            {/* If in board mode, we might still want a drawer for more detail space, 
+                but to follow user request of "unificar" I'll keep the side panel 
+                consistent above or use drawer only for board if it looks better. 
+                User specifically mentioned the table row click -> side panel. */}
+            
+            {selectedCandidate && viewMode === 'board' && (
+                <div style={{ display: 'none' }}> {/* Place holder or keep drawer for board? */} </div>
+            )}
 
             {/* Pagination Footer */}
             {meta && (
@@ -167,13 +197,12 @@ const DashboardPage: React.FC = () => {
                 </div>
             )}
 
-            {selectedCandidate && (
-                <CandidateDrawer
-                    open={!!selectedCandidate}
-                    onClose={() => setSelectedCandidate(null)}
-                    candidate={selectedCandidate}
-                />
-            )}
+            <style>{`
+                .selected-row {
+                    background-color: #e6f7ff !important;
+                }
+            `}</style>
+            </motion.div>
         </div>
     );
 };
