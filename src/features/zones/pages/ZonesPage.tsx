@@ -51,8 +51,10 @@ const ZonesPage: React.FC = () => {
                 filterStateId
             );
             setZones(data);
-            setTotalZones(total);
-        } catch {
+            setTotalZones(Number(total));
+            console.log(`[ZonesPage] Loaded ${data.length} zones out of ${total} total.`);
+        } catch (error) {
+            console.error('Error al cargar zonas:', error);
             message.error('Error al cargar zonas');
         } finally {
             setLoading(false);
@@ -314,7 +316,8 @@ const ZonesPage: React.FC = () => {
                                     showSizeChanger: true, 
                                     pageSizeOptions: ['5', '10', '20', '50', '100'],
                                     showTotal: (total) => `Total ${total} zonas`,
-                                    position: ['bottomCenter'],
+                                    position: ['bottomRight'],
+                                    hideOnSinglePage: false,
                                     onChange: (page, size) => {
                                         setCurrentPage(page);
                                         setPageSize(size);

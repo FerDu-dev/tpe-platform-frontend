@@ -247,7 +247,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                         margin: '24px',
                         background: 'transparent',
                         flex: 1,
-                        overflow: 'hidden',
+                        overflow: 'auto',
                         display: 'flex',
                         flexDirection: 'column',
                         minHeight: 0
