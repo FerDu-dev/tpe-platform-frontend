@@ -191,7 +191,7 @@ const LoginPage: React.FC = () => {
                         <span style={{ color: '#E91E8C' }}>ideal</span> para tu equipo
                     </Title>
                     <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: '18px' }}>
-                        Plataforma ATS de Selección y Reclutamiento
+                        Plataforma de Selección y Reclutamiento
                     </Text>
                 </div>
             </Col>
