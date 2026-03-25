@@ -59,7 +59,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
     const handleCompanyChange = (companyId: number) => {
         setLoadingZones(true);
         zonesService.fetchZones(companyId)
-            .then(setZones)
+            .then((res) => setZones(res.data))
             .catch(() => message.error('Error al cargar zonas'))
             .finally(() => setLoadingZones(false));
         form.setFieldsValue({ zoneId: undefined });
