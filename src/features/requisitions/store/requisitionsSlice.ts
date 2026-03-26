@@ -71,7 +71,10 @@ const requisitionsSlice = createSlice({
     initialState,
     reducers: {
         setFilters: (state, action: PayloadAction<RequisitionFilters>) => {
-            state.filters = action.payload;
+            state.filters = { ...state.filters, ...action.payload };
+        },
+        clearFilters: (state) => {
+            state.filters = { status: state.filters.status || 'OPEN' };
         },
         addRequisition: (state, action: PayloadAction<Requisition>) => {
             state.requisitions.unshift(action.payload);
@@ -109,7 +112,7 @@ const requisitionsSlice = createSlice({
     },
 });
 
-export const { addRequisition, setFilters } = requisitionsSlice.actions;
+export const { addRequisition, setFilters, clearFilters } = requisitionsSlice.actions;
 
 // Selectors
 export const selectRequisitions = (state: RootState) => state.requisitions.requisitions;

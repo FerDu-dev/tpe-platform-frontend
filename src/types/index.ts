@@ -111,6 +111,8 @@ export interface Candidate {
     address?: string;
     municipalityId?: number;
     municipality?: Municipality;
+    stateId?: number;
+    state?: State;
     profession?: string;
     educationLevel?: string;
     hasVehicle: boolean;
@@ -187,6 +189,7 @@ export interface Requisition {
     department: string;
     location: string;
     zone?: any;
+    state?: State;
     zoneId: number;
     companyId: number;
     route?: string;
@@ -208,6 +211,8 @@ export interface RequisitionFilters {
     stateId?: number;
     municipalityId?: number;
     search?: string;
+    zoneId?: number;
+    companyId?: number;
     page?: number;
     limit?: number;
 }

@@ -11,6 +11,7 @@ import {
     AuditOutlined,
     TrophyOutlined,
     ClockCircleOutlined,
+    UploadOutlined,
 } from '@ant-design/icons';
 import { useAppSelector } from '../../../app/store';
 import { selectCurrentUser } from '../../auth/store/authSlice';
@@ -95,12 +96,62 @@ const CandidateDashboard: React.FC = () => {
         switch (stageId) {
             case 1: // Bienvenida
                 return (
-                    <Alert
-                        message="¡Bienvenido a TuPróximoEmpleo!"
-                        description="Tu perfil ha sido recibido con éxito. En breve un reclutador revisará tu información y te notificaremos si avanzas a la siguiente etapa."
-                        type="info"
-                        showIcon
-                    />
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                        <Alert
+                            message="¡Bienvenido a TuPróximoEmpleo!"
+                            description="Tu perfil ha sido recibido con éxito. En breve un reclutador revisará tu información y te notificaremos si avanzas a la siguiente etapa."
+                            type="info"
+                            showIcon
+                        />
+                        {profile?.cvUrl ? (
+                            <Card size="small" style={{ borderLeft: '4px solid #52c41a', borderRadius: '12px' }}>
+                                <Space direction="vertical" style={{ width: '100%' }}>
+                                    <Alert
+                                        type="success"
+                                        message="Currículum Cargado"
+                                        description="Tu currículum ha sido recibido correctamente."
+                                        showIcon
+                                        icon={<CheckCircleOutlined />}
+                                    />
+                                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                                        Si necesitas actualizar tu CV, puedes hacerlo aquí: 
+                                        <Upload
+                                            accept=".pdf,.doc,.docx"
+                                            showUploadList={false}
+                                            beforeUpload={(file) => {
+                                                handleUpload('CV', file);
+                                                return false;
+                                            }}
+                                        >
+                                            <Button type="link" size="small" loading={uploadingDoc === 'CV'}>Actualizar Currículum</Button>
+                                        </Upload>
+                                    </Text>
+                                </Space>
+                            </Card>
+                        ) : (
+                            <Card 
+                                size="small" 
+                                title={<Space><AuditOutlined /> Acción Requerida: Carga de Currículum</Space>}
+                                style={{ borderLeft: '4px solid #f5222d', borderRadius: '12px' }}
+                            >
+                                <Paragraph>
+                                    Parece que tu currículum no se cargó correctamente durante el registro. Por favor, súbelo ahora para que podamos revisar tu perfil.
+                                </Paragraph>
+                                <Upload
+                                    accept=".pdf,.doc,.docx"
+                                    showUploadList={false}
+                                    beforeUpload={(file) => {
+                                        handleUpload('CV', file);
+                                        return false;
+                                    }}
+                                >
+                                    <Button type="primary" danger icon={<UploadOutlined />} loading={uploadingDoc === 'CV'}>
+                                        Cargar mi Currículum Vitae
+                                    </Button>
+                                </Upload>
+                            </Card>
+                        )}
+                    </Space>
                 );
             case 2: // Video
                 return (

@@ -135,7 +135,7 @@ const RegistrationPage: React.FC = () => {
         let fields = [...step.fields];
         // Conditional logic
         if (!hasChildren) fields = fields.filter(f => f !== 'childrenCount');
-        
+
         if (hasVehicle !== 'si') {
             fields = fields.filter(f => !['vehicleIsOwn', 'vehicleType', 'vehicleBrandModelYear', 'vehicleOwnerRelationship'].includes(f));
         } else {
@@ -194,7 +194,7 @@ const RegistrationPage: React.FC = () => {
             if (values.salesExperienceYears) fd.append('salesExperienceYears', values.salesExperienceYears);
             if (values.salesExperienceTypes) fd.append('salesExperienceTypes', JSON.stringify(values.salesExperienceTypes));
             if (values.commercializedGoodsTypes) fd.append('commercializedGoodsTypes', JSON.stringify(values.commercializedGoodsTypes));
-            
+
             if (values.hasVehicle === 'si') {
                 fd.append('vehicleType', values.vehicleType || '');
                 fd.append('vehicleBrandModelYear', values.vehicleBrandModelYear || '');
@@ -221,9 +221,8 @@ const RegistrationPage: React.FC = () => {
             const selectedState = VENEZUELA_STATES.find(s => s.id === values.stateId);
             if (selectedState) fd.append('stateName', selectedState.name);
             if (values.stateId) fd.append('stateId', String(values.stateId));
-            // hasVehicle = true only if they have a vehicle AND it's their own property
-            const actuallyOwnsVehicle = values.hasVehicle === 'si' && values.vehicleIsOwn === 'si';
-            fd.append('hasVehicle', String(actuallyOwnsVehicle));
+            // hasVehicle = true if they have a vehicle available (si)
+            fd.append('hasVehicle', String(values.hasVehicle === 'si'));
             if (values.vehicleDetail) fd.append('vehicleDetail', values.vehicleDetail);
             if (values.profession) fd.append('profession', values.profession);
             if (values.gender) fd.append('gender', values.gender);
@@ -238,8 +237,8 @@ const RegistrationPage: React.FC = () => {
         } catch (err: any) {
             if (err.response?.data?.message) {
                 // Display the exact message returned from the backend (e.g., "Ya te encuentras en un proceso activo...")
-                const backendMsg = Array.isArray(err.response.data.message) 
-                    ? err.response.data.message[0] 
+                const backendMsg = Array.isArray(err.response.data.message)
+                    ? err.response.data.message[0]
                     : err.response.data.message;
                 message.error(backendMsg);
             } else if (err.response?.status === 409) {
@@ -541,12 +540,12 @@ const RegistrationPage: React.FC = () => {
     );
 
     const ReferenceFields = ({ name, label, isMobile }: { name: string, label: string, isMobile?: boolean }) => (
-        <div style={{ 
-            marginBottom: isMobile ? 12 : 32, 
-            padding: isMobile ? '12px 8px' : 20, 
-            background: 'rgba(0,0,0,0.02)', 
-            borderRadius: 12, 
-            border: '1px solid rgba(0,0,0,0.05)' 
+        <div style={{
+            marginBottom: isMobile ? 12 : 32,
+            padding: isMobile ? '12px 8px' : 20,
+            background: 'rgba(0,0,0,0.02)',
+            borderRadius: 12,
+            border: '1px solid rgba(0,0,0,0.05)'
         }}>
             {label && <Title level={4} style={{ marginBottom: 20, fontSize: 16 }}>{label}</Title>}
             <Form.List name={name} initialValue={[{}]}>
@@ -577,7 +576,7 @@ const RegistrationPage: React.FC = () => {
                                     </Col>
                                 </Row>
                                 {fields.length > 1 && (
-                                    <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(fieldName)} 
+                                    <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(fieldName)}
                                         style={{ position: 'absolute', top: isMobile ? -5 : -10, right: isMobile ? -5 : -10 }}>
                                         {isMobile ? '' : 'Eliminar'}
                                     </Button>
@@ -945,9 +944,9 @@ const RegistrationPage: React.FC = () => {
                     <Divider style={{ margin: '24px 0 20px' }} />
 
                     {/* Navigation — responsive layout */}
-                    <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
                         alignItems: 'center',
                         flexWrap: 'wrap',
                         gap: '12px'

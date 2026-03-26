@@ -1,20 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Button, Pagination, Row, Col } from 'antd';
 import { PlusOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Card, Modal, Input, message, notification } from 'antd';
 import { motion } from 'framer-motion';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { loadRequisitions } from '../store/requisitionsSlice';
 import RequisitionsTable from '../components/RequisitionsTable';
 import RequisitionForm from '../components/RequisitionForm';
 import { Requisition } from '../../../types';
-import {
-    PauseCircleOutlined,
-    CloseCircleOutlined,
-    PlayCircleOutlined,
-    InfoCircleOutlined
-} from '@ant-design/icons';
-import { Card, Modal, Input, message, notification } from 'antd';
 import RequisitionDrawer from '../components/RequisitionDrawer';
+import RequisitionFilterBar from '../components/RequisitionFilterBar';
 
 import { Tabs } from 'antd';
 import RecruitmentDashboard from '../components/RecruitmentDashboard';
@@ -163,6 +158,8 @@ const RequisitionsPage: React.FC = () => {
             >
                 <TabPane tab="Lista de Requisiciones" key="list">
                     <div style={{ marginTop: '16px' }}>
+                        <RequisitionFilterBar />
+
                         <Tabs 
                             activeKey={statusTab} 
                             onChange={handleStatusTabChange}

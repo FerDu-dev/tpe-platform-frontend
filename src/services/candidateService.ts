@@ -292,7 +292,7 @@ export const candidateService = {
         return this._mapCandidate(response.data);
     },
 
-    async updateApplicationRequisition(candidateId: string, jobRequisitionId: number): Promise<Candidate> {
+    async updateApplicationRequisition(candidateId: string, jobRequisitionId: number | null): Promise<Candidate> {
         const response = await api.get(`/candidates/${candidateId}`);
         const appId = response.data.applications?.find((a: any) => a.status === 'ACTIVE')?.id || response.data.applications?.[0]?.id;
 
@@ -311,5 +311,10 @@ export const candidateService = {
         if (!appId) throw new Error('No se encontró aplicación para contratar');
 
         await api.post(`/applications/${appId}/hire`, { effectiveStartDate, comment });
+    },
+
+    async resendAccessCredentials(candidateId: string): Promise<any> {
+        const response = await api.post(`/candidates/${candidateId}/resend-access`);
+        return response.data;
     },
 };
