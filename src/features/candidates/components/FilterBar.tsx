@@ -39,6 +39,10 @@ const FilterBar: React.FC<FilterBarProps> = ({ category = 'eligible' }) => {
         dispatch(setFilters({ ...filters, search: e.target.value }));
     };
 
+    const handleNationalIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(setFilters({ ...filters, nationalId: e.target.value || undefined }));
+    };
+
     // const handleProfessionChange = (value: string) => {
     //     dispatch(setFilters({ ...filters, profession: value }));
     // };
@@ -103,12 +107,21 @@ const FilterBar: React.FC<FilterBarProps> = ({ category = 'eligible' }) => {
                         </div>
                     </Col>
                 )}
-                <Col xs={24} sm={category === 'eligible' ? 4 : 5}>
+                <Col xs={24} sm={category === 'eligible' ? 3 : 4}>
                     <Input
                         placeholder="Buscar nombre..."
                         onChange={handleSearchChange}
                         allowClear
                         value={filters.search}
+                        style={{ height: '40px' }}
+                    />
+                </Col>
+                <Col xs={24} sm={category === 'eligible' ? 3 : 4}>
+                    <Input
+                        placeholder="Buscar por cédula..."
+                        onChange={handleNationalIdChange}
+                        allowClear
+                        value={filters.nationalId}
                         style={{ height: '40px' }}
                     />
                 </Col>
@@ -139,7 +152,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ category = 'eligible' }) => {
                         ))}
                     </Select>
                 </Col>
-                <Col xs={24} sm={4}>
+                {/* <Col xs={24} sm={4}>
                     <Select
                         placeholder="Zona"
                         style={{ width: '100%', height: '40px' }}
@@ -151,7 +164,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ category = 'eligible' }) => {
                             <Option key={zone} value={zone}>{zone}</Option>
                         ))}
                     </Select>
-                </Col>
+                </Col> */}
                 <Col xs={24} sm={3} style={{ textAlign: 'center' }}>
                     <Button
                         type="link"

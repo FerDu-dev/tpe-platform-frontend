@@ -79,6 +79,8 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
         const companyId = form.getFieldValue('companyId');
         setCreatingZone(true);
         try {
+            // Resolve state name from the local constant so the backend can upsert it
+            const selectedState = VENEZUELA_STATES.find(s => s.id === values.stateId);
             const newZone = await zonesService.createZone({
                 name: values.name,
                 companyId,
@@ -87,6 +89,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
                 coordinatorNum: values.coordinatorNum,
                 geographicRoute: values.geographicRoute,
                 stateId: values.stateId,
+                stateName: selectedState?.name,
             });
             setZones(prev => [...prev, newZone]);
             form.setFieldsValue({ zoneId: newZone.id });

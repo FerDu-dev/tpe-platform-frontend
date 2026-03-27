@@ -26,6 +26,17 @@ const RejectedCandidatesView: React.FC<RejectedCandidatesViewProps> = ({ candida
             )
         },
         {
+            title: 'Dirección',
+            key: 'address',
+            width: 180,
+            render: (_, record) => {
+                const municipality = record.municipality?.name;
+                const state = record.municipality?.state?.name;
+                if (!municipality && !state) return <Text type="secondary">-</Text>;
+                return <Text style={{ fontSize: '11px' }}>{municipality}{municipality && state ? ', ' : ''}{state}</Text>;
+            }
+        },
+        {
             title: category === 'rejected' ? 'Motivo de Rechazo' : 'Razón de Inelegibilidad',
             dataIndex: 'rejectionReason',
             key: 'rejectionReason',

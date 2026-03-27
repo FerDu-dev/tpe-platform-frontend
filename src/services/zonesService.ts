@@ -11,7 +11,7 @@ export const zonesService = {
         return response.data;
     },
 
-    async createZone(data: Partial<Zone>): Promise<Zone> {
+    async createZone(data: Partial<Zone> & { stateName?: string }): Promise<Zone> {
         const response = await api.post('/zones', data);
         return response.data;
     },

@@ -272,6 +272,11 @@ export const candidateService = {
         return response.data;
     },
 
+    async addApplicationComment(applicationId: string, comment: string): Promise<any> {
+        const response = await api.post(`/applications/${applicationId}/comments`, { comment });
+        return response.data;
+    },
+
     async uploadCandidateDocument(candidateId: string, type: 'CV' | 'Video' | 'PsychTest', file: File | any): Promise<any> {
         const formData = new FormData();
         formData.append('type', type);
@@ -288,7 +293,7 @@ export const candidateService = {
     },
 
     async updateCandidate(id: string, data: any): Promise<Candidate> {
-        const response = await api.put(`/candidates/${id}`, data);
+        const response = await api.patch(`/candidates/${id}`, data);
         return this._mapCandidate(response.data);
     },
 

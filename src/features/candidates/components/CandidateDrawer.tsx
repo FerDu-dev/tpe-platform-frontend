@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Drawer, Typography, Descriptions, Tag, Button, Space, Divider, message, Timeline, Modal, Input, Badge, Row, Col, Card, Tooltip, DatePicker, Upload } from 'antd';
+import { Drawer, Typography, Descriptions, Tag, Button, Space, Divider, message, Timeline, Modal, Input, Badge, Row, Col, Card, Tooltip, DatePicker, Upload, InputNumber, Select, Switch } from 'antd';
 import {
     FilePdfOutlined,
     VideoCameraOutlined,
@@ -16,6 +16,11 @@ import {
     TeamOutlined,
     UploadOutlined,
     MailOutlined,
+    EditOutlined,
+    PlusOutlined,
+    DeleteOutlined,
+    SaveOutlined,
+    CloseOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Candidate, Requisition } from '../../../types';
@@ -29,16 +34,16 @@ import PermissionGuard from '../../../components/PermissionGuard';
 import CandidateRequisitionMatchingModal from './CandidateRequisitionMatchingModal';
 
 const { Title, Text, Paragraph } = Typography;
-// ... (lines 31-525) ...: I will use multi_replace for this if its too big, but let's try to target the footer carefully.
 
 interface CandidateDrawerProps {
     open: boolean;
     onClose: () => void;
     candidate: Candidate | null;
     requisition?: Requisition | null;
+    onActionComplete?: (shouldClose?: boolean) => void;
 }
 
-const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candidate, requisition }) => {
+const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candidate, requisition, onActionComplete }) => {
     const dispatch = useAppDispatch();
     const stages = useAppSelector(selectStages);
     const richCandidate = useAppSelector(selectSelectedCandidate);
@@ -56,7 +61,16 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     const [effectiveStartDate, setEffectiveStartDate] = useState<any>(null);
     const [resendSuccess, setResendSuccess] = useState(false);
     const [resendCVSuccess, setResendCVSuccess] = useState(false);
+    const [resendVideoSuccess, setResendVideoSuccess] = useState(false);
+    const [resendPsychSuccess, setResendPsychSuccess] = useState(false);
+    const [noteComment, setNoteComment] = useState('');
     const [matchingModalOpen, setMatchingModalOpen] = useState(false);
+
+    // --- Edit state for the info modal ---
+    type EditSection = 'personal' | 'vehiculo' | 'ventas' | 'economica' | 'referencias' | null;
+    const [editingSection, setEditingSection] = useState<EditSection>(null);
+    const [editForm, setEditForm] = useState<Record<string, any>>({});
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         if (open && candidate?.id) {
@@ -104,18 +118,32 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             setSubmitting(false);
         }
     };
-
-    const handleAction = async (actionFn: () => Promise<any>) => {
+    const handleAction = async (action: () => Promise<any>, shouldRefresh: boolean = true, shouldClose: boolean = false) => {
         setSubmitting(true);
         try {
-            await actionFn();
-            message.success('Acción realizada con éxito');
-            if (activeCandidate) dispatch(loadCandidateById(activeCandidate.id));
+            await action();
+            message.success('Acción completada con éxito');
+            if (activeCandidate?.id) {
+                dispatch(loadCandidateById(activeCandidate.id));
+            }
+            if (onActionComplete && shouldRefresh) {
+                onActionComplete(shouldClose);
+            }
         } catch (error: any) {
+            console.error('Action error:', error);
             message.error(error.response?.data?.message || 'Error al procesar la acción');
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handleAddNote = async () => {
+        if (!noteComment.trim()) return message.warning('La nota no puede estar vacía');
+        if (!currentApp?.id) return message.error('No hay una aplicación activa para este candidato');
+
+        // Refresh list but DON'T close drawer for notes
+        await handleAction(() => candidateService.addApplicationComment(currentApp.id, noteComment), true, false);
+        setNoteComment('');
     };
 
     const handleAdvance = () => {
@@ -242,7 +270,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             onOk: async () => {
                 const reason = (document.getElementById('reject-reason-input') as HTMLTextAreaElement).value;
                 if (!reason) return message.error('El motivo es obligatorio');
-                await handleAction(async () => { await candidateService.rejectCandidate(activeCandidate.id, reason); });
+                // CLOSE candidate drawer on rejection as they move out of view
+                await handleAction(async () => { await candidateService.rejectCandidate(activeCandidate.id, reason); }, true, true);
             }
         });
     };
@@ -288,20 +317,122 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
         // Update candidate data, remove from active list, and close drawer
         dispatch(loadCandidateById(activeCandidate.id));
         dispatch(removeCandidate(activeCandidate.id));
+        if (onActionComplete) onActionComplete(true);
         onClose();
     };
+
+    // --- Edit helpers ---
+    const startEdit = (section: EditSection) => {
+        const c = activeCandidate;
+        const base: Record<string, any> = {
+            firstName: c.firstName,
+            lastName: c.lastName,
+            nationalId: c.nationalId,
+            educationLevel: c.educationLevel || '',
+            email: c.email,
+            phone: c.phone,
+            altPhone: c.altPhone || '',
+            birthDate: c.birthDate ? dayjs(c.birthDate) : null,
+            gender: c.gender || '',
+            maritalStatus: c.maritalStatus || '',
+            hasChildren: c.hasChildren ?? false,
+            childrenCount: c.childrenCount ?? 0,
+            hasVehicle: c.hasVehicle ?? false,
+            vehicleType: c.vehicleType || '',
+            vehicleBrandModelYear: c.vehicleBrandModelYear || '',
+            isVehicleOwner: c.isVehicleOwner ?? false,
+            vehicleOwnerRelationship: c.vehicleOwnerRelationship || '',
+            salesExperienceYears: c.salesExperienceYears ?? 0,
+            salesExperienceTypes: Array.isArray(c.salesExperienceTypes) ? c.salesExperienceTypes : [],
+            commercializedGoodsTypes: Array.isArray(c.commercializedGoodsTypes) ? c.commercializedGoodsTypes : [],
+            profession: c.profession || '',
+            currentCompany: c.currentCompany || '',
+            previousCompanies: c.previousCompanies || '',
+            currentMonthlyIncome: c.currentMonthlyIncome ?? null,
+            salaryAspiration: c.salaryAspiration ?? null,
+            personalReferences: Array.isArray(c.personalReferences) ? JSON.parse(JSON.stringify(c.personalReferences)) : [],
+            workReferences: Array.isArray(c.workReferences) ? JSON.parse(JSON.stringify(c.workReferences)) : [],
+        };
+        setEditForm(base);
+        setEditingSection(section);
+    };
+
+    const cancelEdit = () => setEditingSection(null);
+
+    const handleSaveEdit = async (section: EditSection) => {
+        if (!activeCandidate) return;
+        setSaving(true);
+        try {
+            const payload: Record<string, any> = {};
+            if (section === 'personal') {
+                payload.firstName = editForm.firstName;
+                payload.lastName = editForm.lastName;
+                payload.nationalId = editForm.nationalId;
+                payload.educationLevel = editForm.educationLevel;
+                payload.email = editForm.email;
+                payload.phone = editForm.phone;
+                payload.altPhone = editForm.altPhone;
+                payload.birthDate = editForm.birthDate ? editForm.birthDate.toISOString() : undefined;
+                payload.gender = editForm.gender;
+                payload.maritalStatus = editForm.maritalStatus;
+                payload.hasChildren = editForm.hasChildren;
+                payload.childrenCount = editForm.childrenCount;
+            } else if (section === 'vehiculo') {
+                payload.hasVehicle = editForm.hasVehicle;
+                payload.vehicleType = editForm.vehicleType;
+                payload.vehicleBrandModelYear = editForm.vehicleBrandModelYear;
+                payload.isVehicleOwner = editForm.isVehicleOwner;
+                payload.vehicleOwnerRelationship = editForm.vehicleOwnerRelationship;
+            } else if (section === 'ventas') {
+                payload.salesExperienceYears = editForm.salesExperienceYears;
+                payload.salesExperienceTypes = editForm.salesExperienceTypes;
+                payload.commercializedGoodsTypes = editForm.commercializedGoodsTypes;
+                payload.profession = editForm.profession;
+            } else if (section === 'economica') {
+                payload.currentCompany = editForm.currentCompany;
+                payload.previousCompanies = editForm.previousCompanies;
+                payload.currentMonthlyIncome = editForm.currentMonthlyIncome;
+                payload.salaryAspiration = editForm.salaryAspiration;
+            } else if (section === 'referencias') {
+                payload.personalReferences = editForm.personalReferences;
+                payload.workReferences = editForm.workReferences;
+            }
+            await candidateService.updateCandidate(activeCandidate.id, payload);
+            message.success('Datos actualizados exitosamente');
+            setEditingSection(null);
+            dispatch(loadCandidateById(activeCandidate.id));
+        } catch (err: any) {
+            message.error(err.response?.data?.message || 'Error al guardar los cambios');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const editCardTitle = (icon: React.ReactNode, label: string, section: EditSection) => (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Space>{icon}{label}</Space>
+            {editingSection === section ? (
+                <Space size={4}>
+                    <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => handleSaveEdit(section)} style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}>Guardar</Button>
+                    <Button size="small" icon={<CloseOutlined />} onClick={cancelEdit}>Cancelar</Button>
+                </Space>
+            ) : (
+                <Button size="small" type="text" icon={<EditOutlined />} onClick={() => startEdit(section)} style={{ color: '#2b457c' }} />
+            )}
+        </div>
+    );
 
     const renderInfoModal = () => (
         <Modal
             title={<Title level={3}><UserOutlined /> Información Completa</Title>}
             open={infoModalOpen}
-            onCancel={() => setInfoModalOpen(false)}
-            footer={[<Button key="close" type="primary" onClick={() => setInfoModalOpen(false)}>Cerrar</Button>]}
-            width={900}
+            onCancel={() => { setInfoModalOpen(false); setEditingSection(null); }}
+            footer={[<Button key="close" type="primary" onClick={() => { setInfoModalOpen(false); setEditingSection(null); }}>Cerrar</Button>]}
+            width={940}
         >
             <div style={{ padding: '0px 10px', maxHeight: '70vh', overflowY: 'auto' }}>
                 <Row gutter={[16, 16]}>
-                    {/* Access Management - Move to TOP and Span 24 */}
+                    {/* Access Management */}
                     <Col span={24}>
                         <Card
                             title={<Space><InfoCircleOutlined /> Gestión de Acceso al Sistema</Space>}
@@ -341,23 +472,91 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                         </Card>
                     </Col>
 
+                    {/* Datos Personales */}
                     <Col span={12}>
-                        <Card title={<Space><UserOutlined /> Datos Personales</Space>} size="small" variant="borderless" style={{ background: '#f5f5f5', borderRadius: 12, height: '100%' }}>
-                            <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
-                                <Descriptions.Item label="Nombre">{activeCandidate.firstName} {activeCandidate.lastName}</Descriptions.Item>
-                                <Descriptions.Item label="Cédula">{activeCandidate.nationalId}</Descriptions.Item>
-                                <Descriptions.Item label="Nivel Académico">{activeCandidate.educationLevel || 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Email">{activeCandidate.email}</Descriptions.Item>
-                                <Descriptions.Item label="Teléfono">{activeCandidate.phone}</Descriptions.Item>
-                                <Descriptions.Item label="Teléfono Alt.">{activeCandidate.altPhone || 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Fecha Nacimiento">{activeCandidate.birthDate ? dayjs(activeCandidate.birthDate).format('DD/MM/YYYY') : 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Género">{activeCandidate.gender || 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Estado Civil">{activeCandidate.maritalStatus || 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Hijos">{activeCandidate.hasChildren ? `Sí (${activeCandidate.childrenCount || 0})` : 'No'}</Descriptions.Item>
-                            </Descriptions>
+                        <Card
+                            title={editCardTitle(<UserOutlined />, 'Datos Personales', 'personal')}
+                            size="small"
+                            variant="borderless"
+                            style={{ background: '#f5f5f5', borderRadius: 12, height: '100%' }}
+                        >
+                            {editingSection === 'personal' ? (
+                                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Nombre</Text>
+                                        <Input value={editForm.firstName} onChange={e => setEditForm((f: any) => ({ ...f, firstName: e.target.value }))} size="small" /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Apellido</Text>
+                                        <Input value={editForm.lastName} onChange={e => setEditForm((f: any) => ({ ...f, lastName: e.target.value }))} size="small" /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Cédula</Text>
+                                        <Input value={editForm.nationalId} onChange={e => setEditForm((f: any) => ({ ...f, nationalId: e.target.value }))} size="small" /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Nivel Académico</Text>
+                                        <Select
+                                            size="small" style={{ width: '100%' }}
+                                            value={editForm.educationLevel || undefined}
+                                            onChange={v => setEditForm((f: any) => ({ ...f, educationLevel: v }))}
+                                            options={['Secundaria', 'TSU', 'Universitario', 'Postgrado', 'Doctorado', 'Técnico', 'Otro'].map(v => ({ label: v, value: v }))}
+                                            placeholder="Seleccionar..."
+                                            allowClear
+                                        /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Email</Text>
+                                        <Input value={editForm.email} onChange={e => setEditForm((f: any) => ({ ...f, email: e.target.value }))} size="small" /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Teléfono</Text>
+                                        <Input value={editForm.phone} onChange={e => setEditForm((f: any) => ({ ...f, phone: e.target.value }))} size="small" /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Teléfono Alt.</Text>
+                                        <Input value={editForm.altPhone} onChange={e => setEditForm((f: any) => ({ ...f, altPhone: e.target.value }))} size="small" /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Fecha de Nacimiento</Text>
+                                        <DatePicker
+                                            size="small" style={{ width: '100%' }}
+                                            value={editForm.birthDate}
+                                            onChange={d => setEditForm((f: any) => ({ ...f, birthDate: d }))}
+                                            format="DD/MM/YYYY"
+                                        /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Género</Text>
+                                        <Select
+                                            size="small" style={{ width: '100%' }}
+                                            value={editForm.gender || undefined}
+                                            onChange={v => setEditForm((f: any) => ({ ...f, gender: v }))}
+                                            options={['Masculino', 'Femenino', 'Otro'].map(v => ({ label: v, value: v }))}
+                                            allowClear placeholder="Seleccionar..."
+                                        /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Estado Civil</Text>
+                                        <Select
+                                            size="small" style={{ width: '100%' }}
+                                            value={editForm.maritalStatus || undefined}
+                                            onChange={v => setEditForm((f: any) => ({ ...f, maritalStatus: v }))}
+                                            options={['Soltero/a', 'Casado/a', 'Divorciado/a', 'Viudo/a', 'Unión Libre'].map(v => ({ label: v, value: v }))}
+                                            allowClear placeholder="Seleccionar..."
+                                        /></div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <Switch checked={editForm.hasChildren} onChange={v => setEditForm((f: any) => ({ ...f, hasChildren: v }))} size="small" />
+                                        <Text style={{ fontSize: 12 }}>¿Tiene hijos?</Text>
+                                        {editForm.hasChildren && (
+                                            <InputNumber
+                                                size="small" min={0} max={20}
+                                                value={editForm.childrenCount}
+                                                onChange={v => setEditForm((f: any) => ({ ...f, childrenCount: v }))}
+                                                style={{ width: 60 }}
+                                            />
+                                        )}
+                                    </div>
+                                </Space>
+                            ) : (
+                                <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
+                                    <Descriptions.Item label="Nombre">{activeCandidate.firstName} {activeCandidate.lastName}</Descriptions.Item>
+                                    <Descriptions.Item label="Cédula">{activeCandidate.nationalId}</Descriptions.Item>
+                                    <Descriptions.Item label="Nivel Académico">{activeCandidate.educationLevel || 'N/A'}</Descriptions.Item>
+                                    <Descriptions.Item label="Email">{activeCandidate.email}</Descriptions.Item>
+                                    <Descriptions.Item label="Teléfono">{activeCandidate.phone}</Descriptions.Item>
+                                    <Descriptions.Item label="Teléfono Alt.">{activeCandidate.altPhone || 'N/A'}</Descriptions.Item>
+                                    <Descriptions.Item label="Fecha Nacimiento">{activeCandidate.birthDate ? dayjs(activeCandidate.birthDate).format('DD/MM/YYYY') : 'N/A'}</Descriptions.Item>
+                                    <Descriptions.Item label="Género">{activeCandidate.gender || 'N/A'}</Descriptions.Item>
+                                    <Descriptions.Item label="Estado Civil">{activeCandidate.maritalStatus || 'N/A'}</Descriptions.Item>
+                                    <Descriptions.Item label="Hijos">{activeCandidate.hasChildren ? `Sí (${activeCandidate.childrenCount || 0})` : 'No'}</Descriptions.Item>
+                                </Descriptions>
+                            )}
                         </Card>
                     </Col>
 
+                    {/* Ubicación (read-only) + Vehículo (editable) */}
                     <Col span={12}>
                         <Space direction="vertical" size={16} style={{ width: '100%' }}>
                             <Card title={<Space><InfoCircleOutlined /> Ubicación</Space>} size="small" variant="borderless" style={{ background: '#f5f5f5', borderRadius: 12 }}>
@@ -367,75 +566,236 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                 </Descriptions>
                             </Card>
 
-                            <Card title={<Space><CarOutlined /> Vehículo</Space>} size="small" variant="borderless" style={{ background: '#f5f5f5', borderRadius: 12 }}>
-                                <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
-                                    <Descriptions.Item label="¿Tiene vehículo?">{activeCandidate.hasVehicle ? 'Sí' : 'No'}</Descriptions.Item>
-                                    {activeCandidate.hasVehicle && (
-                                        <>
-                                            <Descriptions.Item label="Tipo">{activeCandidate.vehicleType || 'N/A'}</Descriptions.Item>
-                                            <Descriptions.Item label="Modelo">{activeCandidate.vehicleBrandModelYear || 'N/A'}</Descriptions.Item>
-                                            <Descriptions.Item label="¿Es propio?">{activeCandidate.isVehicleOwner ? 'Sí' : 'No'}</Descriptions.Item>
-                                            {!activeCandidate.isVehicleOwner && (
-                                                <Descriptions.Item label="Relación dueño">{activeCandidate.vehicleOwnerRelationship || 'N/A'}</Descriptions.Item>
-                                            )}
-                                        </>
-                                    )}
-                                </Descriptions>
+                            <Card
+                                title={editCardTitle(<CarOutlined />, 'Vehículo', 'vehiculo')}
+                                size="small"
+                                variant="borderless"
+                                style={{ background: '#f5f5f5', borderRadius: 12 }}
+                            >
+                                {editingSection === 'vehiculo' ? (
+                                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <Switch checked={editForm.hasVehicle} onChange={v => setEditForm((f: any) => ({ ...f, hasVehicle: v }))} size="small" />
+                                            <Text style={{ fontSize: 12 }}>¿Tiene vehículo?</Text>
+                                        </div>
+                                        {editForm.hasVehicle && (
+                                            <>
+                                                <div><Text type="secondary" style={{ fontSize: 11 }}>Tipo de Vehículo</Text>
+                                                    <Select
+                                                        size="small" style={{ width: '100%' }}
+                                                        value={editForm.vehicleType || undefined}
+                                                        onChange={v => setEditForm((f: any) => ({ ...f, vehicleType: v }))}
+                                                        options={['Moto', 'Carro', 'Camioneta', 'Camión', 'Otro'].map(v => ({ label: v, value: v }))}
+                                                        allowClear placeholder="Seleccionar..."
+                                                    /></div>
+                                                <div><Text type="secondary" style={{ fontSize: 11 }}>Marca / Modelo / Año</Text>
+                                                    <Input value={editForm.vehicleBrandModelYear} onChange={e => setEditForm((f: any) => ({ ...f, vehicleBrandModelYear: e.target.value }))} size="small" placeholder="Ej: Toyota Corolla 2018" /></div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <Switch checked={editForm.isVehicleOwner} onChange={v => setEditForm((f: any) => ({ ...f, isVehicleOwner: v }))} size="small" />
+                                                    <Text style={{ fontSize: 12 }}>¿Es propietario?</Text>
+                                                </div>
+                                                {!editForm.isVehicleOwner && (
+                                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Relación con dueño</Text>
+                                                        <Input value={editForm.vehicleOwnerRelationship} onChange={e => setEditForm((f: any) => ({ ...f, vehicleOwnerRelationship: e.target.value }))} size="small" /></div>
+                                                )}
+                                            </>
+                                        )}
+                                    </Space>
+                                ) : (
+                                    <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
+                                        <Descriptions.Item label="¿Tiene vehículo?">{activeCandidate.hasVehicle ? 'Sí' : 'No'}</Descriptions.Item>
+                                        {activeCandidate.hasVehicle && (
+                                            <>
+                                                <Descriptions.Item label="Tipo">{activeCandidate.vehicleType || 'N/A'}</Descriptions.Item>
+                                                <Descriptions.Item label="Modelo">{activeCandidate.vehicleBrandModelYear || 'N/A'}</Descriptions.Item>
+                                                <Descriptions.Item label="¿Es propio?">{activeCandidate.isVehicleOwner ? 'Sí' : 'No'}</Descriptions.Item>
+                                                {!activeCandidate.isVehicleOwner && (
+                                                    <Descriptions.Item label="Relación dueño">{activeCandidate.vehicleOwnerRelationship || 'N/A'}</Descriptions.Item>
+                                                )}
+                                            </>
+                                        )}
+                                    </Descriptions>
+                                )}
                             </Card>
                         </Space>
                     </Col>
 
+                    {/* Experiencia en Ventas */}
                     <Col span={12}>
-                        <Card title={<Space><BulbOutlined /> Experiencia en Ventas</Space>} size="small" variant="borderless" style={{ background: '#f5f5f5', borderRadius: 12, height: '100%' }}>
-                            <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
-                                <Descriptions.Item label="Exp. Ventas">{activeCandidate.salesExperienceYears ? 'Sí' : 'No'}</Descriptions.Item>
-                                {activeCandidate.salesExperienceYears && (
-                                    <>
-                                        <Descriptions.Item label="Años">{activeCandidate.salesExperienceYears} años</Descriptions.Item>
-                                        <Descriptions.Item label="Tipos">{Array.isArray(activeCandidate.salesExperienceTypes) ? activeCandidate.salesExperienceTypes.join(', ') : (activeCandidate.salesExperienceTypes || 'N/A')}</Descriptions.Item>
-                                        <Descriptions.Item label="Bienes">{Array.isArray(activeCandidate.commercializedGoodsTypes) ? activeCandidate.commercializedGoodsTypes.join(', ') : (activeCandidate.commercializedGoodsTypes || 'N/A')}</Descriptions.Item>
-                                    </>
-                                )}
-                                <Descriptions.Item label="Profesión">{activeCandidate.profession || 'Sin especificar'}</Descriptions.Item>
-                            </Descriptions>
+                        <Card
+                            title={editCardTitle(<BulbOutlined />, 'Experiencia en Ventas', 'ventas')}
+                            size="small"
+                            variant="borderless"
+                            style={{ background: '#f5f5f5', borderRadius: 12, height: '100%' }}
+                        >
+                            {editingSection === 'ventas' ? (
+                                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Profesión</Text>
+                                        <Input value={editForm.profession} onChange={e => setEditForm((f: any) => ({ ...f, profession: e.target.value }))} size="small" /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Años de Experiencia en Ventas</Text>
+                                        <InputNumber
+                                            size="small" min={0} max={50} style={{ width: '100%' }}
+                                            value={editForm.salesExperienceYears}
+                                            onChange={v => setEditForm((f: any) => ({ ...f, salesExperienceYears: v }))}
+                                        /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Tipos de Venta</Text>
+                                        <Select
+                                            mode="multiple" size="small" style={{ width: '100%' }}
+                                            value={editForm.salesExperienceTypes}
+                                            onChange={v => setEditForm((f: any) => ({ ...f, salesExperienceTypes: v }))}
+                                            options={['Directa', 'Indirecta', 'Corporativa', 'Retail', 'Telefónica', 'Online', 'Otra'].map(v => ({ label: v, value: v }))}
+                                            placeholder="Seleccionar tipos..."
+                                        /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Tipo de Bienes Comercializados</Text>
+                                        <Select
+                                            mode="multiple" size="small" style={{ width: '100%' }}
+                                            value={editForm.commercializedGoodsTypes}
+                                            onChange={v => setEditForm((f: any) => ({ ...f, commercializedGoodsTypes: v }))}
+                                            options={['Alimentos', 'Bebidas', 'Seguros', 'Tecnología', 'Farmacéutico', 'Automotriz', 'Servicios', 'Otro'].map(v => ({ label: v, value: v }))}
+                                            placeholder="Seleccionar bienes..."
+                                        /></div>
+                                </Space>
+                            ) : (
+                                <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
+                                    <Descriptions.Item label="Profesión">{activeCandidate.profession || 'Sin especificar'}</Descriptions.Item>
+                                    <Descriptions.Item label="Exp. Ventas">{activeCandidate.salesExperienceYears ? `${activeCandidate.salesExperienceYears} año(s)` : 'No'}</Descriptions.Item>
+                                    {activeCandidate.salesExperienceYears ? (
+                                        <>
+                                            <Descriptions.Item label="Tipos">{Array.isArray(activeCandidate.salesExperienceTypes) ? activeCandidate.salesExperienceTypes.join(', ') : (activeCandidate.salesExperienceTypes || 'N/A')}</Descriptions.Item>
+                                            <Descriptions.Item label="Bienes">{Array.isArray(activeCandidate.commercializedGoodsTypes) ? activeCandidate.commercializedGoodsTypes.join(', ') : (activeCandidate.commercializedGoodsTypes || 'N/A')}</Descriptions.Item>
+                                        </>
+                                    ) : null}
+                                </Descriptions>
+                            )}
                         </Card>
                     </Col>
 
+                    {/* Situación Económica */}
                     <Col span={12}>
-                        <Card title={<Space><BankOutlined /> Situación Económica y Laboral</Space>} size="small" variant="borderless" style={{ background: '#f5f5f5', borderRadius: 12, height: '100%' }}>
-                            <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
-                                <Descriptions.Item label="Empresa Actual">{activeCandidate.currentCompany || 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Empresas Previas">{activeCandidate.previousCompanies || 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Ingreso Actual">{activeCandidate.currentMonthlyIncome ? `${activeCandidate.currentMonthlyIncome} USD` : 'N/A'}</Descriptions.Item>
-                                <Descriptions.Item label="Aspiración">{activeCandidate.salaryAspiration ? `${activeCandidate.salaryAspiration} USD` : 'N/A'}</Descriptions.Item>
-                            </Descriptions>
+                        <Card
+                            title={editCardTitle(<BankOutlined />, 'Situación Económica y Laboral', 'economica')}
+                            size="small"
+                            variant="borderless"
+                            style={{ background: '#f5f5f5', borderRadius: 12, height: '100%' }}
+                        >
+                            {editingSection === 'economica' ? (
+                                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Empresa Actual</Text>
+                                        <Input value={editForm.currentCompany} onChange={e => setEditForm((f: any) => ({ ...f, currentCompany: e.target.value }))} size="small" /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Empresas Previas</Text>
+                                        <Input.TextArea rows={2} value={editForm.previousCompanies} onChange={e => setEditForm((f: any) => ({ ...f, previousCompanies: e.target.value }))} size="small" /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Ingreso Mensual Actual (USD)</Text>
+                                        <InputNumber
+                                            size="small" min={0} style={{ width: '100%' }}
+                                            value={editForm.currentMonthlyIncome}
+                                            onChange={v => setEditForm((f: any) => ({ ...f, currentMonthlyIncome: v }))}
+                                            prefix="$"
+                                        /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Aspiración Salarial (USD)</Text>
+                                        <InputNumber
+                                            size="small" min={0} style={{ width: '100%' }}
+                                            value={editForm.salaryAspiration}
+                                            onChange={v => setEditForm((f: any) => ({ ...f, salaryAspiration: v }))}
+                                            prefix="$"
+                                        /></div>
+                                </Space>
+                            ) : (
+                                <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
+                                    <Descriptions.Item label="Empresa Actual">{activeCandidate.currentCompany || 'N/A'}</Descriptions.Item>
+                                    <Descriptions.Item label="Empresas Previas">{activeCandidate.previousCompanies || 'N/A'}</Descriptions.Item>
+                                    <Descriptions.Item label="Ingreso Actual">{activeCandidate.currentMonthlyIncome ? `${activeCandidate.currentMonthlyIncome} USD` : 'N/A'}</Descriptions.Item>
+                                    <Descriptions.Item label="Aspiración">{activeCandidate.salaryAspiration ? `${activeCandidate.salaryAspiration} USD` : 'N/A'}</Descriptions.Item>
+                                </Descriptions>
+                            )}
                         </Card>
                     </Col>
 
+                    {/* Referencias */}
                     <Col span={24}>
-                        <Card title={<Space><TeamOutlined /> Referencias</Space>} size="small" variant="borderless" style={{ background: '#f0f2f5', borderRadius: 12 }}>
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Title level={5} style={{ fontSize: 13, color: '#2b457c', marginBottom: 8 }}>Personales</Title>
-                                    {(Array.isArray(activeCandidate.personalReferences) ? activeCandidate.personalReferences : []).map((ref: any, i: number) => (
-                                        <div key={i} style={{ marginBottom: 8, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
-                                            <Text strong style={{ fontSize: 12 }}>{ref.name}</Text><br />
-                                            <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref.phone} {ref.company ? `| 🏢 ${ref.company}` : ''}</Text>
-                                        </div>
+                        <Card
+                            title={editCardTitle(<TeamOutlined />, 'Referencias', 'referencias')}
+                            size="small"
+                            variant="borderless"
+                            style={{ background: '#f0f2f5', borderRadius: 12 }}
+                        >
+                            {editingSection === 'referencias' ? (
+                                <Row gutter={24}>
+                                    {(['personalReferences', 'workReferences'] as const).map((field) => (
+                                        <Col span={12} key={field}>
+                                            <Title level={5} style={{ fontSize: 13, color: '#2b457c', marginBottom: 8 }}>{field === 'personalReferences' ? 'Personales' : 'Laborales'}</Title>
+                                            <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                                                {(editForm[field] as any[]).map((ref: any, i: number) => (
+                                                    <div key={i} style={{ padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
+                                                        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                                            <Input
+                                                                size="small" placeholder="Nombre"
+                                                                value={ref.name}
+                                                                onChange={e => {
+                                                                    const updated = [...editForm[field]];
+                                                                    updated[i] = { ...updated[i], name: e.target.value };
+                                                                    setEditForm((f: any) => ({ ...f, [field]: updated }));
+                                                                }}
+                                                            />
+                                                            <Input
+                                                                size="small" placeholder="Teléfono"
+                                                                value={ref.phone}
+                                                                onChange={e => {
+                                                                    const updated = [...editForm[field]];
+                                                                    updated[i] = { ...updated[i], phone: e.target.value };
+                                                                    setEditForm((f: any) => ({ ...f, [field]: updated }));
+                                                                }}
+                                                            />
+                                                            <Input
+                                                                size="small" placeholder="Empresa (opcional)"
+                                                                value={ref.company || ''}
+                                                                onChange={e => {
+                                                                    const updated = [...editForm[field]];
+                                                                    updated[i] = { ...updated[i], company: e.target.value };
+                                                                    setEditForm((f: any) => ({ ...f, [field]: updated }));
+                                                                }}
+                                                            />
+                                                            <Button
+                                                                size="small" danger type="text" icon={<DeleteOutlined />}
+                                                                onClick={() => {
+                                                                    const updated = (editForm[field] as any[]).filter((_: any, idx: number) => idx !== i);
+                                                                    setEditForm((f: any) => ({ ...f, [field]: updated }));
+                                                                }}
+                                                            >Eliminar</Button>
+                                                        </Space>
+                                                    </div>
+                                                ))}
+                                                <Button
+                                                    size="small" type="dashed" block icon={<PlusOutlined />}
+                                                    onClick={() => setEditForm((f: any) => ({ ...f, [field]: [...(f[field] || []), { name: '', phone: '', company: '' }] }))}
+                                                >Agregar Referencia</Button>
+                                            </Space>
+                                        </Col>
                                     ))}
-                                    {(!activeCandidate.personalReferences || (activeCandidate.personalReferences as any[]).length === 0) && <Text type="secondary">Sin referencias</Text>}
-                                </Col>
-                                <Col span={12}>
-                                    <Title level={5} style={{ fontSize: 13, color: '#2b457c', marginBottom: 8 }}>Laborales</Title>
-                                    {(Array.isArray(activeCandidate.workReferences) ? activeCandidate.workReferences : []).map((ref: any, i: number) => (
-                                        <div key={i} style={{ marginBottom: 8, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
-                                            <Text strong style={{ fontSize: 12 }}>{ref.name}</Text><br />
-                                            <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref.phone} {ref.company ? `| 🏢 ${ref.company}` : ''}</Text>
-                                        </div>
-                                    ))}
-                                    {(!activeCandidate.workReferences || (activeCandidate.workReferences as any[]).length === 0) && <Text type="secondary">Sin referencias</Text>}
-                                </Col>
-                            </Row>
+                                </Row>
+                            ) : (
+                                <Row gutter={24}>
+                                    <Col span={12}>
+                                        <Title level={5} style={{ fontSize: 13, color: '#2b457c', marginBottom: 8 }}>Personales</Title>
+                                        {(Array.isArray(activeCandidate.personalReferences) ? activeCandidate.personalReferences : []).map((ref: any, i: number) => (
+                                            <div key={i} style={{ marginBottom: 8, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
+                                                <Text strong style={{ fontSize: 12 }}>{ref.name}</Text><br />
+                                                <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref.phone} {ref.company ? `| 🏢 ${ref.company}` : ''}</Text>
+                                            </div>
+                                        ))}
+                                        {(!activeCandidate.personalReferences || (activeCandidate.personalReferences as any[]).length === 0) && <Text type="secondary">Sin referencias</Text>}
+                                    </Col>
+                                    <Col span={12}>
+                                        <Title level={5} style={{ fontSize: 13, color: '#2b457c', marginBottom: 8 }}>Laborales</Title>
+                                        {(Array.isArray(activeCandidate.workReferences) ? activeCandidate.workReferences : []).map((ref: any, i: number) => (
+                                            <div key={i} style={{ marginBottom: 8, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
+                                                <Text strong style={{ fontSize: 12 }}>{ref.name}</Text><br />
+                                                <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref.phone} {ref.company ? `| 🏢 ${ref.company}` : ''}</Text>
+                                            </div>
+                                        ))}
+                                        {(!activeCandidate.workReferences || (activeCandidate.workReferences as any[]).length === 0) && <Text type="secondary">Sin referencias</Text>}
+                                    </Col>
+                                </Row>
+                            )}
                         </Card>
                     </Col>
                 </Row>
@@ -518,7 +878,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 await handleAction(async () => {
                     await candidateService.rescueCandidate(appId);
                     message.success('Candidato rescatado exitosamente');
-                });
+                }, true, true); // CLOSE on rescue
             }
         });
     };
@@ -804,10 +1164,44 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                         </Card>
                     )
                 )}
-                {activeCandidate.videoUrl && (
+                {activeCandidate.videoUrl ? (
                     <Button block icon={<VideoCameraOutlined />} style={{ textAlign: 'left' }} href={activeCandidate.videoUrl} target="_blank">
                         Video Presentación
                     </Button>
+                ) : (
+                    currentStageId >= 2 && (
+                        <Card size="small" style={{ background: '#fff7e6', border: '1px solid #ffd591' }}>
+                            <Space direction="vertical" style={{ width: '100%' }}>
+                                <Text strong style={{ color: '#d46b08' }}><InfoCircleOutlined /> Video de presentación no subido</Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>El candidato aún no ha cargado su video. Puedes enviarle un recordatorio por correo.</Text>
+                                <Button
+                                    block
+                                    type="primary"
+                                    icon={<MailOutlined />}
+                                    loading={submitting}
+                                    disabled={resendVideoSuccess}
+                                    style={{
+                                        backgroundColor: resendVideoSuccess ? undefined : '#fa8c16',
+                                        borderColor: resendVideoSuccess ? undefined : '#fa8c16'
+                                    }}
+                                    onClick={() => {
+                                        Modal.confirm({
+                                            title: '¿Enviar recordatorio de video?',
+                                            content: 'Se enviará un correo al candidato solicitándole que suba su video de presentación.',
+                                            okText: 'Enviar Recordatorio',
+                                            cancelText: 'Cancelar',
+                                            onOk: async () => {
+                                                await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'Video'));
+                                                setResendVideoSuccess(true);
+                                            }
+                                        });
+                                    }}
+                                >
+                                    {resendVideoSuccess ? 'Recordatorio Enviado ✓' : 'Enviar recordatorio de video'}
+                                </Button>
+                            </Space>
+                        </Card>
+                    )
                 )}
 
                 {/* PsychTest Results - Stage 3 specific or global view if exists */}
@@ -836,26 +1230,59 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                     </div>
                 ) : (
                     currentStageId === 3 && (
-                        <Upload
-                            accept=".pdf"
-                            showUploadList={false}
-                            customRequest={handlePsychTestUpload}
-                        >
-                            <Button
-                                block
-                                icon={<UploadOutlined />}
-                                loading={submitting}
-                                style={{
-                                    marginTop: '8px',
-                                    height: '45px',
-                                    border: '2px dashed #2b457c',
-                                    color: '#2b457c',
-                                    fontWeight: 600
-                                }}
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                            <Upload
+                                accept=".pdf"
+                                showUploadList={false}
+                                customRequest={handlePsychTestUpload}
                             >
-                                Subir Resultados Prueba (PDF)
-                            </Button>
-                        </Upload>
+                                <Button
+                                    block
+                                    icon={<UploadOutlined />}
+                                    loading={submitting}
+                                    style={{
+                                        marginTop: '8px',
+                                        height: '45px',
+                                        border: '2px dashed #2b457c',
+                                        color: '#2b457c',
+                                        fontWeight: 600
+                                    }}
+                                >
+                                    Subir Resultados Prueba (PDF)
+                                </Button>
+                            </Upload>
+                            <Card size="small" style={{ background: '#fffbe6', border: '1px solid #ffe58f' }}>
+                                <Space direction="vertical" style={{ width: '100%' }}>
+                                    <Text strong style={{ color: '#ad8b00' }}><InfoCircleOutlined /> Prueba Psicotécnica pendiente</Text>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>Debes subir los resultados (PDF) para poder avanzar al candidato a la siguiente etapa.</Text>
+                                    <Button
+                                        block
+                                        icon={<MailOutlined />}
+                                        loading={submitting}
+                                        disabled={resendPsychSuccess}
+                                        style={{
+                                            backgroundColor: resendPsychSuccess ? undefined : '#faad14',
+                                            borderColor: resendPsychSuccess ? undefined : '#faad14',
+                                            color: resendPsychSuccess ? undefined : '#fff',
+                                        }}
+                                        onClick={() => {
+                                            Modal.confirm({
+                                                title: '¿Enviar recordatorio de prueba psicotécnica?',
+                                                content: 'Se enviará un correo al candidato recordándole que tiene pendiente la prueba psicotécnica.',
+                                                okText: 'Enviar Recordatorio',
+                                                cancelText: 'Cancelar',
+                                                onOk: async () => {
+                                                    await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'PsychTest'));
+                                                    setResendPsychSuccess(true);
+                                                }
+                                            });
+                                        }}
+                                    >
+                                        {resendPsychSuccess ? 'Recordatorio Enviado ✓' : 'Enviar recordatorio de prueba'}
+                                    </Button>
+                                </Space>
+                            </Card>
+                        </Space>
                     )
                 )}
 
@@ -879,6 +1306,43 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                     <div style={{ marginTop: 4 }}>{activeCandidate.rejectionReason}</div>
                 </div>
             )}
+
+            <Divider orientation="left">Notas y Seguimiento</Divider>
+            <Card size="small" style={{ background: '#f9f9f9', borderRadius: 8 }}>
+                <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                    <div style={{ maxHeight: '200px', overflowY: 'auto', paddingRight: '8px' }}>
+                        {(currentApp?.logs || [])
+                            .filter((log: any) => log.comment)
+                            .map((log: any, index: number) => (
+                                <div key={log.id || index} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #f0f0f0' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Text strong style={{ fontSize: '12px' }}>{log.subStatus || 'Comentario'}</Text>
+                                        <Text type="secondary" style={{ fontSize: '10px' }}>{new Date(log.createdAt).toLocaleDateString()}</Text>
+                                    </div>
+                                    <Paragraph style={{ margin: 0, fontSize: '13px' }}>• {log.comment}</Paragraph>
+                                </div>
+                            ))}
+                        {!(currentApp?.logs || []).some((log: any) => log.comment) && (
+                            <Text type="secondary" italic>No hay notas registradas.</Text>
+                        )}
+                    </div>
+                    <Input.TextArea
+                        placeholder="Escribe una nota interna o seguimiento..."
+                        rows={2}
+                        value={noteComment}
+                        onChange={e => setNoteComment(e.target.value)}
+                    />
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        loading={submitting}
+                        onClick={handleAddNote}
+                        block
+                    >
+                        Agregar Nota
+                    </Button>
+                </Space>
+            </Card>
 
             <Divider />
 

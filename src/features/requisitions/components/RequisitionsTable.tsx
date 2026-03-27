@@ -89,12 +89,12 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selec
             onFilter: (value, record) => record.title === value,
             render: (title: string) => <Text strong>{title}</Text>,
         },
-        {
-            title: 'Departamento',
-            dataIndex: 'department',
-            key: 'department',
-            width: 130,
-        },
+        // {
+        //     title: 'Departamento',
+        //     dataIndex: 'department',
+        //     key: 'department',
+        //     width: 130,
+        // },
         {
             title: 'Ubicación',
             dataIndex: 'location',

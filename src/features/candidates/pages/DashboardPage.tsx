@@ -71,6 +71,25 @@ const DashboardPage: React.FC = () => {
         dispatch(setFilters({}));
     };
 
+    const handleRefresh = (shouldClose: boolean = false) => {
+        const typeMap = {
+            eligible: 'active',
+            not_eligible: 'notSelectable',
+            rejected: 'rejected'
+        } as const;
+
+        dispatch(loadCandidates({
+            page: meta?.page || 1,
+            limit: meta?.limit || 10,
+            type: typeMap[category]
+        }));
+
+        // Close drawer ONLY if requested
+        if (shouldClose) {
+            setSelectedCandidate(null);
+        }
+    };
+
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -172,6 +191,7 @@ const DashboardPage: React.FC = () => {
                 open={!!selectedCandidate}
                 onClose={() => setSelectedCandidate(null)}
                 candidate={selectedCandidate}
+                onActionComplete={handleRefresh}
             />
 
             {/* If in board mode, we might still want a drawer for more detail space, 

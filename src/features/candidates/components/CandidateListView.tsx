@@ -60,6 +60,17 @@ const CandidateListView: React.FC<CandidateListViewProps> = ({ candidates, onVie
             width: 180,
         },
         {
+            title: 'Dirección',
+            key: 'address',
+            width: 180,
+            render: (_, record) => {
+                const municipality = record.municipality?.name;
+                const state = record.municipality?.state?.name;
+                if (!municipality && !state) return <Text type="secondary">-</Text>;
+                return <Text style={{ fontSize: '12px' }}>{municipality}{municipality && state ? ', ' : ''}{state}</Text>;
+            }
+        },
+        {
             title: 'Etapa',
             dataIndex: 'stage',
             key: 'stage',
