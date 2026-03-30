@@ -185,6 +185,8 @@ export interface Requisition {
     priority: Priority;
     status: RequisitionStatus;
     applicants: number;
+    filledCount: number;
+    vacanciesCount: number;
     createdDate: string;
     department: string;
     location: string;

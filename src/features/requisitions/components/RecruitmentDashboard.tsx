@@ -6,9 +6,14 @@ import {
     BarChartOutlined,
     RocketOutlined,
     SwapOutlined,
-    TeamOutlined
+    TeamOutlined,
+    SearchOutlined,
+    FireOutlined,
+    ThunderboltOutlined,
+    InfoCircleOutlined,
+    LineChartOutlined
 } from '@ant-design/icons';
-import { Button, message, Avatar, Divider } from 'antd';
+import { Button, message, Avatar, Divider, Input, Pagination } from 'antd';
 import {
     BarChart,
     Bar,
@@ -36,7 +41,7 @@ import CandidateListModal from './CandidateListModal';
 import SmartMatchingModal from './SmartMatchingModal';
 import CandidateDrawer from '../../candidates/components/CandidateDrawer';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 
 const COMPANIES = [
@@ -77,21 +82,22 @@ const RecruitmentDashboard: React.FC = () => {
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
 
+    // New state for Company Dashboard
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 6;
+
     useEffect(() => {
         // Load requisitions for the company
         if (selectedCompanyId) {
             dispatch(loadRequisitions({ page: 1, limit: 100 })); // Load all for the selector
-            // Only load analytics if both are selected, as per user's "intelligent" request
-            if (selectedRequisitionId) {
-                dispatch(loadRecruitmentAnalytics({
-                    companyId: selectedCompanyId,
-                    jobRequisitionId: selectedRequisitionId,
-                    status: 'ACTIVE'
-                }));
-            } else {
-                // If requisition is not selected, clear analytics or load general company analytics if desired
-                // For now, we'll just not load specific analytics
-            }
+
+            // Load analytics for the company, even if no requisition is selected
+            dispatch(loadRecruitmentAnalytics({
+                companyId: selectedCompanyId,
+                jobRequisitionId: selectedRequisitionId, // can be undefined
+                status: 'ACTIVE'
+            }));
 
             // Fetch candidates in "Bienvenida" stage with no requisition
             candidateService.fetch_candidates_active({ currentStageId: 1 })
@@ -126,8 +132,8 @@ const RecruitmentDashboard: React.FC = () => {
 
         // Validation: Assigned requisition must be OPEN to advance
         if (currentApp?.jobRequisition?.status && currentApp?.jobRequisition?.status !== 'OPEN') {
-            const statusLabel = currentApp?.jobRequisition?.status === 'PAUSED' ? 'Pausada' : 
-                               currentApp?.jobRequisition?.status === 'CANCELLED' ? 'Cancelada' : 'Cerrada';
+            const statusLabel = currentApp?.jobRequisition?.status === 'PAUSED' ? 'Pausada' :
+                currentApp?.jobRequisition?.status === 'CANCELLED' ? 'Cancelada' : 'Cerrada';
             return message.error(`No se puede avanzar: La vacante asignada está ${statusLabel}. Por favor, asigne una nueva vacante abierta.`);
         }
 
@@ -173,10 +179,10 @@ const RecruitmentDashboard: React.FC = () => {
 
     const handleRefreshData = () => {
         setRefreshKey(prev => prev + 1);
-        dispatch(loadRecruitmentAnalytics({ 
-            companyId: selectedCompanyId, 
-            jobRequisitionId: selectedRequisitionId, 
-            status: 'ACTIVE' 
+        dispatch(loadRecruitmentAnalytics({
+            companyId: selectedCompanyId,
+            jobRequisitionId: selectedRequisitionId,
+            status: 'ACTIVE'
         }));
         if (selectedRequisitionId) {
             requisitionService.findOne(selectedRequisitionId.toString()).then(setFullRequisition);
@@ -281,7 +287,7 @@ const RecruitmentDashboard: React.FC = () => {
                 </Row>
             </motion.div>
 
-            {(!selectedCompanyId || !selectedRequisitionId) ? (
+            {(!selectedCompanyId) ? (
                 <div style={{ height: '450px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Card style={{ ...glassStyle, width: '480px', textAlign: 'center', padding: '40px' }}>
                         <Empty
@@ -289,30 +295,246 @@ const RecruitmentDashboard: React.FC = () => {
                             description={
                                 <Space direction="vertical" size="middle">
                                     <Text strong style={{ fontSize: '20px', color: '#1890ff' }}>
-                                        {!selectedCompanyId ? 'Paso 1: Seleccionar Empresa' : 'Paso 2: Seleccionar Requisición'}
+                                        Paso 1: Seleccionar Empresa
                                     </Text>
-                                    <Text type="secondary" style={{ fontSize: '15px' }}>
-                                        {!selectedCompanyId
-                                            ? 'Para comenzar, por favor selecciona la empresa que deseas gestionar.'
-                                            : `Muy bien. Ahora selecciona una requisición abierta de ${COMPANIES.find(c => c.id === selectedCompanyId)?.name} para visualizar sus estadísticas y candidatos.`
-                                        }
-                                    </Text>
-                                    {!selectedCompanyId && (
-                                        <div style={{ marginTop: '16px' }}>
-                                            <RocketOutlined style={{ fontSize: '48px', color: '#1890ff', opacity: 0.2 }} />
-                                        </div>
-                                    )}
+                                    <Paragraph type="secondary" style={{ fontSize: '15px' }}>
+                                        Para comenzar, por favor selecciona la empresa que deseas gestionar para visualizar sus vacantes y analíticas.
+                                    </Paragraph>
+                                    <div style={{ marginTop: '16px' }}>
+                                        <RocketOutlined style={{ fontSize: '48px', color: '#1890ff', opacity: 0.2 }} />
+                                    </div>
                                 </Space>
                             }
                         />
                     </Card>
                 </div>
+            ) : !selectedRequisitionId ? (
+                <motion.div
+                    key="company-dashboard"
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4 }}
+                >
+                    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                        {/* Company Summary Metrics */}
+                        <Row gutter={[24, 24]}>
+                            <Col xs={24} sm={8}>
+                                <Card style={{ ...gradientCard('#1890ff'), height: '140px' }} bodyStyle={{ padding: '20px' }}>
+                                    <Statistic
+                                        title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Requisiciones Abiertas</Text>}
+                                        value={requisitions.filter(r => r.company === COMPANIES.find(c => c.id === selectedCompanyId)?.name && r.status === 'OPEN').length}
+                                        prefix={<RocketOutlined />}
+                                        valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
+                                    />
+                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>Personal de {COMPANIES.find(c => c.id === selectedCompanyId)?.name}</Text>
+                                </Card>
+                            </Col>
+                            <Col xs={24} sm={8}>
+                                <Card style={{ ...gradientCard('#722ed1'), height: '140px' }} bodyStyle={{ padding: '20px' }}>
+                                    <Statistic
+                                        title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos Totales</Text>}
+                                        value={analytics?.totalParticipants || 0}
+                                        prefix={<TeamOutlined />}
+                                        valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
+                                    />
+                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>Asignados a todas las vacantes</Text>
+                                </Card>
+                            </Col>
+                            <Col xs={24} sm={8}>
+                                <Card style={{ ...gradientCard('#fa8c16'), height: '140px' }} bodyStyle={{ padding: '20px' }}>
+                                    <Statistic
+                                        title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Búsquedas de Alta Prioridad</Text>}
+                                        value={requisitions.filter(r => r.company === COMPANIES.find(c => c.id === selectedCompanyId)?.name && r.status === 'OPEN' && r.priority === 'A').length}
+                                        prefix={<FireOutlined />}
+                                        valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
+                                    />
+                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>Requieren atención inmediata</Text>
+                                </Card>
+                            </Col>
+                        </Row>
+
+                        {/* Requisition Grid Section */}
+                        <Card
+                            style={glassStyle}
+                            title={
+                                <Row justify="space-between" align="middle" style={{ width: '100%' }}>
+                                    <Col>
+                                        <Space>
+                                            <LineChartOutlined style={{ color: '#1890ff' }} />
+                                            <span style={{ fontSize: '18px', fontWeight: 600 }}>Vacantes Activas</span>
+                                        </Space>
+                                    </Col>
+                                    <Col>
+                                        <Input
+                                            placeholder="Buscar vacante por título o zona..."
+                                            prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                                            style={{ width: 300, borderRadius: '8px' }}
+                                            allowClear
+                                            value={searchTerm}
+                                            onChange={e => {
+                                                setSearchTerm(e.target.value);
+                                                setCurrentPage(1);
+                                            }}
+                                        />
+                                    </Col>
+                                </Row>
+                            }
+                        >
+                            {(() => {
+                                const companyName = COMPANIES.find(c => c.id === selectedCompanyId)?.name;
+                                const filteredReqs = requisitions.filter(r =>
+                                    r.company === companyName &&
+                                    r.status === 'OPEN' &&
+                                    (r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                        (typeof r.zone === 'object' ? r.zone?.name : r.zone).toLowerCase().includes(searchTerm.toLowerCase()))
+                                );
+
+                                if (filteredReqs.length === 0) return <Empty description="No se encontraron vacantes con los filtros aplicados." />;
+
+                                // Group by priority: A (High), B (Medium), C (Low)
+                                const paginatedReqs = filteredReqs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+                                const grouped = {
+                                    A: paginatedReqs.filter(r => r.priority === 'A'),
+                                    B: paginatedReqs.filter(r => r.priority === 'B'),
+                                    C: paginatedReqs.filter(r => r.priority === 'C'),
+                                };
+
+                                const priorities = [
+                                    { key: 'A', label: 'Prioridad Alta', icon: <FireOutlined style={{ color: '#f5222d' }} /> },
+                                    { key: 'B', label: 'Prioridad Media', icon: <ThunderboltOutlined style={{ color: '#fa8c16' }} /> },
+                                    { key: 'C', label: 'Prioridad Estándar', icon: <InfoCircleOutlined style={{ color: '#1890ff' }} /> },
+                                ] as const;
+
+                                return (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                                        {priorities.map(p => {
+                                            const items = grouped[p.key as keyof typeof grouped];
+                                            if (items.length === 0) return null;
+
+                                            return (
+                                                <div key={p.key}>
+                                                    <Divider orientation="left" style={{ margin: '0 0 16px 0' }}>
+                                                        <Space>
+                                                            {p.icon}
+                                                            <Text strong style={{ fontSize: '15px', color: '#595959' }}>{p.label}</Text>
+                                                            <Tag style={{ borderRadius: '10px', marginLeft: '4px' }}>{items.length}</Tag>
+                                                        </Space>
+                                                    </Divider>
+                                                    <Row gutter={[16, 16]}>
+                                                        {items.map(req => (
+                                                            <Col xs={24} sm={12} lg={8} key={req.id}>
+                                                                <motion.div whileHover={{ y: -5 }} transition={{ duration: 0.2 }}>
+                                                                    <Card
+                                                                        hoverable
+                                                                        className="requisition-card"
+                                                                        style={{ borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}
+                                                                        bodyStyle={{ padding: '16px' }}
+                                                                        onClick={() => setSelectedRequisitionId(Number(req.id))}
+                                                                    >
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                                                            <Title level={5} style={{ margin: 0, fontSize: '14px' }}>{req.title}</Title>
+                                                                            <Tag color={req.priority === 'A' ? 'error' : req.priority === 'B' ? 'warning' : 'blue'} style={{ borderRadius: '4px', margin: 0 }}>
+                                                                                Prio {req.priority}
+                                                                            </Tag>
+                                                                        </div>
+                                                                        <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                                                            <Space style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                                                                                <GlobalOutlined /> {typeof req.zone === 'object' ? req.zone?.name : req.zone}
+                                                                            </Space>
+                                                                            <div style={{ marginTop: '12px' }}>
+                                                                                <Row gutter={12} align="middle">
+                                                                                    <Col span={24}>
+                                                                                        <Statistic
+                                                                                            value={req.applicants || 0}
+                                                                                            title={<span style={{ fontSize: '11px', color: '#8c8c8c', fontWeight: 500 }}>Postulantes en proceso</span>}
+                                                                                            prefix={<TeamOutlined style={{ color: '#1890ff', fontSize: '16px' }} />}
+                                                                                            valueStyle={{ fontSize: '24px', fontWeight: 700, color: '#1890ff' }}
+                                                                                        />
+                                                                                    </Col>
+                                                                                </Row>
+
+                                                                                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                                    <Space size={8}>
+                                                                                        <Tag
+                                                                                            color="green"
+                                                                                            style={{ borderRadius: '12px', border: 'none', padding: '1px 12px', fontSize: '11px' }}
+                                                                                        >
+                                                                                            Requisición Abierta
+                                                                                        </Tag>
+                                                                                        {req.vacanciesCount > 1 && (
+                                                                                            <Text type="secondary" style={{ fontSize: '11px' }}>
+                                                                                                ({req.filledCount || 0} de {req.vacanciesCount} cubiertas)
+                                                                                            </Text>
+                                                                                        )}
+                                                                                    </Space>
+                                                                                    <Button type="link" size="small" style={{ padding: 0, fontWeight: 500 }}>
+                                                                                        Ir al Dashboard →
+                                                                                    </Button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </Space>
+                                                                    </Card>
+                                                                </motion.div>
+                                                            </Col>
+                                                        ))}
+                                                    </Row>
+                                                </div>
+                                            );
+                                        })}
+
+                                        {filteredReqs.length > pageSize && (
+                                            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
+                                                <Pagination
+                                                    current={currentPage}
+                                                    pageSize={pageSize}
+                                                    total={filteredReqs.length}
+                                                    onChange={page => setCurrentPage(page)}
+                                                    showSizeChanger={false}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                        </Card>
+                    </Space>
+                </motion.div>
             ) : analyticsLoading ? (
                 <div style={{ textAlign: 'center', padding: '100px' }}>
                     <Spin size="large" tip="Cargando analíticas..." />
                 </div>
             ) : (
                 <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                    {/* Detailed View Header */}
+                    <Card style={{ ...glassStyle, marginBottom: -16 }} bodyStyle={{ padding: '12px 24px' }}>
+                        <Row justify="space-between" align="middle">
+                            <Col style={{ display: 'flex', gap: '12px' }}>
+                                <Space size="large">
+                                    <Button
+                                        icon={<SwapOutlined />}
+                                        onClick={() => setSelectedRequisitionId(undefined)}
+                                        style={{ borderRadius: '8px', border: '1px solid #1890ff', color: '#1890ff' }}
+                                    >
+                                        Ver Todas las Vacantes
+                                    </Button>
+                                    <Divider type="vertical" style={{ height: '24px' }} />
+                                    <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                                        <RocketOutlined style={{ color: '#1890ff', marginRight: '10px' }} />
+                                        {fullRequisition?.title}
+                                    </Title>
+                                </Space>
+                                <Space>
+                                    <Text type="secondary">Zona:</Text>
+                                    <Tag color="blue" icon={<GlobalOutlined />} style={{ borderRadius: '4px' }}>
+                                        {typeof fullRequisition?.zone === 'object' ? fullRequisition?.zone?.name : fullRequisition?.zone}
+                                    </Tag>
+                                </Space>
+                            </Col>
+
+                        </Row>
+                    </Card>
+
                     {/* Metrics Row */}
                     <Row gutter={[24, 24]}>
                         <Col xs={24} sm={8}>
@@ -322,19 +544,23 @@ const RecruitmentDashboard: React.FC = () => {
                             >
                                 <Statistic
                                     title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>
-                                        {selectedRequisitionId ? 'Estado de Vacante' : 'Vacantes Abiertas'}
+                                        {selectedRequisitionId ? 'Candidatos en Proceso' : 'Vacantes Abiertas'}
                                     </Text>}
                                     value={selectedRequisitionId
-                                        ? (fullRequisition?.filledCount || 0)
+                                        ? (analytics?.totalParticipants || 0)
                                         : requisitions.filter(r => r.company === COMPANIES.find(c => c.id === selectedCompanyId)?.name && r.status === 'OPEN').length
                                     }
-                                    suffix={selectedRequisitionId ? `/ ${fullRequisition?.vacanciesCount || 1}` : undefined}
-                                    prefix={<RocketOutlined />}
+                                    prefix={selectedRequisitionId ? <TeamOutlined /> : <RocketOutlined />}
                                     valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
                                 />
-                                {selectedRequisitionId && (
+                                {selectedRequisitionId && fullRequisition?.vacanciesCount > 1 && (
                                     <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
                                         {fullRequisition?.filledCount || 0} de {fullRequisition?.vacanciesCount || 0} posiciones cubiertas
+                                    </Text>
+                                )}
+                                {selectedRequisitionId && fullRequisition?.vacanciesCount === 1 && (
+                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
+                                        Búsqueda activa de 1 vacante
                                     </Text>
                                 )}
                             </Card>
@@ -388,11 +614,11 @@ const RecruitmentDashboard: React.FC = () => {
                                 style={glassStyle}
                                 className="dashboard-card"
                             >
-                                <div style={{ height: 350, width: '100%' }}>
+                                <div style={{ height: 260, width: '100%' }}>
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart
                                             data={chartData}
-                                            margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
+                                            margin={{ top: 10, right: 30, left: 0, bottom: 60 }}
                                         >
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
                                             <XAxis
@@ -400,8 +626,8 @@ const RecruitmentDashboard: React.FC = () => {
                                                 angle={-45}
                                                 textAnchor="end"
                                                 interval={0}
-                                                height={120}
-                                                tick={{ fill: '#8c8c8c', fontSize: 12 }}
+                                                height={70}
+                                                tick={{ fill: '#8c8c8c', fontSize: 11 }}
                                                 stroke="rgba(0,0,0,0.1)"
                                             />
                                             <YAxis tick={{ fill: '#8c8c8c' }} stroke="rgba(0,0,0,0.1)" />
