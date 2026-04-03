@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Select, Input, Card, Row, Col, Button } from 'antd';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { setFilters, clearFilters, selectFilters } from '../store/candidatesSlice';
-import { selectZones } from '../../../store/masterDataSlice';
 import { selectStages } from '../../../store/workflowSlice';
 import { municipalityService } from '../../../services/municipalityService';
 import type { State, Municipality } from '../../../types';
@@ -16,8 +15,6 @@ interface FilterBarProps {
 const FilterBar: React.FC<FilterBarProps> = ({ category = 'eligible' }) => {
     const dispatch = useAppDispatch();
     const filters = useAppSelector(selectFilters);
-    const zones = useAppSelector(selectZones);
-
     const stages = useAppSelector(selectStages);
 
     const [states, setStates] = useState<State[]>([]);
@@ -53,10 +50,6 @@ const FilterBar: React.FC<FilterBarProps> = ({ category = 'eligible' }) => {
 
     const handleMunicipalityChange = (value: number) => {
         dispatch(setFilters({ ...filters, municipalityId: value }));
-    };
-
-    const handleZoneChange = (value: string) => {
-        dispatch(setFilters({ ...filters, zone: value }));
     };
 
     const handleStageChange = (value: number) => {
