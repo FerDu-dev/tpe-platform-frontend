@@ -1,11 +1,6 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
-import CandidateLoginPage from './features/auth/pages/CandidateLoginPage';
-import MagicLoginPage from './features/auth/pages/MagicLoginPage';
-import RegistrationPage from './features/candidate-portal/pages/RegistrationPage';
-import CandidateDashboard from './features/candidate-portal/pages/CandidateDashboard';
-import LandingRedirect from './components/LandingRedirect';
 import DashboardPage from './features/candidates/pages/DashboardPage';
 import RequisitionsPage from './features/requisitions/pages/RequisitionsPage';
 import UsersPage from './features/users/pages/UsersPage';
@@ -15,33 +10,15 @@ import ZonesPage from './features/zones/pages/ZonesPage';
 import ProtectedRoute from './features/auth/components/ProtectedRoute';
 import PermissionRoute from './features/auth/components/PermissionRoute';
 import MainLayout from './components/MainLayout';
-import CandidateLayout from './components/CandidateLayout';
 import './index.css';
 
 const App: React.FC = () => {
     return (
         <Router>
             <Routes>
-                {/* Priority Routes */}
-                <Route path="/candidate/magic-login" element={<MagicLoginPage />} />
-
                 {/* Public Routes */}
-                <Route path="/" element={<LandingRedirect />} />
-                <Route path="/register" element={<RegistrationPage />} />
-                <Route path="/candidate/login" element={<CandidateLoginPage />} />
                 <Route path="/login" element={<LoginPage />} />
-
-                {/* Candidate Portal */}
-                <Route
-                    path="/candidate/dashboard"
-                    element={
-                        <ProtectedRoute allowedEntity="candidate" redirectTo="/candidate/login">
-                            <CandidateLayout>
-                                <CandidateDashboard />
-                            </CandidateLayout>
-                        </ProtectedRoute>
-                    }
-                />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
                 {/* Admin Routes */}
                 <Route
@@ -120,7 +97,7 @@ const App: React.FC = () => {
                 />
 
                 {/* Fallbacks */}
-                <Route path="*" element={<LandingRedirect />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
         </Router>
     );
