@@ -31,6 +31,11 @@ ENV PORT=80
 RUN echo "server { \
     listen 80; \
     server_name localhost; \
+    location /health { \
+        access_log off; \
+        add_header Content-Type text/plain; \
+        return 200 'OK'; \
+    } \
     location / { \
         root /usr/share/nginx/html; \
         index index.html index.htm; \
