@@ -12,14 +12,14 @@ const LandingRedirect: React.FC = () => {
 
     // If not logged in:
     if (!user) {
-        console.log('No user found in LandingRedirect, sending to /register');
+        console.log('No user found in LandingRedirect, sending to /login');
         // If we're already on the root /, go to /register
         if (location.pathname === '/' || location.pathname === '') {
-            return <Navigate to="/register" replace />;
+            return <Navigate to="/login" replace />;
         }
         // Otherwise (fallback for *), just go to /register as well, 
         // but explicit paths like /login are handled by App.tsx routes.
-        return <Navigate to="/register" replace />;
+        return <Navigate to="/login" replace />;
     }
 
     console.log('User found in LandingRedirect, entityType:', user.entityType);
