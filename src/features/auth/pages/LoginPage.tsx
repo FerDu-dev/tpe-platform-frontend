@@ -82,13 +82,13 @@ const LoginPage: React.FC = () => {
                         size="large"
                     >
                         <Form.Item
-                            label="Email"
+                            label="Usuario"
                             name="username"
                             rules={[{ required: true, message: 'Por favor ingresa tu email' }]}
                         >
                             <Input
                                 prefix={<UserOutlined />}
-                                placeholder="admin@tuproximoempleo.com"
+                                placeholder=""
                                 style={{ borderRadius: '8px', height: '48px' }}
                             />
                         </Form.Item>
@@ -100,7 +100,7 @@ const LoginPage: React.FC = () => {
                         >
                             <Input.Password
                                 prefix={<LockOutlined />}
-                                placeholder="••••••••"
+                                placeholder=""
                                 style={{ borderRadius: '8px', height: '48px' }}
                             />
                         </Form.Item>
