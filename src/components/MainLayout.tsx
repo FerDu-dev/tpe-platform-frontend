@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import logoSvg from '../assets/logo.svg';
+import logoSvg from '../assets/logo.png';
 import { Layout, Menu, Avatar, Dropdown, Typography, Button, Space } from 'antd';
 import {
     UserOutlined,

@@ -5,7 +5,7 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { loginUser, clearError, selectAuthLoading, selectAuthError, selectIsAuthenticated } from '../store/authSlice';
 import type { AuthCredentials } from '../../../types';
-import logoSvg from '../../../assets/logo.svg';
+import logoSvg from '../../../assets/logo.png';
 
 const { Title, Text } = Typography;
 
