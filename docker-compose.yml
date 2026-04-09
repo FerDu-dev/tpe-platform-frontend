@@ -1,0 +1,13 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/production.Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+        - VITE_FRONTEND_URL=${VITE_FRONTEND_URL}
+    environment:
+      - PORT=${PORT:-8080}
+      - VITE_API_URL=${VITE_API_URL}
+      - VITE_FRONTEND_URL=${VITE_FRONTEND_URL}
+    restart: unless-stopped
