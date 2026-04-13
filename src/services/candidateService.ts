@@ -67,7 +67,7 @@ export const getStatusTagStyle = (subStatus?: string) => {
     const normalized = subStatus.toLowerCase();
     const color = SUB_STATUS_COLORS[normalized] || '#8c8c8c';
     const isSuccess = normalized.includes('exitosamente') || normalized.includes('enviado') || normalized.includes('completado');
-    
+
     return {
         background: isSuccess ? `${color}25` : `${color}10`,
         color: color,
@@ -115,10 +115,10 @@ export const candidateService = {
             currentStageName: STAGE_DISPLAY_MAPPING[activeApp?.currentStageId] || 'Postulado',
             requisitionZoneName: activeApp?.jobRequisition?.zone?.name,
             subStatus: (activeApp?.logs?.[0] && (
-                activeApp.logs[0].stageId === activeApp.currentStageId || 
+                activeApp.logs[0].stageId === activeApp.currentStageId ||
                 activeApp.logs[0].comment?.toLowerCase().includes('exitosamente')
-            )) 
-                ? (activeApp.logs[0].subStatus || activeApp.logs[0].comment) 
+            ))
+                ? (activeApp.logs[0].subStatus || activeApp.logs[0].comment)
                 : (activeApp?.subStatus || STAGE_DISPLAY_MAPPING[activeApp?.currentStageId]),
             hasVehicle: c.hasVehicle,
             vehicleDetail: c.vehicleDetail,

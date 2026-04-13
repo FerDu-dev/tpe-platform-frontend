@@ -82,7 +82,7 @@ const LoginPage: React.FC = () => {
                         size="large"
                     >
                         <Form.Item
-                            label="Usuario"
+                            label="Correo electrónico"
                             name="username"
                             rules={[{ required: true, message: 'Por favor ingresa tu email' }]}
                         >
