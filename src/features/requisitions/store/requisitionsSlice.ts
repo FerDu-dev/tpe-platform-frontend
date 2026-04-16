@@ -54,6 +54,17 @@ export const createRequisition = createAsyncThunk(
     }
 );
 
+export const updateRequisition = createAsyncThunk(
+    'requisitions/update',
+    async ({ id, data }: { id: number | string; data: Partial<Requisition> }, { rejectWithValue }) => {
+        try {
+            return await requisitionService.updateRequisition(id, data);
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || error.message);
+        }
+    }
+);
+
 // Async thunk to load recruitment analytics
 export const loadRecruitmentAnalytics = createAsyncThunk(
     'requisitions/loadAnalytics',
@@ -97,6 +108,12 @@ const requisitionsSlice = createSlice({
             })
             .addCase(createRequisition.fulfilled, (state, action: PayloadAction<Requisition>) => {
                 state.requisitions.unshift(action.payload);
+            })
+            .addCase(updateRequisition.fulfilled, (state, action: PayloadAction<Requisition>) => {
+                const index = state.requisitions.findIndex(r => r.id === action.payload.id);
+                if (index !== -1) {
+                    state.requisitions[index] = action.payload;
+                }
             })
             // Analytics
             .addCase(loadRecruitmentAnalytics.pending, (state) => {

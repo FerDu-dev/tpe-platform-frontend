@@ -9,7 +9,8 @@ import {
     PauseCircleOutlined,
     CloseCircleOutlined,
     PlayCircleOutlined,
-    InfoCircleOutlined
+    InfoCircleOutlined,
+    EditOutlined
 } from '@ant-design/icons';
 import { useAppDispatch } from '../../../app/store';
 import { selectCandidate } from '../../candidates/store/candidatesSlice';
@@ -27,6 +28,7 @@ interface RequisitionDrawerProps {
     onPause: (requisition: Requisition) => void;
     onCancel: (requisition: Requisition) => void;
     onReactivate: (requisition: Requisition) => void;
+    onEditClick: (requisition: Requisition) => void;
 }
 
 const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
@@ -35,7 +37,8 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
     requisition,
     onPause,
     onCancel,
-    onReactivate
+    onReactivate,
+    onEditClick
 }) => {
     const dispatch = useAppDispatch();
     const [showApplicants, setShowApplicants] = React.useState(false);
@@ -57,6 +60,21 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
             styles={{ body: { paddingBottom: 80 } }}
             extra={
                 <Space>
+                    <PermissionGuard module="requisition" action="edit">
+                        <Button 
+                            icon={<EditOutlined />} 
+                            onClick={() => {
+                                console.log('Edit clicked for:', requisition);
+                                if (onEditClick && typeof onEditClick === 'function') {
+                                    onEditClick(requisition);
+                                } else {
+                                    console.error('onEditClick is not a function:', onEditClick);
+                                }
+                            }}
+                        >
+                            Editar
+                        </Button>
+                    </PermissionGuard>
                     {requisition.status === 'OPEN' && (
                         <Button onClick={handleViewApplicants} type="primary" icon={<UsergroupAddOutlined />}>
                             Ver Postulantes
@@ -94,7 +112,7 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
                             </Button>
                         </PermissionGuard>
                     )}
-                    {/* <Button onClick={onClose}>Cerrar</Button> */}
+                    <Button onClick={onClose}>Cerrar</Button>
                 </div>
             }
         >

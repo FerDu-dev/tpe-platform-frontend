@@ -9,7 +9,6 @@ import {
     TeamOutlined,
     FileTextOutlined,
     UsergroupAddOutlined,
-    TrophyOutlined,
     GlobalOutlined,
     SafetyCertificateOutlined,
 } from '@ant-design/icons';

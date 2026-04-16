@@ -6,9 +6,9 @@ import {
     selectPositions,
     addCompany, addPosition
 } from '../../../store/masterDataSlice';
-import { createRequisition } from '../store/requisitionsSlice';
+import { createRequisition, updateRequisition } from '../store/requisitionsSlice';
 import { VENEZUELA_STATES } from '../../../constants/venezuela';
-import type { Priority, Zone } from '../../../types';
+import type { Priority, Zone, Requisition } from '../../../types';
 import { zonesService } from '../../../services/zonesService';
 
 const { Option } = Select;
@@ -16,9 +16,11 @@ const { Option } = Select;
 interface RequisitionFormProps {
     open: boolean;
     onClose: () => void;
+    requisition?: Requisition | null;
+    loading?: boolean;
 }
 
-const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
+const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requisition, loading = false }) => {
     const [form] = Form.useForm();
     const [zoneForm] = Form.useForm();
     const dispatch = useAppDispatch();
@@ -32,6 +34,48 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
     const [loadingZones, setLoadingZones] = useState(false);
     const [zoneModalOpen, setZoneModalOpen] = useState(false);
     const [creatingZone, setCreatingZone] = useState(false);
+
+    // Initial load for editing
+    React.useEffect(() => {
+        if (open) {
+            if (requisition) {
+                console.log('Populating form with requisition:', requisition);
+                
+                // Populate municipalities if state exists
+                if (requisition.stateId) {
+                    const found = VENEZUELA_STATES.find(s => s.id === requisition.stateId);
+                    setMunicipalities(found ? found.municipalities : []);
+                }
+                
+                // Populate zones if company exists
+                const companyId = requisition.companyId;
+                if (companyId) {
+                    setLoadingZones(true);
+                    zonesService.fetchZones(companyId)
+                        .then((res) => setZones(res.data))
+                        .catch(() => message.error('Error al cargar zonas'))
+                        .finally(() => setLoadingZones(false));
+                }
+
+                // Resolve zoneId (it might be in zoneId or zone.id)
+                const resolvedZoneId = requisition.zoneId || (requisition.zone && typeof requisition.zone === 'object' ? requisition.zone.id : undefined);
+
+                form.setFieldsValue({
+                    companyId: requisition.companyId,
+                    requestedBy: requisition.requestedBy,
+                    priority: requisition.priority,
+                    position: requisition.title,
+                    stateId: requisition.stateId,
+                    municipalityId: requisition.municipalityId,
+                    zoneId: resolvedZoneId,
+                });
+            } else {
+                form.resetFields();
+                setMunicipalities([]);
+                setZones([]);
+            }
+        }
+    }, [open, requisition, form]);
 
     const COMPANIES = [
         { id: 1, name: 'Febeca' },
@@ -101,7 +145,8 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
             setCreatingZone(false);
         }
     };
-
+    
+    // Submit handler
     const handleSubmit = async (values: any) => {
         try {
             const selectedState = VENEZUELA_STATES.find(s => s.id === values.stateId);
@@ -117,16 +162,23 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
                 stateName: selectedState?.name,
                 municipalityName: selectedMuni?.name,
                 requestedBy: values.requestedBy,
-                requiresVehicle: false,
-                vacanciesCount: 1,
             };
 
-            await dispatch(createRequisition(requisitionData)).unwrap();
-            message.success('Requisición creada con éxito');
+            if (requisition) {
+                await dispatch(updateRequisition({ id: requisition.id, data: requisitionData })).unwrap();
+                message.success('Requisición actualizada con éxito');
+            } else {
+                // Add defaults for new
+                requisitionData.requiresVehicle = false;
+                requisitionData.vacanciesCount = 1;
+                await dispatch(createRequisition(requisitionData)).unwrap();
+                message.success('Requisición creada con éxito');
+            }
+            
             form.resetFields();
             onClose();
         } catch (error: any) {
-            message.error(error || 'Error al crear la requisición');
+            message.error(error || 'Error al procesar la requisición');
         }
     };
 
@@ -151,13 +203,16 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
     return (
         <>
             <Modal
-                title="Nueva Requisición"
+                title={requisition ? "Editar Requisición" : "Nueva Requisición"}
                 open={open}
                 onCancel={onClose}
                 onOk={() => form.submit()}
-                okText="Crear Requisición"
+                okText={requisition ? "Guardar Cambios" : "Crear Requisición"}
                 cancelText="Cancelar"
+                confirmLoading={loading}
                 width={600}
+                style={{ top: 20 }}
+                zIndex={1100}
             >
                 <Form form={form} layout="vertical" onFinish={handleSubmit}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -180,7 +235,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
                         </Form.Item>
 
                         <Form.Item name="position" label="Cargo / Posición" rules={[{ required: true }]}>
-                            <Select dropdownRender={renderPositionDropdown}>
+                            <Select popupRender={renderPositionDropdown}>
                                 {positions.map(p => <Option key={p} value={p}>{p}</Option>)}
                             </Select>
                         </Form.Item>

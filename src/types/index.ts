@@ -55,6 +55,11 @@ export interface Municipality {
     state?: State;
 }
 
+export interface Company {
+    id: number;
+    name: string;
+}
+
 export interface Zone {
   id: number;
   name: string;
@@ -64,6 +69,8 @@ export interface Zone {
   coordinatorNum?: string;
   geographicRoute?: string;
   stateId?: number;
+  company?: Company;
+  state?: State;
 }
 
 export interface Permissions {

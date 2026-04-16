@@ -31,12 +31,26 @@ const ZonesPage: React.FC = () => {
     const [pageSize, setPageSize] = useState(5);
     const [loading, setLoading] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
-    const [editingZone, setEditingZone] = useState<Zone | null>(null);
+
+    // Senior reactive state: use IDs to track selection
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [detailId, setDetailId] = useState<number | null>(null);
+
     const [saving, setSaving] = useState(false);
     const [filterCompanyId, setFilterCompanyId] = useState<number | undefined>();
     const [filterStateId, setFilterStateId] = useState<number | undefined>();
     const [filterSearch, setFilterSearch] = useState('');
-    const [detailZone, setDetailZone] = useState<Zone | null>(null);
+
+    // Derived reactive states
+    const editingZone = React.useMemo(() =>
+        zones.find(z => z.id === editingId) || null,
+        [zones, editingId]
+    );
+
+    const detailZone = React.useMemo(() =>
+        zones.find(z => z.id === detailId) || null,
+        [zones, detailId]
+    );
 
     const [form] = Form.useForm();
 
@@ -71,37 +85,49 @@ const ZonesPage: React.FC = () => {
     }, [filterCompanyId, filterSearch, filterStateId]);
 
     const openCreate = () => {
-        setEditingZone(null);
-        form.resetFields();
+        setEditingId(null);
         setModalOpen(true);
     };
 
     const openEdit = (zone: Zone) => {
-        setEditingZone(zone);
-        form.setFieldsValue({
-            name: zone.name,
-            companyId: zone.companyId,
-            region: zone.region,
-            coordinator: zone.coordinator,
-            coordinatorNum: zone.coordinatorNum,
-            geographicRoute: zone.geographicRoute,
-            stateId: zone.stateId,
-        });
+        setEditingId(zone.id);
         setModalOpen(true);
     };
+
+    // Form population logic
+    useEffect(() => {
+        if (modalOpen) {
+            if (editingZone) {
+                form.setFieldsValue({
+                    name: editingZone.name,
+                    companyId: editingZone.companyId || (editingZone.company as any)?.id,
+                    region: editingZone.region,
+                    coordinator: editingZone.coordinator,
+                    coordinatorNum: editingZone.coordinatorNum,
+                    geographicRoute: editingZone.geographicRoute,
+                    stateId: editingZone.stateId || (editingZone.state as any)?.id,
+                });
+            } else {
+                form.resetFields();
+            }
+        }
+    }, [modalOpen, editingZone, form]);
 
     const handleSave = async (values: any) => {
         setSaving(true);
         try {
-            if (editingZone) {
-                await zonesService.updateZone(editingZone.id, values);
+            if (editingId) {
+                const updated = await zonesService.updateZone(editingId, values);
                 message.success('Zona actualizada correctamente');
+
+                // Reactive local update: avoids full reload if only editing
+                setZones(prev => prev.map(z => z.id === editingId ? updated : z));
             } else {
                 await zonesService.createZone(values);
                 message.success('Zona creada correctamente');
+                loadZones(); // For new zones, reload to get correct position/totals
             }
             setModalOpen(false);
-            loadZones();
         } catch {
             message.error('Error al guardar la zona');
         } finally {
@@ -113,8 +139,13 @@ const ZonesPage: React.FC = () => {
         try {
             await zonesService.deleteZone(id);
             message.success('Zona eliminada');
-            loadZones();
-            if (detailZone?.id === id) setDetailZone(null);
+
+            // Reactive local update: immediate removal from UI
+            setZones(prev => prev.filter(z => z.id !== id));
+            setTotalZones(prev => Math.max(0, prev - 1));
+
+            if (detailId === id) setDetailId(null);
+            if (editingId === id) setEditingId(null);
         } catch {
             message.error('Error al eliminar la zona');
         }
@@ -134,7 +165,7 @@ const ZonesPage: React.FC = () => {
                     <Text
                         strong
                         style={{ color: '#1890ff', cursor: 'pointer' }}
-                        onClick={() => setDetailZone(record)}
+                        onClick={() => setDetailId(record.id)}
                     >
                         {name}
                     </Text>
@@ -299,7 +330,7 @@ const ZonesPage: React.FC = () => {
 
                 {/* Content: Table + Detail */}
                 <Row gutter={[20, 20]}>
-                    <Col xs={24} lg={detailZone ? 16 : 24}>
+                    <Col xs={24} lg={detailId ? 16 : 24}>
                         <Card
                             style={{ borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)' }}
                             bodyStyle={{ padding: 0 }}
@@ -309,11 +340,11 @@ const ZonesPage: React.FC = () => {
                                 dataSource={zones}
                                 rowKey="id"
                                 loading={loading}
-                                pagination={{ 
+                                pagination={{
                                     current: currentPage,
                                     pageSize: pageSize,
                                     total: totalZones,
-                                    showSizeChanger: true, 
+                                    showSizeChanger: true,
                                     pageSizeOptions: ['5', '10', '20', '50', '100'],
                                     showTotal: (total) => `Total ${total} zonas`,
                                     position: ['bottomRight'],
@@ -325,9 +356,9 @@ const ZonesPage: React.FC = () => {
                                 }}
                                 locale={{ emptyText: <Empty description="No se encontraron zonas" /> }}
                                 style={{ borderRadius: '12px', overflow: 'hidden' }}
-                                rowClassName={(record) => record.id === detailZone?.id ? 'selected-row' : ''}
+                                rowClassName={(record) => record.id === detailId ? 'selected-row' : ''}
                                 onRow={(record) => ({
-                                    onClick: () => setDetailZone(record),
+                                    onClick: () => setDetailId(record.id),
                                     style: { cursor: 'pointer' }
                                 })}
                             />
@@ -345,7 +376,7 @@ const ZonesPage: React.FC = () => {
                                         </Space>
                                     }
                                     extra={
-                                        <Button type="text" onClick={() => setDetailZone(null)} size="small">✕</Button>
+                                        <Button type="text" onClick={() => setDetailId(null)} size="small">✕</Button>
                                     }
                                     style={{ borderRadius: '12px', border: '1px solid rgba(24,144,255,0.2)', background: '#fafcff' }}
                                 >

@@ -85,9 +85,17 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selec
             title: 'Cargo',
             dataIndex: 'title',
             key: 'title',
+            width: 140,
             filters: positions.map(p => ({ text: p, value: p })),
             onFilter: (value, record) => record.title === value,
             render: (title: string) => <Text strong>{title}</Text>,
+        },
+        {
+            title: 'Solicitado por',
+            dataIndex: 'requestedBy',
+            key: 'requestedBy',
+            width: 130,
+            render: (requestedBy: string) => <Text type="secondary">{requestedBy || 'N/A'}</Text>,
         },
         // {
         //     title: 'Departamento',
