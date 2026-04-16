@@ -985,17 +985,14 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                                     icon={<ArrowRightOutlined />}
                                                     disabled={
                                                         (currentStageId === 1 && !activeCandidate.cvUrl) ||
-                                                        (currentStageId === 2 && !activeCandidate.videoUrl) ||
                                                         (currentStageId === 3 && !activeCandidate.psychTestUrl)
                                                     }
                                                     title={
                                                         currentStageId === 1 && !activeCandidate.cvUrl
                                                             ? 'El candidato debe tener un currículum cargado para avanzar'
-                                                            : currentStageId === 2 && !activeCandidate.videoUrl
-                                                                ? 'El candidato debe subir su video para avanzar'
-                                                                : currentStageId === 3 && !activeCandidate.psychTestUrl
-                                                                    ? 'Debe subir los resultados de la prueba (PDF) para avanzar'
-                                                                    : ''
+                                                            : currentStageId === 3 && !activeCandidate.psychTestUrl
+                                                                ? 'Debe subir los resultados de la prueba (PDF) para avanzar'
+                                                                : ''
                                                     }
                                                     style={{ minWidth: 160, backgroundColor: '#2b457c', borderColor: '#2b457c' }}
                                                 >
