@@ -78,13 +78,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             module: 'zones',
             onClick: () => navigate('/zones'),
         },
-        {
-            key: '/hires',
-            icon: <TrophyOutlined style={{ fontSize: '18px' }} />,
-            label: 'Contrataciones',
-            module: 'hires',
-            onClick: () => navigate('/hires'),
-        },
+
         {
             key: '/users',
             icon: <TeamOutlined style={{ fontSize: '18px' }} />,

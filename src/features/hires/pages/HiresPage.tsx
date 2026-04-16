@@ -128,19 +128,8 @@ const HiresPage: React.FC = () => {
     ];
 
     return (
-        <div style={{ background: '#f0f2f5', minHeight: '100%' }}>
+        <div style={{ minHeight: '100%' }}>
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-                {/* Header */}
-                <Row justify="space-between" align="middle" style={{ marginBottom: '24px' }}>
-                    <Col>
-                        <Title level={3} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <TrophyOutlined style={{ color: '#faad14' }} />
-                            Historial de Contrataciones
-                        </Title>
-                        <Text type="secondary">Registro de todos los candidatos contratados exitosamente</Text>
-                    </Col>
-                </Row>
-
                 {/* Filters */}
                 <Card
                     style={{ marginBottom: '20px', borderRadius: '12px' }}

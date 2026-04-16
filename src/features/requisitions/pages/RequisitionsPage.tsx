@@ -15,6 +15,7 @@ import { Tabs } from 'antd';
 import RecruitmentDashboard from '../components/RecruitmentDashboard';
 import { requisitionService } from '../../../services/requisitionService';
 import PermissionGuard from '../../../components/PermissionGuard';
+import HiresPage from '../../hires/pages/HiresPage';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -199,6 +200,11 @@ const RequisitionsPage: React.FC = () => {
                 </TabPane>
                 <TabPane tab="Dashboard de Reclutamiento" key="dashboard">
                     <RecruitmentDashboard />
+                </TabPane>
+                <TabPane tab="Historial de Contrataciones" key="hires">
+                    <PermissionGuard module="hires">
+                        <HiresPage />
+                    </PermissionGuard>
                 </TabPane>
             </Tabs>
 

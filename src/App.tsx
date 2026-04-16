@@ -5,7 +5,6 @@ import DashboardPage from './features/candidates/pages/DashboardPage';
 import RequisitionsPage from './features/requisitions/pages/RequisitionsPage';
 import UsersPage from './features/users/pages/UsersPage';
 import RolesPage from './features/roles/pages/RolesPage';
-import HiresPage from './features/hires/pages/HiresPage';
 import ZonesPage from './features/zones/pages/ZonesPage';
 import ProtectedRoute from './features/auth/components/ProtectedRoute';
 import PermissionRoute from './features/auth/components/PermissionRoute';
@@ -70,18 +69,7 @@ const App: React.FC = () => {
                     }
                 />
 
-                <Route
-                    path="/hires"
-                    element={
-                        <ProtectedRoute allowedEntity="staff" redirectTo="/login">
-                            <PermissionRoute module="hires">
-                                <MainLayout>
-                                    <HiresPage />
-                                </MainLayout>
-                            </PermissionRoute>
-                        </ProtectedRoute>
-                    }
-                />
+
 
                 <Route
                     path="/zones"
