@@ -146,6 +146,21 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
         }
     };
     
+    
+    // Add remote search for zones
+    const handleZoneSearch = async (value: string) => {
+        if (!selectedCompanyId) return;
+        setLoadingZones(true);
+        try {
+            const res = await zonesService.fetchZones(selectedCompanyId, value);
+            setZones(res.data);
+        } catch {
+            // Already handled by error message in other places
+        } finally {
+            setLoadingZones(false);
+        }
+    };
+    
     // Submit handler
     const handleSubmit = async (values: any) => {
         try {
@@ -262,7 +277,8 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                                 loading={loadingZones}
                                 disabled={!selectedCompanyId}
                                 showSearch
-                                optionFilterProp="children"
+                                onSearch={handleZoneSearch}
+                                filterOption={false}
                                 placeholder={!selectedCompanyId ? 'Selecciona primero una empresa' : 'Seleccionar zona'}
                                 dropdownRender={(menu) => (
                                     <>

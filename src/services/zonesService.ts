@@ -2,7 +2,7 @@ import { Zone } from '../types';
 import { api } from './api';
 
 export const zonesService = {
-    async fetchZones(companyId?: number, search?: string, page: number = 1, limit: number = 5, stateId?: number): Promise<{ data: Zone[], total: number }> {
+    async fetchZones(companyId?: number, search?: string, page: number = 1, limit: number = 100, stateId?: number): Promise<{ data: Zone[], total: number }> {
         const response = await api.get('/zones', { params: { companyId, search, page, limit, stateId } });
         return response.data;
     },
