@@ -48,11 +48,14 @@ const masterDataSlice = createSlice({
                 state.routes.push(action.payload);
                 state.routes.sort();
             }
+        },
+        removePosition: (state, action: PayloadAction<string>) => {
+            state.positions = state.positions.filter(p => p !== action.payload);
         }
     }
 });
 
-export const { addCompany, addPosition, addZone, addRoute } = masterDataSlice.actions;
+export const { addCompany, addPosition, addZone, addRoute, removePosition } = masterDataSlice.actions;
 
 export const selectCompanies = (state: { masterData: MasterDataState }) => state.masterData.companies;
 export const selectPositions = (state: { masterData: MasterDataState }) => state.masterData.positions;

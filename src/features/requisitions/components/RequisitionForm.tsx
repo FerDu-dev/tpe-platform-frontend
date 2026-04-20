@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Modal, Form, Select, Input, Button, Divider, message, Space, Card, Descriptions } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import {
     selectPositions,
-    addCompany, addPosition
+    addCompany, addPosition, removePosition
 } from '../../../store/masterDataSlice';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { createRequisition, updateRequisition } from '../store/requisitionsSlice';
 import { VENEZUELA_STATES } from '../../../constants/venezuela';
 import type { Priority, Zone, Requisition } from '../../../types';
@@ -98,6 +98,25 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
         else if (type === 'position') dispatch(addPosition(newItemName));
         message.success(`${newItemName} añadido correctamente`);
         setNewItemName('');
+    };
+
+    const handleDeletePosition = (positionName: string, event: React.MouseEvent) => {
+        event.stopPropagation(); // Prevent dropdown item selection
+        Modal.confirm({
+            title: '¿Estás seguro de eliminar este cargo?',
+            content: `Se eliminará el cargo "${positionName}" de la lista de opciones.`,
+            okText: 'Eliminar',
+            okType: 'danger',
+            cancelText: 'Cancelar',
+            onOk: () => {
+                dispatch(removePosition(positionName));
+                message.success(`Cargo "${positionName}" eliminado correctamente`);
+                // If the deleted position was selected, clear it
+                if (form.getFieldValue('position') === positionName) {
+                    form.setFieldValue('position', undefined);
+                }
+            },
+        });
     };
 
     const handleCompanyChange = (companyId: number) => {
@@ -250,8 +269,21 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                         </Form.Item>
 
                         <Form.Item name="position" label="Cargo / Posición" rules={[{ required: true }]}>
-                            <Select popupRender={renderPositionDropdown}>
-                                {positions.map(p => <Option key={p} value={p}>{p}</Option>)}
+                            <Select popupRender={renderPositionDropdown} placeholder="Seleccionar cargo">
+                                {positions.map(p => (
+                                    <Option key={p} value={p}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span>{p}</span>
+                                            <Button
+                                                type="text"
+                                                size="small"
+                                                icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />}
+                                                onClick={(e) => handleDeletePosition(p, e)}
+                                                onMouseDown={(e) => e.stopPropagation()} // Extra precaution for AntD Select
+                                            />
+                                        </div>
+                                    </Option>
+                                ))}
                             </Select>
                         </Form.Item>
 
