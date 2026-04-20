@@ -37,7 +37,7 @@ import { STAGE_COLORS } from '../../../services/candidateService';
 import { motion } from 'framer-motion';
 import { requisitionService } from '../../../services/requisitionService';
 import { candidateService } from '../../../services/candidateService';
-import { updateCandidateStage } from '../../candidates/store/candidatesSlice';
+// import { updateCandidateStage } from '../../candidates/store/candidatesSlice';
 import CandidateListModal from './CandidateListModal';
 import SmartMatchingModal from './SmartMatchingModal';
 import CandidateDrawer from '../../candidates/components/CandidateDrawer';
@@ -121,36 +121,36 @@ const RecruitmentDashboard: React.FC = () => {
         }
     }, [selectedRequisitionId]);
 
-    const handleAdvance = async (candidate: any) => {
-        const currentApp = candidate.applications?.[0];
-        const currentStageId = currentApp?.currentStageId;
-        if (!currentStageId || currentStageId >= 8) return;
+    // const handleAdvance = async (candidate: any) => {
+    //     const currentApp = candidate.applications?.[0];
+    //     const currentStageId = currentApp?.currentStageId;
+    //     if (!currentStageId || currentStageId >= 8) return;
 
-        // Validation: Must have a requisition to advance
-        if (!currentApp?.jobRequisitionId) {
-            return message.error('La vacante que tenía este candidato ya no está disponible. Por favor, asigne una nueva vacante para continuar.');
-        }
+    //     // Validation: Must have a requisition to advance
+    //     if (!currentApp?.jobRequisitionId) {
+    //         return message.error('La vacante que tenía este candidato ya no está disponible. Por favor, asigne una nueva vacante para continuar.');
+    //     }
 
-        // Validation: Assigned requisition must be OPEN to advance
-        if (currentApp?.jobRequisition?.status && currentApp?.jobRequisition?.status !== 'OPEN') {
-            const statusLabel = currentApp?.jobRequisition?.status === 'PAUSED' ? 'Pausada' :
-                currentApp?.jobRequisition?.status === 'CANCELLED' ? 'Cancelada' : 'Cerrada';
-            return message.error(`No se puede avanzar: La vacante asignada está ${statusLabel}. Por favor, asigne una nueva vacante abierta.`);
-        }
+    //     // Validation: Assigned requisition must be OPEN to advance
+    //     if (currentApp?.jobRequisition?.status && currentApp?.jobRequisition?.status !== 'OPEN') {
+    //         const statusLabel = currentApp?.jobRequisition?.status === 'PAUSED' ? 'Pausada' :
+    //             currentApp?.jobRequisition?.status === 'CANCELLED' ? 'Cancelada' : 'Cerrada';
+    //         return message.error(`No se puede avanzar: La vacante asignada está ${statusLabel}. Por favor, asigne una nueva vacante abierta.`);
+    //     }
 
-        try {
-            await dispatch(updateCandidateStage({ id: candidate.id, newStage: (currentStageId + 1) as any })).unwrap();
-            message.success(`Candidato ${candidate.firstName} avanzado a la etapa ${currentStageId + 1}`);
-            // Refresh detailed data
-            if (selectedRequisitionId) {
-                const updated = await requisitionService.findOne(selectedRequisitionId.toString());
-                setFullRequisition(updated);
-            }
-            dispatch(loadRecruitmentAnalytics({ companyId: selectedCompanyId, jobRequisitionId: selectedRequisitionId, status: 'ACTIVE' }));
-        } catch (e: any) {
-            message.error(e || 'No se pudo avanzar al candidato. Verifique que cumpla los requisitos de la etapa.');
-        }
-    };
+    //     try {
+    //         await dispatch(updateCandidateStage({ id: candidate.id, newStage: (currentStageId + 1) as any })).unwrap();
+    //         message.success(`Candidato ${candidate.firstName} avanzado a la etapa ${currentStageId + 1}`);
+    //         // Refresh detailed data
+    //         if (selectedRequisitionId) {
+    //             const updated = await requisitionService.findOne(selectedRequisitionId.toString());
+    //             setFullRequisition(updated);
+    //         }
+    //         dispatch(loadRecruitmentAnalytics({ companyId: selectedCompanyId, jobRequisitionId: selectedRequisitionId, status: 'ACTIVE' }));
+    //     } catch (e: any) {
+    //         message.error(e || 'No se pudo avanzar al candidato. Verifique que cumpla los requisitos de la etapa.');
+    //     }
+    // };
 
     const handleLinkCandidate = async (candidateId: string) => {
         if (!selectedRequisitionId) return;
