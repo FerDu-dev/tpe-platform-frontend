@@ -63,12 +63,21 @@ const RequisitionApplicantsModal: React.FC<RequisitionApplicantsModalProps> = ({
         {
             title: 'Candidato',
             key: 'name',
+            width: 150,
             render: (_, r) => (
                 <div>
                     <Text strong>{r.firstName} {r.lastName}</Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 11 }}>{r.nationalId}</Text>
                 </div>
+            ),
+        },
+        {
+            title: 'Residencia/Estado',
+            key: 'state',
+            width: 150,
+            render: (_, r) => (
+                <Text>{r.municipality?.name || r.location?.split('-').pop()?.trim() || 'N/A'}/{r.state?.name || r.location?.split('-').pop()?.trim() || 'N/A'}</Text>
             ),
         },
         {

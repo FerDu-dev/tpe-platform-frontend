@@ -11,7 +11,8 @@ import {
     FireOutlined,
     ThunderboltOutlined,
     InfoCircleOutlined,
-    LineChartOutlined
+    LineChartOutlined,
+    EyeOutlined
 } from '@ant-design/icons';
 import { Button, message, Avatar, Divider, Input, Pagination } from 'antd';
 import {
@@ -769,16 +770,19 @@ const RecruitmentDashboard: React.FC = () => {
                                                 dataSource={fullRequisition.applications || []}
                                                 renderItem={(app: any) => (
                                                     <List.Item
+                                                        onClick={() => handleViewCandidate(app.candidate)}
                                                         actions={[
                                                             <Button
                                                                 type="primary"
                                                                 ghost
                                                                 size="small"
-                                                                icon={<SwapOutlined />}
-                                                                onClick={() => handleAdvance(app.candidate)}
-                                                                disabled={app.currentStageId >= 8 || !app.jobRequisitionId || fullRequisition?.status !== 'OPEN'}
+                                                                icon={<EyeOutlined />}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleViewCandidate(app.candidate);
+                                                                }}
                                                             >
-                                                                Siguiente Etapa
+                                                                Ver Perfil
                                                             </Button>
                                                         ]}
                                                         style={{
@@ -786,8 +790,11 @@ const RecruitmentDashboard: React.FC = () => {
                                                             borderRadius: '8px',
                                                             padding: '12px 16px',
                                                             marginBottom: '8px',
-                                                            border: '1px solid rgba(0,0,0,0.03)'
+                                                            border: '1px solid rgba(0,0,0,0.03)',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease'
                                                         }}
+                                                        className="hover-card-light"
                                                     >
                                                         <List.Item.Meta
                                                             avatar={<Avatar src={app.candidate.avatarUrl} icon={<UserOutlined />} style={{ backgroundColor: STAGE_COLORS[app.currentStageId] }} />}
@@ -816,11 +823,26 @@ const RecruitmentDashboard: React.FC = () => {
                                                     dataSource={availableCandidates}
                                                     renderItem={(candidate: any) => (
                                                         <List.Item
+                                                            onClick={() => handleViewCandidate(candidate)}
                                                             actions={[
+                                                                <Button
+                                                                    type="link"
+                                                                    size="small"
+                                                                    icon={<EyeOutlined />}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleViewCandidate(candidate);
+                                                                    }}
+                                                                >
+                                                                    Ver
+                                                                </Button>,
                                                                 <Button
                                                                     type="dashed"
                                                                     size="small"
-                                                                    onClick={() => handleLinkCandidate(candidate.id)}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleLinkCandidate(candidate.id);
+                                                                    }}
                                                                     style={{ borderRadius: '6px' }}
                                                                 >
                                                                     Vincular
@@ -831,8 +853,11 @@ const RecruitmentDashboard: React.FC = () => {
                                                                 background: '#fff',
                                                                 borderRadius: '8px',
                                                                 marginBottom: '8px',
-                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                                                                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.2s ease'
                                                             }}
+                                                            className="hover-card-light"
                                                         >
                                                             <List.Item.Meta
                                                                 title={<Text strong style={{ fontSize: '13px' }}>{candidate.firstName} {candidate.lastName}</Text>}

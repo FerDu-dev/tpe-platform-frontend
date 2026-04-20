@@ -145,6 +145,7 @@ export const candidateService = {
             email: c.email,
             phone: c.phone,
             location: `${c.municipality?.name || ''} - ${c.municipality?.state?.name || ''}`.trim(),
+            state: c.municipality?.state || c.state,
             municipality: c.municipality,
             municipalityId: c.municipalityId,
             zone: activeApp?.jobRequisition?.zone?.name || 'N/A',

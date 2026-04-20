@@ -40,13 +40,13 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
         if (open) {
             if (requisition) {
                 console.log('Populating form with requisition:', requisition);
-                
+
                 // Populate municipalities if state exists
                 if (requisition.stateId) {
                     const found = VENEZUELA_STATES.find(s => s.id === requisition.stateId);
                     setMunicipalities(found ? found.municipalities : []);
                 }
-                
+
                 // Populate zones if company exists
                 const companyId = requisition.companyId;
                 if (companyId) {
@@ -164,8 +164,8 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
             setCreatingZone(false);
         }
     };
-    
-    
+
+
     // Add remote search for zones
     const handleZoneSearch = async (value: string) => {
         if (!selectedCompanyId) return;
@@ -179,7 +179,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
             setLoadingZones(false);
         }
     };
-    
+
     // Submit handler
     const handleSubmit = async (values: any) => {
         try {
@@ -208,7 +208,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                 await dispatch(createRequisition(requisitionData)).unwrap();
                 message.success('Requisición creada con éxito');
             }
-            
+
             form.resetFields();
             onClose();
         } catch (error: any) {
@@ -338,6 +338,9 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                     {selectedZoneId && zones.find(z => z.id === selectedZoneId) && (
                         <Card size="small" style={{ marginTop: '16px', background: '#f0f5ff', borderRadius: '10px' }}>
                             <Descriptions title="Detalles de la Zona Seleccionada" column={2} size="small">
+                                <Descriptions.Item label="Estado">
+                                    {zones.find(z => z.id === selectedZoneId)?.state?.name || 'N/A'}
+                                </Descriptions.Item>
                                 <Descriptions.Item label="Región">
                                     {zones.find(z => z.id === selectedZoneId)?.region || 'N/A'}
                                 </Descriptions.Item>
