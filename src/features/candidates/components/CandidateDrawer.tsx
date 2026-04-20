@@ -871,14 +871,14 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
 
         Modal.confirm({
             title: '¿Rescatar este candidato?',
-            content: 'El candidato volverá a estar activo en el proceso.',
+            content: 'El candidato volverá a estar activo en el proceso en la etapa donde quedó.',
             okText: 'Rescatar',
             cancelText: 'Cancelar',
             onOk: async () => {
                 await handleAction(async () => {
                     await candidateService.rescueCandidate(appId);
                     message.success('Candidato rescatado exitosamente');
-                }, true, true); // CLOSE on rescue
+                }, true, false); // DON'T close on rescue, let the user see the current state
             }
         });
     };

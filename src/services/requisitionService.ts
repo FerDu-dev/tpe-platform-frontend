@@ -25,6 +25,7 @@ export const requisitionService = {
             requestedBy: r.requestedBy,
             location: r.municipality ? `${r.municipality.name} - ${r.state?.name || ''}` : (r.state?.name || 'N/A'),
             zone: r.zone,
+            state: r.state,
             route: r.zone?.geographicRoute || 'N/A'
         }));
 
@@ -51,6 +52,7 @@ export const requisitionService = {
             department: r.department || 'N/A',
             location: r.municipality ? `${r.municipality.name} - ${r.state?.name || ''}` : (r.state?.name || 'N/A'),
             zone: r.zone,
+            state: r.state,
             zoneId: r.zoneId,
             route: r.zone?.geographicRoute || 'N/A',
             stateId: r.stateId,
@@ -96,6 +98,7 @@ export const requisitionService = {
             department: r.department || 'N/A',
             location: r.municipality ? `${r.municipality.name} - ${r.state?.name || ''}` : (r.state?.name || 'N/A'),
             zone: r.zone,
+            state: r.state,
             zoneId: r.zoneId,
             route: r.zone?.geographicRoute || 'N/A',
             stateId: r.stateId,

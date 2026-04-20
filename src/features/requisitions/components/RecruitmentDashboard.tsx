@@ -254,17 +254,23 @@ const RecruitmentDashboard: React.FC = () => {
                                         placeholder="Todas las Requisiciones"
                                         allowClear
                                         className="premium-select"
+                                        popupMatchSelectWidth={false}
+                                        dropdownStyle={{ minWidth: 350, maxWidth: 600 }}
                                     >
                                         {requisitions
                                             .filter(r => r.company === COMPANIES.find(c => c.id === selectedCompanyId)?.name && r.status === 'OPEN')
                                             .map(r => (
                                                 <Option key={r.id} value={r.id}>
-                                                    <Space>
-                                                        <Tag color={r.priority === 'A' ? 'error' : r.priority === 'B' ? 'warning' : 'blue'} style={{ fontSize: '10px' }}>
-                                                            {r.priority}
-                                                        </Tag>
-                                                        {r.title} - Zona:{typeof r.zone === 'object' ? r.zone?.name : r.zone}
-                                                    </Space>
+                                                    <div style={{ display: 'inline-block', minWidth: '100%' }}>
+                                                        <Space>
+                                                            <Tag color={r.priority === 'A' ? 'error' : r.priority === 'B' ? 'warning' : 'blue'} style={{ fontSize: '10px' }}>
+                                                                {r.priority}
+                                                            </Tag>
+                                                            <Text style={{ whiteSpace: 'nowrap' }}>
+                                                                {r.title} - Zona: {typeof r.zone === 'object' ? r.zone?.name : r.zone}
+                                                            </Text>
+                                                        </Space>
+                                                    </div>
                                                 </Option>
                                             ))
                                         }

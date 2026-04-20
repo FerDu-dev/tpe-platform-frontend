@@ -3,7 +3,7 @@ import { Table, Tag, Typography, Empty } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useAppSelector } from '../../../app/store';
 import { selectRequisitions, selectRequisitionsLoading } from '../store/requisitionsSlice';
-import { selectCompanies, selectPositions, selectZones } from '../../../store/masterDataSlice';
+import { selectCompanies, selectPositions, selectZones, selectStates } from '../../../store/masterDataSlice';
 import type { Requisition, Priority, RequisitionStatus } from '../../../types';
 
 const { Text } = Typography;
@@ -66,6 +66,7 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selec
     const companies = useAppSelector(selectCompanies);
     const positions = useAppSelector(selectPositions);
     const zones = useAppSelector(selectZones);
+    const statesList = useAppSelector(selectStates);
 
     const columns: ColumnsType<Requisition> = [
         {
@@ -123,6 +124,19 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selec
                 const name = typeof zone === 'object' ? zone?.name : zone;
                 return <Tag color="orange">{name || 'N/A'}</Tag>;
             },
+        },
+        {
+            title: 'Estado',
+            key: 'state',
+            width: 120,
+            filters: statesList.map(s => ({ text: s, value: s })),
+            onFilter: (value, record) => {
+                const stateName = record.state?.name || record.stateName;
+                return stateName === value;
+            },
+            render: (_: any, record: Requisition) => (
+                <Text>{record.state?.name || record.stateName || 'N/A'}</Text>
+            ),
         },
         {
             title: 'Prioridad',
