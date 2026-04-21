@@ -979,17 +979,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                                     onClick={handleAdvance}
                                                     loading={submitting}
                                                     icon={<ArrowRightOutlined />}
-                                                    disabled={
-                                                        (currentStageId === 1 && !activeCandidate.cvUrl) ||
-                                                        (currentStageId === 3 && !activeCandidate.psychTestUrl)
-                                                    }
-                                                    title={
-                                                        currentStageId === 1 && !activeCandidate.cvUrl
-                                                            ? 'El candidato debe tener un currículum cargado para avanzar'
-                                                            : currentStageId === 3 && !activeCandidate.psychTestUrl
-                                                                ? 'Debe subir los resultados de la prueba (PDF) para avanzar'
-                                                                : ''
-                                                    }
+                                                    disabled={false}
+                                                    title={''}
                                                     style={{ minWidth: 160, backgroundColor: '#2b457c', borderColor: '#2b457c' }}
                                                 >
                                                     Siguiente Etapa
