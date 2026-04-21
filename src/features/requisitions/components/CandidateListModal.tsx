@@ -89,7 +89,7 @@ const CandidateListModal: React.FC<CandidateListModalProps> = ({ visible, onClos
             onCancel={onClose}
             footer={null}
             width={900}
-            bodyStyle={{ padding: '0 24px 24px 24px' }}
+            styles={{ body: { padding: '0 24px 24px 24px' } }}
         >
             <div style={{ marginTop: '20px' }}>
                 {loading ? (

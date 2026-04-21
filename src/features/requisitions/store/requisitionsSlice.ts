@@ -34,8 +34,12 @@ export const loadRequisitions = createAsyncThunk(
     async (params: { page?: number; limit?: number; status?: string } & RequisitionFilters = {}, { getState, rejectWithValue }) => {
         const state = getState() as RootState;
         const filters = state.requisitions.filters;
+        
+        // Sanitize: Exclude jobRequisitionId as the list endpoint doesn't support it as a filter
+        const { jobRequisitionId, ...cleanFilters } = { ...filters, ...params };
+
         try {
-            const response = await requisitionService.fetchRequisitions({ ...filters, ...params });
+            const response = await requisitionService.fetchRequisitions(cleanFilters);
             return response;
         } catch (error) {
             return rejectWithValue((error as Error).message);

@@ -31,7 +31,9 @@ import {
     selectRecruitmentAnalytics,
     selectAnalyticsLoading,
     loadRequisitions,
-    selectRequisitions
+    selectRequisitions,
+    selectRequisitionsFilters,
+    setFilters
 } from '../store/requisitionsSlice';
 import { STAGE_COLORS } from '../../../services/candidateService';
 import { motion } from 'framer-motion';
@@ -69,8 +71,9 @@ const RecruitmentDashboard: React.FC = () => {
     const analyticsLoading = useAppSelector(selectAnalyticsLoading); // Renamed from 'loading' to avoid conflict
     const requisitions = useAppSelector(selectRequisitions);
 
-    const [selectedCompanyId, setSelectedCompanyId] = useState<number | undefined>(undefined);
-    const [selectedRequisitionId, setSelectedRequisitionId] = useState<number | undefined>(undefined);
+    const filters = useAppSelector(selectRequisitionsFilters);
+
+    // Deep-dive detail for specific requisition fetched on demand
     const [fullRequisition, setFullRequisition] = useState<any>(null);
     const [availableCandidates, setAvailableCandidates] = useState<any[]>([]);
     const [loadingOps, setLoadingOps] = useState(false);
@@ -89,37 +92,32 @@ const RecruitmentDashboard: React.FC = () => {
     const pageSize = 6;
 
     useEffect(() => {
-        // Load requisitions for the company
-        if (selectedCompanyId) {
-            dispatch(loadRequisitions({ page: 1, limit: 100 })); // Load all for the selector
+        // Load analytics based on global filters
+        dispatch(loadRecruitmentAnalytics({
+            companyId: filters.companyId,
+            jobRequisitionId: filters.jobRequisitionId,
+            stateId: filters.stateId,
+            status: 'ACTIVE'
+        }));
 
-            // Load analytics for the company, even if no requisition is selected
-            dispatch(loadRecruitmentAnalytics({
-                companyId: selectedCompanyId,
-                jobRequisitionId: selectedRequisitionId, // can be undefined
-                status: 'ACTIVE'
-            }));
-
-            // Fetch candidates in "Bienvenida" stage with no requisition
-            candidateService.fetch_candidates_active({ currentStageId: 1 })
-                .then(res => {
-                    // Filter those without jobRequisitionId in applications
-                    const withoutReq = res.data.filter((c: any) => !c.applications?.[0]?.jobRequisitionId);
-                    setAvailableCandidates(withoutReq);
-                });
-        }
-    }, [dispatch, selectedCompanyId, selectedRequisitionId]);
+        // Load available candidates if in Bienvenida
+        candidateService.fetch_candidates_active({ stageId: 1 })
+            .then(res => {
+                const withoutReq = res.data.filter((c: any) => !c.applications?.[0]?.jobRequisitionId);
+                setAvailableCandidates(withoutReq);
+            });
+    }, [dispatch, filters.companyId, filters.jobRequisitionId, filters.stateId, refreshKey]);
 
     useEffect(() => {
-        if (selectedRequisitionId) {
+        if (filters.jobRequisitionId) {
             setLoadingOps(true);
-            requisitionService.findOne(selectedRequisitionId.toString())
+            requisitionService.findOne(filters.jobRequisitionId.toString())
                 .then(setFullRequisition)
                 .finally(() => setLoadingOps(false));
         } else {
             setFullRequisition(null);
         }
-    }, [selectedRequisitionId]);
+    }, [filters.jobRequisitionId]);
 
     // const handleAdvance = async (candidate: any) => {
     //     const currentApp = candidate.applications?.[0];
@@ -153,21 +151,21 @@ const RecruitmentDashboard: React.FC = () => {
     // };
 
     const handleLinkCandidate = async (candidateId: string) => {
-        if (!selectedRequisitionId) return;
+        if (!filters.jobRequisitionId) return;
         try {
             // Find application ID
             const candidate = availableCandidates.find(c => c.id === candidateId);
             const applicationId = candidate?.applications?.[0]?.id;
             if (!applicationId) throw new Error('No se encontró aplicación activa para el candidato');
 
-            await candidateService.updateApplicationRequisition(applicationId, selectedRequisitionId);
+            await candidateService.updateApplicationRequisition(applicationId, filters.jobRequisitionId);
             message.success('Candidato vinculado correctamente');
 
             // Refresh
-            const updated = await requisitionService.findOne(selectedRequisitionId.toString());
+            const updated = await requisitionService.findOne(filters.jobRequisitionId.toString());
             setFullRequisition(updated);
             setAvailableCandidates(prev => prev.filter(c => c.id !== candidateId));
-            dispatch(loadRecruitmentAnalytics({ companyId: selectedCompanyId, jobRequisitionId: selectedRequisitionId, status: 'ACTIVE' }));
+            dispatch(loadRecruitmentAnalytics({ companyId: filters.companyId, jobRequisitionId: filters.jobRequisitionId, status: 'ACTIVE' }));
         } catch (e: any) {
             message.error('Error al vincular candidato');
         }
@@ -181,12 +179,12 @@ const RecruitmentDashboard: React.FC = () => {
     const handleRefreshData = () => {
         setRefreshKey(prev => prev + 1);
         dispatch(loadRecruitmentAnalytics({
-            companyId: selectedCompanyId,
-            jobRequisitionId: selectedRequisitionId,
+            companyId: filters.companyId,
+            jobRequisitionId: filters.jobRequisitionId,
             status: 'ACTIVE'
         }));
-        if (selectedRequisitionId) {
-            requisitionService.findOne(selectedRequisitionId.toString()).then(setFullRequisition);
+        if (filters.jobRequisitionId) {
+            requisitionService.findOne(filters.jobRequisitionId.toString()).then(setFullRequisition);
         }
     };
 
@@ -215,107 +213,66 @@ const RecruitmentDashboard: React.FC = () => {
 
     return (
         <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100%' }}>
-            {/* Header & Main Selectors */}
+            {/* Header Area - Now using global filters */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 style={{ marginBottom: '32px' }}
             >
                 <Row gutter={[24, 24]} align="middle">
-                    <Col xs={24} md={8}>
-                        <Title level={3} style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
-                            <BarChartOutlined style={{ marginRight: '12px', color: '#1890ff' }} />
-                            Dashboard de Reclutamiento
-                        </Title>
-                    </Col>
-                    <Col xs={24} md={16}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '12px' }}>
-                            <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <Text type="secondary" style={{ fontSize: '11px', marginBottom: '4px', fontWeight: 600 }}>EMPRESA</Text>
-                                    <Select
-                                        style={{ width: 180 }}
-                                        value={selectedCompanyId}
-                                        onChange={(val) => {
-                                            setSelectedCompanyId(val);
-                                            setSelectedRequisitionId(undefined); // Reset requisition when company changes
-                                        }}
-                                        placeholder="Seleccionar Empresa"
-                                        className="premium-select"
+                    <Col span={24}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Title level={3} style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                                <BarChartOutlined style={{ marginRight: '12px', color: '#1890ff' }} />
+                                Analítica de Reclutamiento {filters.jobRequisitionId ? '(Detallada)' : '(Vista General)'}
+                            </Title>
+                            <Space>
+                                {filters.jobRequisitionId && (
+                                    <Button
+                                        type="primary"
+                                        size="middle"
+                                        icon={<RocketOutlined />}
+                                        style={{ borderRadius: '8px', background: '#1890ff', border: 'none', boxShadow: '0 2px 8px rgba(24, 144, 255, 0.3)' }}
+                                        onClick={() => setIsSmartModalVisible(true)}
                                     >
-                                        {COMPANIES.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
-                                    </Select>
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <Text type="secondary" style={{ fontSize: '11px', marginBottom: '4px', fontWeight: 600 }}>REQUISICIÓN / VACANTE</Text>
-                                    <Select
-                                        style={{ width: 250 }}
-                                        value={selectedRequisitionId}
-                                        onChange={setSelectedRequisitionId}
-                                        placeholder="Todas las Requisiciones"
-                                        allowClear
-                                        className="premium-select"
-                                        popupMatchSelectWidth={false}
-                                        dropdownStyle={{ minWidth: 350, maxWidth: 600 }}
-                                    >
-                                        {requisitions
-                                            .filter(r => r.company === COMPANIES.find(c => c.id === selectedCompanyId)?.name && r.status === 'OPEN')
-                                            .map(r => (
-                                                <Option key={r.id} value={r.id}>
-                                                    <div style={{ display: 'inline-block', minWidth: '100%' }}>
-                                                        <Space>
-                                                            <Tag color={r.priority === 'A' ? 'error' : r.priority === 'B' ? 'warning' : 'blue'} style={{ fontSize: '10px' }}>
-                                                                {r.priority}
-                                                            </Tag>
-                                                            <Text style={{ whiteSpace: 'nowrap' }}>
-                                                                {r.title} - Zona: {typeof r.zone === 'object' ? r.zone?.name : r.zone}
-                                                            </Text>
-                                                        </Space>
-                                                    </div>
-                                                </Option>
-                                            ))
-                                        }
-                                    </Select>
-                                </div>
-                            </div>
-                            {(selectedCompanyId && selectedRequisitionId) && (
-                                <Button
-                                    type="primary"
-                                    size="middle"
-                                    icon={<RocketOutlined />}
-                                    style={{ borderRadius: '8px', background: '#1890ff', border: 'none', boxShadow: '0 2px 8px rgba(24, 144, 255, 0.3)' }}
-                                    onClick={() => setIsSmartModalVisible(true)}
-                                >
-                                    Emparejamiento Inteligente
+                                        Emparejamiento Inteligente
+                                    </Button>
+                                )}
+                                <Button icon={<SwapOutlined />} onClick={handleRefreshData}>
+                                    Actualizar
                                 </Button>
-                            )}
+                            </Space>
                         </div>
                     </Col>
                 </Row>
             </motion.div>
 
-            {(!selectedCompanyId) ? (
+            {(!filters.companyId) ? (
                 <div style={{ height: '450px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Card style={{ ...glassStyle, width: '480px', textAlign: 'center', padding: '40px' }}>
+                    <Card style={{ ...glassStyle, width: '520px', textAlign: 'center', padding: '40px' }}>
                         <Empty
                             image={Empty.PRESENTED_IMAGE_SIMPLE}
                             description={
                                 <Space direction="vertical" size="middle">
-                                    <Text strong style={{ fontSize: '20px', color: '#1890ff' }}>
-                                        Paso 1: Seleccionar Empresa
+                                    <Text strong style={{ fontSize: '22px', color: '#1890ff' }}>
+                                        Contexto no seleccionado
                                     </Text>
-                                    <Paragraph type="secondary" style={{ fontSize: '15px' }}>
-                                        Para comenzar, por favor selecciona la empresa que deseas gestionar para visualizar sus vacantes y analíticas.
+                                    <Paragraph type="secondary" style={{ fontSize: '16px' }}>
+                                        Para visualizar el Dashboard, por favor utiliza la barra de filtros superior para elegir una empresa y, opcionalmente, una vacante.
                                     </Paragraph>
-                                    <div style={{ marginTop: '16px' }}>
-                                        <RocketOutlined style={{ fontSize: '48px', color: '#1890ff', opacity: 0.2 }} />
+                                    <div style={{ marginTop: '24px' }}>
+                                        <div style={{ padding: '16px', background: '#f0f7ff', borderRadius: '12px', border: '1px dashed #1890ff' }}>
+                                            <Text type="secondary">
+                                                Tip Senior: Si seleccionas una empresa pero no una vacante, verás las métricas acumuladas de toda la empresa.
+                                            </Text>
+                                        </div>
                                     </div>
                                 </Space>
                             }
                         />
                     </Card>
                 </div>
-            ) : !selectedRequisitionId ? (
+            ) : !filters.jobRequisitionId ? (
                 <motion.div
                     key="company-dashboard"
                     initial={{ opacity: 0, scale: 0.98 }}
@@ -329,11 +286,11 @@ const RecruitmentDashboard: React.FC = () => {
                                 <Card style={{ ...gradientCard('#1890ff'), height: '140px' }} bodyStyle={{ padding: '20px' }}>
                                     <Statistic
                                         title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Requisiciones Abiertas</Text>}
-                                        value={requisitions.filter(r => r.company === COMPANIES.find(c => c.id === selectedCompanyId)?.name && r.status === 'OPEN').length}
+                                        value={requisitions.filter(r => r.companyId === filters.companyId && r.status === 'OPEN').length}
                                         prefix={<RocketOutlined />}
                                         valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
                                     />
-                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>Personal de {COMPANIES.find(c => c.id === selectedCompanyId)?.name}</Text>
+                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>Personal de {COMPANIES.find(c => c.id === filters.companyId)?.name}</Text>
                                 </Card>
                             </Col>
                             <Col xs={24} sm={8}>
@@ -351,7 +308,7 @@ const RecruitmentDashboard: React.FC = () => {
                                 <Card style={{ ...gradientCard('#fa8c16'), height: '140px' }} bodyStyle={{ padding: '20px' }}>
                                     <Statistic
                                         title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Búsquedas de Alta Prioridad</Text>}
-                                        value={requisitions.filter(r => r.company === COMPANIES.find(c => c.id === selectedCompanyId)?.name && r.status === 'OPEN' && r.priority === 'A').length}
+                                        value={requisitions.filter(r => r.companyId === filters.companyId && r.status === 'OPEN' && r.priority === 'A').length}
                                         prefix={<FireOutlined />}
                                         valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
                                     />
@@ -388,9 +345,8 @@ const RecruitmentDashboard: React.FC = () => {
                             }
                         >
                             {(() => {
-                                const companyName = COMPANIES.find(c => c.id === selectedCompanyId)?.name;
                                 const filteredReqs = requisitions.filter(r =>
-                                    r.company === companyName &&
+                                    r.companyId === filters.companyId &&
                                     r.status === 'OPEN' &&
                                     (r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                         (typeof r.zone === 'object' ? r.zone?.name : r.zone).toLowerCase().includes(searchTerm.toLowerCase()))
@@ -437,7 +393,7 @@ const RecruitmentDashboard: React.FC = () => {
                                                                         className="requisition-card"
                                                                         style={{ borderRadius: '12px', border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}
                                                                         bodyStyle={{ padding: '16px' }}
-                                                                        onClick={() => setSelectedRequisitionId(Number(req.id))}
+                                                                        onClick={() => dispatch(setFilters({ jobRequisitionId: Number(req.id) }))}
                                                                     >
                                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                                                                             <Title level={5} style={{ margin: 0, fontSize: '14px' }}>{req.title}</Title>
@@ -520,7 +476,7 @@ const RecruitmentDashboard: React.FC = () => {
                                 <Space size="large">
                                     <Button
                                         icon={<SwapOutlined />}
-                                        onClick={() => setSelectedRequisitionId(undefined)}
+                                        onClick={() => dispatch(setFilters({ jobRequisitionId: undefined }))}
                                         style={{ borderRadius: '8px', border: '1px solid #1890ff', color: '#1890ff' }}
                                     >
                                         Ver Todas las Vacantes
@@ -551,21 +507,21 @@ const RecruitmentDashboard: React.FC = () => {
                             >
                                 <Statistic
                                     title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>
-                                        {selectedRequisitionId ? 'Candidatos en Proceso' : 'Vacantes Abiertas'}
+                                        {filters.jobRequisitionId ? 'Candidatos en Proceso' : 'Vacantes Abiertas'}
                                     </Text>}
-                                    value={selectedRequisitionId
+                                    value={filters.jobRequisitionId
                                         ? (analytics?.totalParticipants || 0)
-                                        : requisitions.filter(r => r.company === COMPANIES.find(c => c.id === selectedCompanyId)?.name && r.status === 'OPEN').length
+                                        : requisitions.filter(r => r.companyId === filters.companyId && r.status === 'OPEN').length
                                     }
-                                    prefix={selectedRequisitionId ? <TeamOutlined /> : <RocketOutlined />}
+                                    prefix={filters.jobRequisitionId ? <TeamOutlined /> : <RocketOutlined />}
                                     valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
                                 />
-                                {selectedRequisitionId && fullRequisition?.vacanciesCount > 1 && (
+                                {filters.jobRequisitionId && fullRequisition?.vacanciesCount > 1 && (
                                     <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
                                         {fullRequisition?.filledCount || 0} de {fullRequisition?.vacanciesCount || 0} posiciones cubiertas
                                     </Text>
                                 )}
-                                {selectedRequisitionId && fullRequisition?.vacanciesCount === 1 && (
+                                {filters.jobRequisitionId && fullRequisition?.vacanciesCount === 1 && (
                                     <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
                                         Búsqueda activa de 1 vacante
                                     </Text>
@@ -577,7 +533,7 @@ const RecruitmentDashboard: React.FC = () => {
                                 style={{ ...gradientCard('#722ed1'), cursor: 'pointer' }}
                                 bodyStyle={{ padding: '20px' }}
                                 onClick={() => {
-                                    setModalTitle(selectedRequisitionId ? `Candidatos: ${fullRequisition?.title}` : `Todos los Candidatos Activos: ${COMPANIES.find(c => c.id === selectedCompanyId)?.name}`);
+                                    setModalTitle(filters.jobRequisitionId ? `Candidatos: ${fullRequisition?.title}` : `Todos los Candidatos Activos: ${COMPANIES.find(c => c.id === filters.companyId)?.name}`);
                                     setIsModalVisible(true);
                                 }}
                                 hoverable
@@ -650,7 +606,7 @@ const RecruitmentDashboard: React.FC = () => {
                                                     const stage = STAGES.find(s => s.name === data.name);
                                                     if (stage) {
                                                         setSelectedStageId(stage.id);
-                                                        setModalTitle(`Candidatos en: ${stage.name} (${selectedRequisitionId ? fullRequisition?.title : COMPANIES.find(c => c.id === selectedCompanyId)?.name})`);
+                                                        setModalTitle(`Candidatos en: ${stage.name} (${filters.jobRequisitionId ? fullRequisition?.title : COMPANIES.find(c => c.id === filters.companyId)?.name})`);
                                                         setIsModalVisible(true);
                                                     }
                                                 }}
@@ -923,8 +879,8 @@ const RecruitmentDashboard: React.FC = () => {
                 onClose={() => setIsModalVisible(false)}
                 title={modalTitle}
                 filters={{
-                    companyId: selectedCompanyId,
-                    jobRequisitionId: selectedRequisitionId,
+                    companyId: filters.companyId,
+                    jobRequisitionId: filters.jobRequisitionId,
                     stageId: selectedStageId
                 }}
                 onViewCandidate={handleViewCandidate}
@@ -946,10 +902,10 @@ const RecruitmentDashboard: React.FC = () => {
                 requisition={fullRequisition}
                 onCandidateLinked={async () => {
                     // Refresh requisition data
-                    if (selectedRequisitionId) {
-                        const updated = await requisitionService.findOne(selectedRequisitionId.toString());
+                    if (filters.jobRequisitionId) {
+                        const updated = await requisitionService.findOne(filters.jobRequisitionId.toString());
                         setFullRequisition(updated);
-                        dispatch(loadRecruitmentAnalytics({ companyId: selectedCompanyId, jobRequisitionId: selectedRequisitionId, status: 'ACTIVE' }));
+                        dispatch(loadRecruitmentAnalytics({ companyId: filters.companyId, jobRequisitionId: filters.jobRequisitionId, status: 'ACTIVE' }));
                     }
                 }}
             />

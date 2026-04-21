@@ -222,6 +222,7 @@ export interface RequisitionFilters {
     search?: string;
     zoneId?: number;
     companyId?: number;
+    jobRequisitionId?: number;
     page?: number;
     limit?: number;
 }

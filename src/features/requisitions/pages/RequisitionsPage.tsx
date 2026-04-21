@@ -177,6 +177,10 @@ const RequisitionsPage: React.FC = () => {
                         </PermissionGuard>
                     </Col>
                 </Row>
+                
+                <div style={{ marginBottom: '24px' }}>
+                    <RequisitionFilterBar />
+                </div>
 
                 <Tabs
                     activeKey={activeTab}
@@ -185,8 +189,7 @@ const RequisitionsPage: React.FC = () => {
                     className="premium-tabs"
                 >
                     <TabPane tab="Lista de Requisiciones" key="list">
-                        <div style={{ marginTop: '16px' }}>
-                            <RequisitionFilterBar />
+                        <div style={{ marginTop: '0px' }}>
 
                             <Tabs
                                 activeKey={statusTab}
