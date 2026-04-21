@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Select, Typography, Statistic, Spin, Empty, Tag, List, Space } from 'antd';
+import { Card, Row, Col, Typography, Statistic, Spin, Empty, Tag, List, Space } from 'antd';
 import {
     UserOutlined,
     GlobalOutlined,
@@ -30,7 +30,6 @@ import {
     loadRecruitmentAnalytics,
     selectRecruitmentAnalytics,
     selectAnalyticsLoading,
-    loadRequisitions,
     selectRequisitions,
     selectRequisitionsFilters,
     setFilters
@@ -45,7 +44,7 @@ import SmartMatchingModal from './SmartMatchingModal';
 import CandidateDrawer from '../../candidates/components/CandidateDrawer';
 
 const { Title, Text, Paragraph } = Typography;
-const { Option } = Select;
+
 
 const COMPANIES = [
     { id: 1, name: 'Febeca' },
