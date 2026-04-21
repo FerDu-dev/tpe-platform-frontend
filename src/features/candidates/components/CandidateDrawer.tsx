@@ -168,10 +168,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 content: (
                     <div style={{ marginTop: '16px' }}>
                         <Space direction="vertical" style={{ width: '100%' }}>
-                            <Text strong>Link de la prueba:</Text>
-                            <Input id="test-link-input" placeholder="https://ejemplo.com/test" />
-                            <Text strong style={{ marginTop: '8px' }}>Código de Acceso (Opcional):</Text>
-                            <Input id="test-code-input" placeholder="ID12345" />
+                            <Text strong>Código de Acceso:</Text>
+                            <Input id="test-code-input" placeholder="Ingresa el código de acceso del candidato en la plataforma de pruebas..." />
                             <Text strong style={{ marginTop: '8px' }}>¿Desea dejar algún comentario? (opcional):</Text>
                             <Input.TextArea id="transition-comment-input" placeholder="Escribe un comentario si lo deseas..." rows={2} />
                         </Space>
@@ -180,12 +178,10 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 okText: 'Enviar y Avanzar',
                 cancelText: 'Cancelar',
                 onOk: async () => {
-                    const link = (document.getElementById('test-link-input') as HTMLInputElement).value;
                     const code = (document.getElementById('test-code-input') as HTMLInputElement).value;
                     const comment = (document.getElementById('transition-comment-input') as HTMLTextAreaElement).value;
-                    if (!link) return message.error('El link es obligatorio');
+                    if (!code) return message.error('El código de acceso es obligatorio');
                     await handleAction(() => candidateService.updateCandidateStage(activeCandidate.id, nextStage.id, {
-                        testLink: link,
                         testCode: code,
                         comment: comment || undefined
                     }));
