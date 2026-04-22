@@ -81,6 +81,19 @@ export const loadRecruitmentAnalytics = createAsyncThunk(
     }
 );
 
+// Async thunk to delete a requisition
+export const deleteRequisition = createAsyncThunk(
+    'requisitions/delete',
+    async (id: number | string, { rejectWithValue }) => {
+        try {
+            await requisitionService.deleteRequisition(id);
+            return id;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || error.message);
+        }
+    }
+);
+
 const requisitionsSlice = createSlice({
     name: 'requisitions',
     initialState,
@@ -129,6 +142,9 @@ const requisitionsSlice = createSlice({
             })
             .addCase(loadRecruitmentAnalytics.rejected, (state) => {
                 state.analyticsLoading = false;
+            })
+            .addCase(deleteRequisition.fulfilled, (state, action: PayloadAction<number | string>) => {
+                state.requisitions = state.requisitions.filter(r => r.id !== action.payload);
             });
     },
 });

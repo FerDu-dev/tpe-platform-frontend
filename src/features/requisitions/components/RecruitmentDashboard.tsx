@@ -221,7 +221,7 @@ const RecruitmentDashboard: React.FC = () => {
                 <Row gutter={[24, 24]} align="middle">
                     <Col span={24}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Title level={3} style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                            <Title level={3} style={{ margin: 0, display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
                                 <BarChartOutlined style={{ marginRight: '12px', color: '#1890ff' }} />
                                 Analítica de Reclutamiento {filters.jobRequisitionId ? '(Detallada)' : '(Vista General)'}
                             </Title>
@@ -402,7 +402,7 @@ const RecruitmentDashboard: React.FC = () => {
                                                                         </div>
                                                                         <Space direction="vertical" size={8} style={{ width: '100%' }}>
                                                                             <Space style={{ fontSize: '12px', color: '#8c8c8c' }}>
-                                                                                <GlobalOutlined /> {typeof req.zone === 'object' ? req.zone?.name : req.zone}
+                                                                                <GlobalOutlined /> {typeof req.zone === 'object' ? `${req.zone?.name}, ${req.zone?.region} - ${req.state?.name}` : req.zone}
                                                                             </Space>
                                                                             <div style={{ marginTop: '12px' }}>
                                                                                 <Row gutter={12} align="middle">
@@ -489,7 +489,9 @@ const RecruitmentDashboard: React.FC = () => {
                                 <Space>
                                     <Text type="secondary">Zona:</Text>
                                     <Tag color="blue" icon={<GlobalOutlined />} style={{ borderRadius: '4px' }}>
-                                        {typeof fullRequisition?.zone === 'object' ? fullRequisition?.zone?.name : fullRequisition?.zone}
+                                        {typeof fullRequisition?.zone === 'object' 
+                                            ? `${fullRequisition.zone.name}, ${fullRequisition.zone.region} - ${fullRequisition.state?.name}` 
+                                            : fullRequisition?.zone}
                                     </Tag>
                                 </Space>
                             </Col>
@@ -680,7 +682,7 @@ const RecruitmentDashboard: React.FC = () => {
                                                 <Text type="secondary" style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 600 }}>Detalles de Requisición</Text>
                                                 <Title level={4} style={{ margin: 0 }}>{fullRequisition.title}</Title>
                                                 <Space split={<Divider type="vertical" />} style={{ marginTop: '4px' }}>
-                                                    <Text><GlobalOutlined /> {fullRequisition.zone?.name || 'N/A'}</Text>
+                                                    <Text><GlobalOutlined /> {fullRequisition.zone?.name ? `${fullRequisition.zone.name}, ${fullRequisition.zone.region} - ${fullRequisition.state?.name}` : 'N/A'}</Text>
                                                     <Text><TeamOutlined /> {fullRequisition.vacanciesCount} Vacantes</Text>
                                                     <Tag color={fullRequisition.status === 'OPEN' ? 'green' : 'gray'}>{fullRequisition.status}</Tag>
                                                 </Space>

@@ -10,14 +10,17 @@ import {
     CloseCircleOutlined,
     PlayCircleOutlined,
     InfoCircleOutlined,
-    EditOutlined
+    EditOutlined,
+    DeleteOutlined
 } from '@ant-design/icons';
+import { Popconfirm, message } from 'antd';
 import { useAppDispatch } from '../../../app/store';
 import { selectCandidate } from '../../candidates/store/candidatesSlice';
 import { getStatusTagStyle } from '../../../services/candidateService';
 import RequisitionApplicantsModal from './RequisitionApplicantsModal';
 import PermissionGuard from '../../../components/PermissionGuard';
 import { getStatusLabel, getStatusColor } from './RequisitionsTable';
+import { deleteRequisition } from '../store/requisitionsSlice';
 
 const { Title, Text } = Typography;
 
@@ -42,6 +45,7 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
 }) => {
     const dispatch = useAppDispatch();
     const [showApplicants, setShowApplicants] = React.useState(false);
+    const [deleting, setDeleting] = React.useState(false);
 
     if (!requisition) return null;
 
@@ -49,6 +53,19 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
 
     const handleViewApplicants = () => {
         setShowApplicants(true);
+    };
+
+    const handleDelete = async () => {
+        setDeleting(true);
+        try {
+            await dispatch(deleteRequisition(requisition.id)).unwrap();
+            message.success('Requisición eliminada correctamente');
+            onClose();
+        } catch (error: any) {
+            message.error(`Error al eliminar: ${error}`);
+        } finally {
+            setDeleting(false);
+        }
     };
 
     return (
@@ -61,19 +78,38 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
             extra={
                 <Space>
                     <PermissionGuard module="requisition" action="edit">
-                        <Button 
-                            icon={<EditOutlined />} 
-                            onClick={() => {
-                                console.log('Edit clicked for:', requisition);
-                                if (onEditClick && typeof onEditClick === 'function') {
-                                    onEditClick(requisition);
-                                } else {
-                                    console.error('onEditClick is not a function:', onEditClick);
-                                }
-                            }}
-                        >
-                            Editar
-                        </Button>
+                        <Space>
+                            <Popconfirm
+                                title="¿Eliminar requisición?"
+                                description="Esta acción no se puede deshacer y desvinculará a los candidatos activos."
+                                onConfirm={handleDelete}
+                                okText="Sí, eliminar"
+                                cancelText="No"
+                                okButtonProps={{ danger: true, loading: deleting }}
+                            >
+                                <Button
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    loading={deleting}
+                                >
+                                    Eliminar
+                                </Button>
+                            </Popconfirm>
+                            <Button
+                                icon={<EditOutlined />}
+                                onClick={() => {
+                                    console.log('Edit clicked for:', requisition);
+                                    if (onEditClick && typeof onEditClick === 'function') {
+                                        onEditClick(requisition);
+                                    } else {
+                                        console.error('onEditClick is not a function:', onEditClick);
+                                    }
+                                }}
+                            >
+                                Editar
+                            </Button>
+
+                        </Space>
                     </PermissionGuard>
                     {requisition.status === 'OPEN' && (
                         <Button onClick={handleViewApplicants} type="primary" icon={<UsergroupAddOutlined />}>

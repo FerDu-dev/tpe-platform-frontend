@@ -106,4 +106,7 @@ export const requisitionService = {
             requestedBy: r.requestedBy,
         } as Requisition;
     },
+    async deleteRequisition(id: number | string): Promise<void> {
+        await api.delete(`/requisitions/${id}`);
+    },
 };
