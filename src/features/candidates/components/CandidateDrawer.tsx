@@ -346,6 +346,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             previousCompanies: c.previousCompanies || '',
             currentMonthlyIncome: c.currentMonthlyIncome ?? null,
             salaryAspiration: c.salaryAspiration ?? null,
+            address: c.address || '',
             personalReferences: Array.isArray(c.personalReferences) ? JSON.parse(JSON.stringify(c.personalReferences)) : [],
             workReferences: Array.isArray(c.workReferences) ? JSON.parse(JSON.stringify(c.workReferences)) : [],
         };
@@ -371,6 +372,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 payload.birthDate = editForm.birthDate ? editForm.birthDate.toISOString() : undefined;
                 payload.gender = editForm.gender;
                 payload.maritalStatus = editForm.maritalStatus;
+                payload.address = editForm.address;
                 payload.hasChildren = editForm.hasChildren;
                 payload.childrenCount = editForm.childrenCount;
             } else if (section === 'vehiculo') {
@@ -499,6 +501,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                         <Input value={editForm.phone} onChange={e => setEditForm((f: any) => ({ ...f, phone: e.target.value }))} size="small" /></div>
                                     <div><Text type="secondary" style={{ fontSize: 11 }}>Teléfono Alt.</Text>
                                         <Input value={editForm.altPhone} onChange={e => setEditForm((f: any) => ({ ...f, altPhone: e.target.value }))} size="small" /></div>
+                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Dirección Exacta</Text>
+                                        <Input.TextArea value={editForm.address} onChange={e => setEditForm((f: any) => ({ ...f, address: e.target.value }))} size="small" autoSize={{ minRows: 2, maxRows: 3 }} /></div>
                                     <div><Text type="secondary" style={{ fontSize: 11 }}>Fecha de Nacimiento</Text>
                                         <DatePicker
                                             size="small" style={{ width: '100%' }}
@@ -543,6 +547,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                     <Descriptions.Item label="Email">{activeCandidate.email}</Descriptions.Item>
                                     <Descriptions.Item label="Teléfono">{activeCandidate.phone}</Descriptions.Item>
                                     <Descriptions.Item label="Teléfono Alt.">{activeCandidate.altPhone || 'N/A'}</Descriptions.Item>
+                                    <Descriptions.Item label="Dirección">{activeCandidate.address || 'N/A'}</Descriptions.Item>
                                     <Descriptions.Item label="Fecha Nacimiento">{activeCandidate.birthDate ? dayjs(activeCandidate.birthDate).format('DD/MM/YYYY') : 'N/A'}</Descriptions.Item>
                                     <Descriptions.Item label="Género">{activeCandidate.gender || 'N/A'}</Descriptions.Item>
                                     <Descriptions.Item label="Estado Civil">{activeCandidate.maritalStatus || 'N/A'}</Descriptions.Item>
