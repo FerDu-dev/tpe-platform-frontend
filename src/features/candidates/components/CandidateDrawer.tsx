@@ -99,8 +99,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     const currentStepIndex = stages.findIndex(s => s.id === currentStageId);
 
     const targetRequisition = requisition || currentApp?.jobRequisition;
-    const companyDisplay = typeof targetRequisition?.company === 'object' ? targetRequisition.company.name : (targetRequisition?.company || 'N/A');
-    const zoneDisplay = typeof targetRequisition?.zone === 'object' ? targetRequisition.zone.name : (targetRequisition?.zone || 'N/A');
+    const companyDisplay = typeof targetRequisition?.company === 'object' && targetRequisition?.company !== null ? targetRequisition.company.name : (targetRequisition?.company || 'N/A');
+    const zoneDisplay = typeof targetRequisition?.zone === 'object' && targetRequisition?.zone !== null ? targetRequisition.zone.name : (targetRequisition?.zone || 'N/A');
     const idxDisplay = targetRequisition?.idx || targetRequisition?.id || 'N/A';
 
     const handlePsychTestUpload = async (info: any) => {
@@ -347,8 +347,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             currentMonthlyIncome: c.currentMonthlyIncome ?? null,
             salaryAspiration: c.salaryAspiration ?? null,
             address: c.address || '',
-            personalReferences: Array.isArray(c.personalReferences) ? JSON.parse(JSON.stringify(c.personalReferences)) : [],
-            workReferences: Array.isArray(c.workReferences) ? JSON.parse(JSON.stringify(c.workReferences)) : [],
+            personalReferences: Array.isArray(c.personalReferences) ? JSON.parse(JSON.stringify(c.personalReferences)).filter(Boolean) : [],
+            workReferences: Array.isArray(c.workReferences) ? JSON.parse(JSON.stringify(c.workReferences)).filter(Boolean) : [],
         };
         setEditForm(base);
         setEditingSection(section);
@@ -777,23 +777,23 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                 <Row gutter={24}>
                                     <Col span={12}>
                                         <Title level={5} style={{ fontSize: 13, color: '#2b457c', marginBottom: 8 }}>Personales</Title>
-                                        {(Array.isArray(activeCandidate.personalReferences) ? activeCandidate.personalReferences : []).map((ref: any, i: number) => (
+                                        {(Array.isArray(activeCandidate.personalReferences) ? activeCandidate.personalReferences : []).filter(Boolean).map((ref: any, i: number) => (
                                             <div key={i} style={{ marginBottom: 8, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
-                                                <Text strong style={{ fontSize: 12 }}>{ref.name}</Text><br />
-                                                <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref.phone} {ref.company ? `| 🏢 ${ref.company}` : ''}</Text>
+                                                <Text strong style={{ fontSize: 12 }}>{ref?.name || 'N/A'}</Text><br />
+                                                <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref?.phone || 'N/A'} {ref?.company ? `| 🏢 ${ref.company}` : ''}</Text>
                                             </div>
                                         ))}
-                                        {(!activeCandidate.personalReferences || (activeCandidate.personalReferences as any[]).length === 0) && <Text type="secondary">Sin referencias</Text>}
+                                        {(!activeCandidate.personalReferences || (activeCandidate.personalReferences as any[]).filter(Boolean).length === 0) && <Text type="secondary">Sin referencias</Text>}
                                     </Col>
                                     <Col span={12}>
                                         <Title level={5} style={{ fontSize: 13, color: '#2b457c', marginBottom: 8 }}>Laborales</Title>
-                                        {(Array.isArray(activeCandidate.workReferences) ? activeCandidate.workReferences : []).map((ref: any, i: number) => (
+                                        {(Array.isArray(activeCandidate.workReferences) ? activeCandidate.workReferences : []).filter(Boolean).map((ref: any, i: number) => (
                                             <div key={i} style={{ marginBottom: 8, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
-                                                <Text strong style={{ fontSize: 12 }}>{ref.name}</Text><br />
-                                                <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref.phone} {ref.company ? `| 🏢 ${ref.company}` : ''}</Text>
+                                                <Text strong style={{ fontSize: 12 }}>{ref?.name || 'N/A'}</Text><br />
+                                                <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref?.phone || 'N/A'} {ref?.company ? `| 🏢 ${ref.company}` : ''}</Text>
                                             </div>
                                         ))}
-                                        {(!activeCandidate.workReferences || (activeCandidate.workReferences as any[]).length === 0) && <Text type="secondary">Sin referencias</Text>}
+                                        {(!activeCandidate.workReferences || (activeCandidate.workReferences as any[]).filter(Boolean).length === 0) && <Text type="secondary">Sin referencias</Text>}
                                     </Col>
                                 </Row>
                             )}
@@ -1043,10 +1043,10 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                 {currentApp?.jobRequisition ? (
                                     <Space direction="vertical" size={0}>
                                         <Text strong style={{ color: '#2b457c' }}>
-                                            {typeof currentApp.jobRequisition.zone === 'object' ? currentApp.jobRequisition.zone?.name : currentApp.jobRequisition.zone} | {currentApp.jobRequisition.title}
+                                            {typeof currentApp.jobRequisition.zone === 'object' && currentApp.jobRequisition.zone !== null ? currentApp.jobRequisition.zone.name : (currentApp.jobRequisition.zone || 'N/A')} | {currentApp.jobRequisition.title}
                                         </Text>
                                         <Text type="secondary" style={{ fontSize: '12px' }}>
-                                            {typeof currentApp.jobRequisition.company === 'object' ? currentApp.jobRequisition.company?.name : currentApp.jobRequisition.company}
+                                            {typeof currentApp.jobRequisition.company === 'object' && currentApp.jobRequisition.company !== null ? currentApp.jobRequisition.company.name : (currentApp.jobRequisition.company || 'N/A')}
                                         </Text>
                                     </Space>
                                 ) : (

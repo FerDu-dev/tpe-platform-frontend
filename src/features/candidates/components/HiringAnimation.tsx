@@ -18,7 +18,7 @@ const HiringAnimation: React.FC<HiringAnimationProps> = ({ candidate, requisitio
     const [phase, setPhase] = useState<'initial' | 'catching' | 'success'>('initial');
     const [animationDone, setAnimationDone] = useState(false); // State to wait for motion done
 
-    const companyName = typeof requisition.company === 'object' ? (requisition.company as any).name : requisition.company;
+    const companyName = typeof requisition.company === 'object' && requisition.company !== null ? (requisition.company as any).name : requisition.company;
 
     useEffect(() => {
         // Start catching after a longer initial delay for builds anticipation

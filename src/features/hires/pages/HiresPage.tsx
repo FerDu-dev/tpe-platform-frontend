@@ -76,7 +76,7 @@ const HiresPage: React.FC = () => {
             key: 'requisition',
             render: (_, r) => {
                 const company = r.jobRequisition?.company;
-                const companyDisplay = typeof company === 'object' ? (company as any).name : (company || 'N/A');
+                const companyDisplay = typeof company === 'object' && company !== null ? (company as any).name : (company || 'N/A');
                 return (
                     <div>
                         <Text strong>{r.jobRequisition?.title || 'N/A'}</Text>
@@ -90,7 +90,7 @@ const HiresPage: React.FC = () => {
             key: 'zone',
             render: (_, r) => {
                 const zone = r.jobRequisition?.zone;
-                const zoneDisplay = typeof zone === 'object' ? (zone as any).name : (zone || 'N/A');
+                const zoneDisplay = typeof zone === 'object' && zone !== null ? (zone as any).name : (zone || 'N/A');
                 return <Tag color="blue">{zoneDisplay}</Tag>;
             }
         },
@@ -220,11 +220,11 @@ const HiresPage: React.FC = () => {
                                         <Descriptions column={1} size="small" bordered>
                                             <Descriptions.Item label="Puesto">{detailHire.jobRequisition?.title}</Descriptions.Item>
                                             <Descriptions.Item label="Empresa">
-                                                {typeof detailHire.jobRequisition?.company === 'object' ? (detailHire.jobRequisition.company as any).name : detailHire.jobRequisition?.company}
+                                                {typeof detailHire.jobRequisition?.company === 'object' && detailHire.jobRequisition?.company !== null ? (detailHire.jobRequisition.company as any).name : detailHire.jobRequisition?.company}
                                             </Descriptions.Item>
                                             <Descriptions.Item label="Zona">
                                                 <Tag color="orange" style={{ fontWeight: 'bold' }}>
-                                                    {typeof detailHire.jobRequisition?.zone === 'object' ? (detailHire.jobRequisition.zone as any).name : (detailHire.jobRequisition?.zone || 'N/A')}
+                                                    {typeof detailHire.jobRequisition?.zone === 'object' && detailHire.jobRequisition?.zone !== null ? (detailHire.jobRequisition.zone as any).name : (detailHire.jobRequisition?.zone || 'N/A')}
                                                 </Tag>
                                             </Descriptions.Item>
                                             <Descriptions.Item label="Fecha Inicio">

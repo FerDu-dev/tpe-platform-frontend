@@ -348,7 +348,7 @@ const RecruitmentDashboard: React.FC = () => {
                                     r.companyId === filters.companyId &&
                                     r.status === 'OPEN' &&
                                     (r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                        (typeof r.zone === 'object' ? r.zone?.name : r.zone).toLowerCase().includes(searchTerm.toLowerCase()))
+                                        ((typeof r.zone === 'object' && r.zone !== null ? r.zone.name : (r.zone || '')).toLowerCase().includes(searchTerm.toLowerCase())))
                                 );
 
                                 if (filteredReqs.length === 0) return <Empty description="No se encontraron vacantes con los filtros aplicados." />;
@@ -402,7 +402,7 @@ const RecruitmentDashboard: React.FC = () => {
                                                                         </div>
                                                                         <Space direction="vertical" size={8} style={{ width: '100%' }}>
                                                                             <Space style={{ fontSize: '12px', color: '#8c8c8c' }}>
-                                                                                <GlobalOutlined /> {typeof req.zone === 'object' ? `${req.zone?.name}, ${req.zone?.region} - ${req.state?.name}` : req.zone}
+                                                                                <GlobalOutlined /> {typeof req.zone === 'object' && req.zone !== null ? `${req.zone.name}, ${req.zone.region} - ${req.state?.name}` : req.zone}
                                                                             </Space>
                                                                             <div style={{ marginTop: '12px' }}>
                                                                                 <Row gutter={12} align="middle">
@@ -489,7 +489,7 @@ const RecruitmentDashboard: React.FC = () => {
                                 <Space>
                                     <Text type="secondary">Zona:</Text>
                                     <Tag color="blue" icon={<GlobalOutlined />} style={{ borderRadius: '4px' }}>
-                                        {typeof fullRequisition?.zone === 'object' 
+                                        {typeof fullRequisition?.zone === 'object' && fullRequisition?.zone !== null 
                                             ? `${fullRequisition.zone.name}, ${fullRequisition.zone.region} - ${fullRequisition.state?.name}` 
                                             : fullRequisition?.zone}
                                     </Tag>
