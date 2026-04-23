@@ -1,17 +1,28 @@
 import React, { useState } from 'react';
+<<<<<<< Updated upstream
 import { Modal, Form, Select, Input, Button, Divider, message, Space, Card, Descriptions } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+=======
+import { Modal, Form, Select, Input, Button, Divider, message, Space, Card, Descriptions, Checkbox, DatePicker } from 'antd';
+>>>>>>> Stashed changes
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import {
     selectPositions,
     addCompany, addPosition
 } from '../../../store/masterDataSlice';
+<<<<<<< Updated upstream
 import { createRequisition } from '../store/requisitionsSlice';
+=======
+import { DeleteOutlined, PlusOutlined, WarningOutlined } from '@ant-design/icons';
+import { createRequisition, updateRequisition } from '../store/requisitionsSlice';
+>>>>>>> Stashed changes
 import { VENEZUELA_STATES } from '../../../constants/venezuela';
 import type { Priority, Zone } from '../../../types';
 import { zonesService } from '../../../services/zonesService';
+import dayjs from 'dayjs';
 
 const { Option } = Select;
+const { TextArea } = Input;
 
 interface RequisitionFormProps {
     open: boolean;
@@ -24,6 +35,8 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
     const dispatch = useAppDispatch();
     const selectedZoneId = Form.useWatch('zoneId', form);
     const selectedCompanyId = Form.useWatch('companyId', form);
+    const isConfidential = Form.useWatch('isConfidential', form);
+
 
     const positions = useAppSelector(selectPositions);
 
@@ -33,6 +46,57 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
     const [zoneModalOpen, setZoneModalOpen] = useState(false);
     const [creatingZone, setCreatingZone] = useState(false);
 
+<<<<<<< Updated upstream
+=======
+    // Initial load for editing
+    React.useEffect(() => {
+        if (open) {
+            if (requisition) {
+                console.log('Populating form with requisition:', requisition);
+
+                const currentStateId = requisition.stateId || requisition.state?.id || (requisition.stateId);
+                if (currentStateId) {
+                    const found = VENEZUELA_STATES.find(s => s.id === currentStateId);
+                    setMunicipalities(found ? found.municipalities : []);
+                } else {
+                    setMunicipalities([]);
+                }
+
+                // Populate zones if company exists
+                const companyId = requisition.companyId;
+                if (companyId) {
+                    setLoadingZones(true);
+                    zonesService.fetchZones(companyId)
+                        .then((res) => setZones(res.data))
+                        .catch(() => message.error('Error al cargar zonas'))
+                        .finally(() => setLoadingZones(false));
+                }
+
+                // Resolve zoneId (it might be in zoneId or zone.id)
+                const resolvedZoneId = requisition.zoneId || (requisition.zone && typeof requisition.zone === 'object' ? requisition.zone.id : undefined);
+
+                form.setFieldsValue({
+                    companyId: requisition.companyId,
+                    requestedBy: requisition.requestedBy,
+                    priority: requisition.priority,
+                    position: requisition.title,
+                    stateId: currentStateId,
+                    municipalityId: requisition.municipalityId,
+                    zoneId: resolvedZoneId,
+                    comments: requisition.comments,
+                    isConfidential: requisition.isConfidential || false,
+                    createdAt: requisition.createdAt ? dayjs(requisition.createdAt) : (requisition.createdDate ? dayjs(requisition.createdDate) : undefined),
+                });
+            } else {
+                form.resetFields();
+                form.setFieldsValue({ createdAt: dayjs() });
+                setMunicipalities([]);
+                setZones([]);
+            }
+        }
+    }, [open, requisition, form]);
+
+>>>>>>> Stashed changes
     const COMPANIES = [
         { id: 1, name: 'Febeca' },
         { id: 2, name: 'Beval' },
@@ -43,9 +107,9 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
     const [newItemName, setNewItemName] = useState('');
 
     const handleStateChange = (stateId: number) => {
-        form.setFieldValue('municipalityId', undefined);
         const found = VENEZUELA_STATES.find(s => s.id === stateId);
         setMunicipalities(found ? found.municipalities : []);
+        form.setFieldValue('municipalityId', undefined);
     };
 
     const handleCreateNew = (type: 'company' | 'position') => {
@@ -101,9 +165,6 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
 
     const handleSubmit = async (values: any) => {
         try {
-            const selectedState = VENEZUELA_STATES.find(s => s.id === values.stateId);
-            const selectedMuni = municipalities.find(m => m.id === values.municipalityId);
-
             const requisitionData: any = {
                 title: values.position,
                 priority: values.priority as Priority,
@@ -111,15 +172,36 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
                 zoneId: values.zoneId,
                 stateId: values.stateId,
                 municipalityId: values.municipalityId,
-                stateName: selectedState?.name,
-                municipalityName: selectedMuni?.name,
                 requestedBy: values.requestedBy,
+<<<<<<< Updated upstream
                 requiresVehicle: false,
                 vacanciesCount: 1,
             };
 
             await dispatch(createRequisition(requisitionData)).unwrap();
             message.success('Requisición creada con éxito');
+=======
+                comments: values.comments,
+                isConfidential: values.isConfidential,
+            };
+
+            // Send date if present
+            if (values.createdAt) {
+                requisitionData.createdAt = values.createdAt.toISOString();
+            }
+
+            if (requisition) {
+                await dispatch(updateRequisition({ id: requisition.id, data: requisitionData })).unwrap();
+                message.success('Requisición actualizada con éxito');
+            } else {
+                // Add defaults for new
+                requisitionData.requiresVehicle = false;
+                requisitionData.vacanciesCount = 1;
+                await dispatch(createRequisition(requisitionData)).unwrap();
+                message.success('Requisición creada con éxito');
+            }
+
+>>>>>>> Stashed changes
             form.resetFields();
             onClose();
         } catch (error: any) {
@@ -154,7 +236,14 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
                 onOk={() => form.submit()}
                 okText="Crear Requisición"
                 cancelText="Cancelar"
+<<<<<<< Updated upstream
                 width={600}
+=======
+                confirmLoading={loading}
+                width={650}
+                style={{ top: 20 }}
+                zIndex={1100}
+>>>>>>> Stashed changes
             >
                 <Form form={form} layout="vertical" onFinish={handleSubmit}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -183,13 +272,13 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
                         </Form.Item>
 
                         <Form.Item name="stateId" label="Estado" rules={[{ required: true }]}>
-                            <Select showSearch onChange={handleStateChange}>
+                            <Select showSearch onChange={handleStateChange} placeholder="Seleccionar estado">
                                 {VENEZUELA_STATES.map(s => <Option key={s.id} value={s.id}>{s.name}</Option>)}
                             </Select>
                         </Form.Item>
 
-                        <Form.Item name="municipalityId" label="Municipio" rules={[{ required: true }]}>
-                            <Select showSearch disabled={municipalities.length === 0}>
+                        <Form.Item name="municipalityId" label="Municipio">
+                            <Select showSearch placeholder="Seleccionar municipio">
                                 {municipalities.map(m => <Option key={m.id} value={m.id}>{m.name}</Option>)}
                             </Select>
                         </Form.Item>
@@ -226,6 +315,28 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose }) => {
                             >
                                 {zones.map(z => <Option key={z.id} value={z.id}>{z.name}</Option>)}
                             </Select>
+                        </Form.Item>
+
+                        <Form.Item name="isConfidential" valuePropName="checked" style={{ gridColumn: 'span 2', marginBottom: 8 }}>
+                            <Checkbox>
+                                <span style={{ color: isConfidential ? '#ff4d4f' : 'inherit', fontWeight: isConfidential ? 600 : 400 }}>
+                                    {isConfidential && <WarningOutlined style={{ marginRight: 8 }} />}
+                                    ¿Esta vacante es Confidencial?
+                                </span>
+                            </Checkbox>
+                        </Form.Item>
+
+                        <Form.Item
+                            name="createdAt"
+                            label="Fecha de Solicitud"
+                            style={{ gridColumn: 'span 2' }}
+                            extra="Si no se modifica, se asignará la fecha de hoy automáticamente."
+                        >
+                            <DatePicker showTime format="DD/MM/YYYY HH:mm" style={{ width: '100%' }} />
+                        </Form.Item>
+
+                        <Form.Item name="comments" label="Comentarios / Observaciones" style={{ gridColumn: 'span 2' }}>
+                            <TextArea rows={3} placeholder="Agrega notas o comentarios adicionales sobre la requisición..." />
                         </Form.Item>
                     </div>
 

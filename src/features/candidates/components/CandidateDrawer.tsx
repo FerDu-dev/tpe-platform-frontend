@@ -36,9 +36,69 @@ interface CandidateDrawerProps {
     onClose: () => void;
     candidate: Candidate | null;
     requisition?: Requisition | null;
+<<<<<<< Updated upstream
 }
 
 const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candidate, requisition }) => {
+=======
+    onActionComplete?: (shouldClose?: boolean) => void;
+    onUpdate?: () => void;
+}
+
+const getWhatsAppMessage = (candidate: any) => {
+    const firstName = candidate.firstName || 'Candidato';
+    const currentApp = candidate.applications?.[0];
+    const stageId = currentApp?.currentStageId;
+    
+    switch (stageId) {
+        case 2: // Etapa de video
+            return `Hola 👋 te saluda el equipo de captación de Grupo Mayoreo.
+¡Felicidades! 🙌 Ya estás participando en el proceso de selección para ser parte de la Fuerza de Ventas más grande del País.
+Ahora queremos conocerte mejor 🎥
+Notamos que aún no hemos recibido tu video.
+Puedes subirlo en tu portal o, si prefieres, enviarlo por aquí 👍
+No pierdas esta oportunidad de avanzar en el proceso 🚀
+¡Feliz día!`;
+
+        case 3: // Etapa de pruebas
+            return `Hola 👋 te saluda el equipo de captación de Grupo Mayoreo.
+Te enviamos las pruebas psicotécnicas a tu correo. También puedes acceder a ellas desde tu portal.
+Estamos a la espera de que las completes para poder continuar con tu proceso.
+🚀 Estás cada vez más cerca de formar parte de una de las fuerzas de ventas más importantes del país.
+¡Feliz día!`;
+
+        case 4: // Entrevista
+        case 5:
+            return `Hola 👋 te saluda el equipo de Grupo Mayoreo.
+¡Felicidades! Superaste las pruebas psicotécnicas y sigues avanzando en el proceso.
+Nos encantaría invitarte a tu entrevista personal para seguir conociéndote.
+🚀 Estás cada vez más cerca de formar parte de la fuerza de ventas más importante del país.
+Cuéntanos tu disponibilidad y la coordinamos.`;
+
+        default:
+            return `Hola 👋 *${firstName}*, te saluda el equipo de captación de Grupo Mayoreo. ¡Felicidades! 🙌 Ya estás participando en el proceso de selección de la fuerza de ventas más grande del país.`;
+    }
+};
+
+const formatWhatsAppPhone = (phone: string) => {
+    if (!phone) return '';
+    let cleaned = phone.replace(/\D/g, '');
+
+    // If it starts with 0 (e.g. 0414...), remove the 0
+    if (cleaned.startsWith('0')) {
+        cleaned = cleaned.substring(1);
+    }
+
+    // If it doesn't have the 58 prefix, add it
+    if (!cleaned.startsWith('58')) {
+        cleaned = '58' + cleaned;
+    }
+
+    return cleaned;
+};
+
+const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candidate, requisition, onActionComplete }) => {
+>>>>>>> Stashed changes
     const dispatch = useAppDispatch();
     const stages = useAppSelector(selectStages);
     const richCandidate = useAppSelector(selectSelectedCandidate);
@@ -753,8 +813,9 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                             <Button
                                 type="text"
                                 icon={<WhatsAppOutlined style={{ color: '#25D366', fontSize: '18px' }} />}
-                                href={`https://wa.me/${activeCandidate.phone.replace(/\D/g, '')}`}
+                                href={`https://wa.me/${formatWhatsAppPhone(activeCandidate.phone)}?text=${encodeURIComponent(getWhatsAppMessage(activeCandidate))}`}
                                 target="_blank"
+                                rel="noreferrer"
                                 size="small"
                                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             />
@@ -865,8 +926,9 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                         type="primary"
                         icon={<WhatsAppOutlined />}
                         style={{ backgroundColor: '#25D366', borderColor: '#25D366', height: '45px', marginTop: '12px' }}
-                        href={`https://wa.me/${activeCandidate.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${activeCandidate.firstName}, te contacto de TuPróximoEmpleo para agendar tu entrevista.`)}`}
+                        href={`https://wa.me/${formatWhatsAppPhone(activeCandidate.phone)}?text=${encodeURIComponent(getWhatsAppMessage(activeCandidate))}`}
                         target="_blank"
+                        rel="noreferrer"
                     >
                         Agendar entrevista con {activeCandidate.firstName}
                     </Button>

@@ -201,6 +201,9 @@ export interface Requisition {
     matchingCandidates?: Candidate[];
     statusReason?: string;
     statusUpdatedAt?: string;
+    comments?: string;
+    isConfidential?: boolean;
+    createdAt?: string;
 }
 
 export interface RequisitionFilters {

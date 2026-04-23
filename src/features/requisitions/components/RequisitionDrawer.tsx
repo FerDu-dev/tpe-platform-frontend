@@ -105,6 +105,9 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
                     <Tag color={getStatusColor(requisition.status)}>
                         {getStatusLabel(requisition.status)}
                     </Tag>
+                    {requisition.isConfidential && (
+                        <Tag color="error" style={{ marginLeft: 4 }}>CONFIDENCIAL</Tag>
+                    )}
                     <Divider type="vertical" />
                     <ClockCircleOutlined style={{ marginRight: 8 }} />
                     <Text>{daysOpen} días abierta</Text>
@@ -132,7 +135,7 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
                 )}
             </div>
 
-            <Descriptions title="Información General" bordered column={2} style={{ marginBottom: 32 }}>
+            <Descriptions title="Información General" bordered column={2} style={{ marginBottom: 24 }}>
                 <Descriptions.Item label="Empresa">{requisition.company}</Descriptions.Item>
                 <Descriptions.Item label="Prioridad">
                     <Badge
@@ -142,6 +145,9 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
                 </Descriptions.Item>
                 <Descriptions.Item label="Solicitado por">
                     {requisition.requestedBy || <span style={{ color: '#bfbfbf' }}>No especificado</span>}
+                </Descriptions.Item>
+                <Descriptions.Item label="Fecha de Solicitud">
+                    {requisition.createdAt ? new Date(requisition.createdAt).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' }) : (requisition.createdDate ? new Date(requisition.createdDate).toLocaleDateString() : 'N/A')}
                 </Descriptions.Item>
                 <Descriptions.Item label="Ubicación" span={2}>
                     <EnvironmentOutlined /> {requisition.location}
@@ -162,6 +168,9 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
                     {requisition.zone && typeof requisition.zone !== 'string'
                         ? (requisition.zone.geographicRoute || <span style={{ color: '#bfbfbf' }}>No especificada</span>)
                         : (requisition.route || <span style={{ color: '#bfbfbf' }}>No especificada</span>)}
+                </Descriptions.Item>
+                <Descriptions.Item label="Comentarios" span={2}>
+                    {requisition.comments || <Text type="secondary" italic>Sin observaciones adicionales</Text>}
                 </Descriptions.Item>
             </Descriptions>
 

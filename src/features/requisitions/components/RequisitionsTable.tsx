@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Tag, Typography, Empty } from 'antd';
+import { Table, Tag, Typography, Empty, Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useAppSelector } from '../../../app/store';
 import { selectRequisitions, selectRequisitionsLoading } from '../store/requisitionsSlice';
@@ -85,9 +85,20 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selec
             title: 'Cargo',
             dataIndex: 'title',
             key: 'title',
+<<<<<<< Updated upstream
+=======
+            width: 180,
+>>>>>>> Stashed changes
             filters: positions.map(p => ({ text: p, value: p })),
             onFilter: (value, record) => record.title === value,
-            render: (title: string) => <Text strong>{title}</Text>,
+            render: (title: string, record: Requisition) => (
+                <Space direction="vertical" size={2}>
+                    <Text strong>
+                        {title}
+                    </Text>
+                    {record.isConfidential && <Tag color="error" style={{ fontSize: '10px', height: '18px', lineHeight: '16px' }}>CONFIDENCIAL</Tag>}
+                </Space>
+            ),
         },
         {
             title: 'Departamento',
@@ -95,12 +106,15 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selec
             key: 'department',
             width: 130,
         },
+<<<<<<< Updated upstream
         {
             title: 'Ubicación',
             dataIndex: 'location',
             key: 'location',
             width: 140,
         },
+=======
+>>>>>>> Stashed changes
         {
             title: 'Zona',
             dataIndex: 'zone',
@@ -166,9 +180,9 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selec
             key: 'applicants',
             width: 100,
             align: 'center',
-            sorter: (a, b) => a.applicants - b.applicants,
+            sorter: (a, b) => (a.applicants || 0) - (b.applicants || 0),
             render: (applicants: number) => (
-                <Tag color={applicants > 0 ? 'green' : 'default'}>{applicants}</Tag>
+                <Tag color={(applicants || 0) > 0 ? 'green' : 'default'}>{applicants || 0}</Tag>
             ),
         },
         {
@@ -176,18 +190,23 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selec
             key: 'daysOpen',
             width: 110,
             render: (_: any, record: Requisition) => {
-                const days = Math.floor((new Date().getTime() - new Date(record.createdDate).getTime()) / (1000 * 3600 * 24));
+                const date = record.createdAt || record.createdDate;
+                if (!date) return <Text>-</Text>;
+                const days = Math.floor((new Date().getTime() - new Date(date).getTime()) / (1000 * 3600 * 24));
                 return <Text>{days} días</Text>;
             },
-            sorter: (a, b) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime(),
+            sorter: (a, b) => new Date(a.createdAt || a.createdDate).getTime() - new Date(b.createdAt || b.createdDate).getTime(),
         },
         {
             title: 'Fecha',
-            dataIndex: 'createdDate',
             key: 'createdDate',
             width: 110,
-            sorter: (a, b) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime(),
-            render: (date: string) => new Date(date).toLocaleDateString('es-VE'),
+            sorter: (a, b) => new Date(a.createdAt || a.createdDate).getTime() - new Date(b.createdAt || b.createdDate).getTime(),
+            render: (_: any, record: Requisition) => {
+                const date = record.createdAt || record.createdDate;
+                if (!date) return <Text>-</Text>;
+                return new Date(date).toLocaleDateString('es-VE');
+            },
         },
     ];
 

@@ -27,6 +27,28 @@ interface CandidateDetailPanelProps {
     onClose: () => void;
 }
 
+const formatWhatsAppPhone = (phone: string) => {
+    if (!phone) return '';
+    let cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+    if (!cleaned.startsWith('58')) cleaned = '58' + cleaned;
+    return cleaned;
+};
+
+const getWhatsAppMessage = (candidate: any) => {
+    const firstName = candidate.firstName || 'Candidato';
+    const currentApp = candidate.applications?.[0];
+    const stageId = currentApp?.currentStageId;
+    
+    switch (stageId) {
+        case 2: return `Hola 👋 te saluda el equipo de captación de Grupo Mayoreo.\n¡Felicidades! 🙌 Ya estás participando en el proceso de selección para ser parte de la Fuerza de Ventas más grande del País.\nAhora queremos conocerte mejor 🎥\nNotamos que aún no hemos recibido tu video.\nPuedes subirlo en tu portal o, si prefieres, enviarlo por aquí 👍\nNo pierdas esta oportunidad de avanzar en el proceso 🚀\n¡Feliz día!`;
+        case 3: return `Hola 👋 te saluda el equipo de captación de Grupo Mayoreo.\nTe enviamos las pruebas psicotécnicas a tu correo. También puedes acceder a ellas desde tu portal.\nEstamos a la espera de que las completes para poder continuar con tu proceso.\n🚀 Estás cada vez más cerca de formar parte de una de las fuerzas de ventas más importantes del país.\n¡Feliz día!`;
+        case 4:
+        case 5: return `Hola 👋 te saluda el equipo de Grupo Mayoreo.\n¡Felicidades! Superaste las pruebas psicotécnicas y sigues avanzando en el proceso.\nNos encantaría invitarte a tu entrevista personal para seguir conociéndote.\n🚀 Estás cada vez más cerca de formar parte de la fuerza de ventas más importante del país.\nCuéntanos tu disponibilidad y la coordinamos.`;
+        default: return `Hola 👋 *${firstName}*, te saluda el equipo de captación de Grupo Mayoreo. ¡Felicidades! 🙌 Ya estás participando en el proceso de selección de la fuerza de ventas más grande del país.`;
+    }
+};
+
 const CandidateDetailPanel: React.FC<CandidateDetailPanelProps> = ({ candidate, onClose }) => {
     const dispatch = useAppDispatch();
     const stages = useAppSelector(selectStages);
@@ -131,7 +153,7 @@ const CandidateDetailPanel: React.FC<CandidateDetailPanelProps> = ({ candidate, 
                         {activeCandidate.videoUrl && (
                             <Button icon={<VideoCameraOutlined />} href={activeCandidate.videoUrl} target="_blank" size="small">Video</Button>
                         )}
-                        <Button icon={<WhatsAppOutlined />} href={`https://wa.me/${activeCandidate.phone?.replace(/\D/g, '')}`} target="_blank" size="small" style={{ color: '#25D366' }}>WhatsApp</Button>
+                        <Button icon={<WhatsAppOutlined />} href={`https://wa.me/${formatWhatsAppPhone(activeCandidate.phone)}?text=${encodeURIComponent(getWhatsAppMessage(activeCandidate))}`} target="_blank" size="small" style={{ color: '#25D366' }}>WhatsApp</Button>
                     </div>
 
                     <Divider style={{ margin: '8px 0' }} />

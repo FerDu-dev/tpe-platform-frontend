@@ -70,6 +70,7 @@ const SmartMatchingModal: React.FC<SmartMatchingModalProps> = ({ visible, onClos
     );
 
     return (
+<<<<<<< Updated upstream
         <Modal
             title={
                 <Space>
@@ -110,6 +111,40 @@ const SmartMatchingModal: React.FC<SmartMatchingModalProps> = ({ visible, onClos
                                         <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
                                             <strong>Ruta/Detalles:</strong> {fullZone.geographicRoute}
                                         </Text>
+=======
+        <>
+            <Modal
+                title={
+                    <Space>
+                        <RocketOutlined style={{ color: '#1890ff' }} />
+                        <span>Emparejamiento Inteligente</span>
+                    </Space>
+                }
+                open={visible}
+                onCancel={onClose}
+                width={900}
+                footer={null}
+                bodyStyle={{ padding: '24px' }}
+                centered
+            >
+                <div style={{ marginBottom: '24px', background: '#f0f5ff', padding: '20px', borderRadius: '12px', border: '1px solid #adc6ff' }}>
+                    <Row align="middle" gutter={16}>
+                        <Col span={16}>
+                            <Text type="secondary" style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Vacante Activa</Text>
+                            <Title level={4} style={{ margin: '4px 0 12px 0', color: '#003a8c' }}>
+                                {requisition?.title}
+                                {requisition?.isConfidential && <Tag color="error" style={{ marginLeft: 12 }}>CONFIDENCIAL</Tag>}
+                            </Title>
+
+                            <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    <Tag color="blue" style={{ margin: 0, borderRadius: '4px', fontWeight: 600 }}>
+                                        <GlobalOutlined /> {fullZone?.name || requisition?.zone?.name || 'N/A'}
+                                    </Tag>
+                                    {fullZone?.region && <Tag color="cyan" style={{ borderRadius: '4px' }}>Región: {fullZone.region}</Tag>}
+                                    {(requisition?.state?.name || fullZone?.state?.name) && (
+                                        <Tag color="orange" style={{ borderRadius: '4px' }}>Estado: {requisition?.state?.name || fullZone?.state?.name}</Tag>
+>>>>>>> Stashed changes
                                     )}
                                 </div>
                             )}

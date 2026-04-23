@@ -179,10 +179,14 @@ const CandidateRequisitionMatchingModal: React.FC<CandidateRequisitionMatchingMo
             )
         },
         {
-            title: 'Profesión / Cargo',
-            dataIndex: 'title',
+            title: 'Cargo',
             key: 'title',
-            render: (text: string) => <Tag color="blue">{text}</Tag>
+            render: (_: any, record: Requisition) => (
+                <Space direction="vertical" size={2}>
+                    <Tag color="blue">{record.title}</Tag>
+                    {record.isConfidential && <Tag color="error" style={{ fontSize: '10px', height: '18px', lineHeight: '16px' }}>CONFIDENCIAL</Tag>}
+                </Space>
+            )
         },
         {
             title: 'Empresa',

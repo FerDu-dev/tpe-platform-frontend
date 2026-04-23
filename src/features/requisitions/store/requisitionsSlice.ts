@@ -14,6 +14,10 @@ interface RequisitionsState {
         countsByStage: Record<number, number>;
         countsByState: Record<string, number>;
         advanceRate?: number;
+        requisitionAnalytics?: {
+            status: Record<string, number>;
+            priority: Record<string, number>;
+        };
     } | null;
     analyticsLoading: boolean;
 }
