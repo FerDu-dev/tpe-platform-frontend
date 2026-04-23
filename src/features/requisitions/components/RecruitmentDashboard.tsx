@@ -32,7 +32,8 @@ import {
     selectAnalyticsLoading,
     selectRequisitions,
     selectRequisitionsFilters,
-    setFilters
+    setFilters,
+    selectRequisitionsMeta
 } from '../store/requisitionsSlice';
 import { STAGE_COLORS } from '../../../services/candidateService';
 import { motion } from 'framer-motion';
@@ -69,6 +70,7 @@ const RecruitmentDashboard: React.FC = () => {
     const analytics = useAppSelector(selectRecruitmentAnalytics);
     const analyticsLoading = useAppSelector(selectAnalyticsLoading); // Renamed from 'loading' to avoid conflict
     const requisitions = useAppSelector(selectRequisitions);
+    const requisitionsMeta = useAppSelector(selectRequisitionsMeta);
 
     const filters = useAppSelector(selectRequisitionsFilters);
 
@@ -285,7 +287,7 @@ const RecruitmentDashboard: React.FC = () => {
                                 <Card style={{ ...gradientCard('#1890ff'), height: '140px' }} bodyStyle={{ padding: '20px' }}>
                                     <Statistic
                                         title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Requisiciones Abiertas</Text>}
-                                        value={requisitions.filter(r => r.companyId === filters.companyId && r.status === 'OPEN').length}
+                                        value={requisitionsMeta?.total || 0}
                                         prefix={<RocketOutlined />}
                                         valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
                                     />
@@ -489,8 +491,8 @@ const RecruitmentDashboard: React.FC = () => {
                                 <Space>
                                     <Text type="secondary">Zona:</Text>
                                     <Tag color="blue" icon={<GlobalOutlined />} style={{ borderRadius: '4px' }}>
-                                        {typeof fullRequisition?.zone === 'object' && fullRequisition?.zone !== null 
-                                            ? `${fullRequisition.zone.name}, ${fullRequisition.zone.region} - ${fullRequisition.state?.name}` 
+                                        {typeof fullRequisition?.zone === 'object' && fullRequisition?.zone !== null
+                                            ? `${fullRequisition.zone.name}, ${fullRequisition.zone.region} - ${fullRequisition.state?.name}`
                                             : fullRequisition?.zone}
                                     </Tag>
                                 </Space>
