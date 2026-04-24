@@ -79,6 +79,13 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     }, [open, candidate?.id, dispatch]);
 
     useEffect(() => {
+        setResendSuccess(false);
+        setResendCVSuccess(false);
+        setResendVideoSuccess(false);
+        setResendPsychSuccess(false);
+    }, [candidate?.id]);
+
+    useEffect(() => {
         if (infoModalOpen) {
             setResendSuccess(false);
             setResendCVSuccess(false);
