@@ -77,7 +77,7 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
             styles={{ body: { paddingBottom: 80 } }}
             extra={
                 <Space>
-                    <PermissionGuard module="requisition" action="edit">
+                    <PermissionGuard module="requisitions" action="edit">
                         <Space>
                             <Popconfirm
                                 title="¿Eliminar requisición?"
@@ -121,7 +121,7 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
             footer={
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
                     {requisition.status === 'OPEN' && (
-                        <PermissionGuard module="requisition" action="edit">
+                        <PermissionGuard module="requisitions" action="edit">
                             <Button
                                 icon={<PauseCircleOutlined />}
                                 onClick={() => onPause(requisition)}
@@ -138,7 +138,7 @@ const RequisitionDrawer: React.FC<RequisitionDrawerProps> = ({
                         </PermissionGuard>
                     )}
                     {requisition.status === 'PAUSED' && (
-                        <PermissionGuard module="requisition" action="edit">
+                        <PermissionGuard module="requisitions" action="edit">
                             <Button
                                 icon={<PlayCircleOutlined />}
                                 onClick={() => onReactivate(requisition)}
