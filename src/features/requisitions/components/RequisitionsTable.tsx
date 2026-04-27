@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Tag, Typography, Empty } from 'antd';
+import { Table, Tag, Typography, Empty, Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useAppSelector } from '../../../app/store';
 import { selectRequisitions, selectRequisitionsLoading } from '../store/requisitionsSlice';
@@ -86,35 +86,29 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selec
             title: 'Cargo',
             dataIndex: 'title',
             key: 'title',
-            width: 140,
+            width: 180,
             filters: positions.map(p => ({ text: p, value: p })),
             onFilter: (value, record) => record.title === value,
-            render: (title: string) => <Text strong>{title}</Text>,
+            render: (title: string, record: Requisition) => (
+                <Space direction="vertical" size={2}>
+                    <Text strong>
+                        {title}
+                    </Text>
+                    {record.isConfidential && <Tag color="error" style={{ fontSize: '10px', height: '18px', lineHeight: '16px' }}>CONFIDENCIAL</Tag>}
+                </Space>
+            ),
         },
         {
             title: 'Solicitado por',
             dataIndex: 'requestedBy',
             key: 'requestedBy',
             width: 130,
-            render: (requestedBy: string) => <Text type="secondary">{requestedBy || 'N/A'}</Text>,
-        },
-        // {
-        //     title: 'Departamento',
-        //     dataIndex: 'department',
-        //     key: 'department',
-        //     width: 130,
-        // },
-        {
-            title: 'Ubicación',
-            dataIndex: 'location',
-            key: 'location',
-            width: 140,
         },
         {
             title: 'Zona',
             dataIndex: 'zone',
             key: 'zone',
-            width: 100,
+            width: 120,
             filters: zones.map(z => ({ text: z, value: z })),
             onFilter: (value, record) => {
                 const zoneName = typeof record.zone === 'object' ? record.zone?.name : record.zone;
@@ -126,7 +120,7 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selec
             },
         },
         {
-            title: 'Estado',
+            title: 'Estado (Ubi)',
             key: 'state',
             width: 120,
             filters: statesList.map(s => ({ text: s, value: s })),
@@ -188,28 +182,21 @@ const RequisitionsTable: React.FC<RequisitionsTableProps> = ({ onRowClick, selec
             key: 'applicants',
             width: 100,
             align: 'center',
-            sorter: (a, b) => a.applicants - b.applicants,
+            sorter: (a, b) => (a.applicants || 0) - (b.applicants || 0),
             render: (applicants: number) => (
-                <Tag color={applicants > 0 ? 'green' : 'default'}>{applicants}</Tag>
+                <Tag color={(applicants || 0) > 0 ? 'green' : 'default'}>{applicants || 0}</Tag>
             ),
         },
         {
-            title: 'Días Abierta',
-            key: 'daysOpen',
-            width: 110,
-            render: (_: any, record: Requisition) => {
-                const days = Math.floor((new Date().getTime() - new Date(record.createdDate).getTime()) / (1000 * 3600 * 24));
-                return <Text>{days} días</Text>;
-            },
-            sorter: (a, b) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime(),
-        },
-        {
             title: 'Fecha',
-            dataIndex: 'createdDate',
             key: 'createdDate',
             width: 110,
-            sorter: (a, b) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime(),
-            render: (date: string) => new Date(date).toLocaleDateString('es-VE'),
+            sorter: (a, b) => new Date(a.createdAt || a.createdDate).getTime() - new Date(b.createdAt || b.createdDate).getTime(),
+            render: (_: any, record: Requisition) => {
+                const date = record.createdAt || record.createdDate;
+                if (!date) return <Text>-</Text>;
+                return new Date(date).toLocaleDateString('es-VE');
+            },
         },
     ];
 

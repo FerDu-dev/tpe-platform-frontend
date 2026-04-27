@@ -45,7 +45,7 @@ const SmartMatchingModal: React.FC<SmartMatchingModalProps> = ({ visible, onClos
     const fetchAvailable = async () => {
         setLoading(true);
         try {
-            // Fetch ALL active candidates (not just Stage 1)
+            // Fetch ALL active candidates
             const res = await candidateService.fetch_candidates_active({ limit: 100 });
 
             // Filter candidates who DON'T have an active requisition assigned
@@ -105,7 +105,10 @@ const SmartMatchingModal: React.FC<SmartMatchingModalProps> = ({ visible, onClos
                     <Row align="middle" gutter={16}>
                         <Col span={16}>
                             <Text type="secondary" style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Vacante Activa</Text>
-                            <Title level={4} style={{ margin: '4px 0 12px 0', color: '#003a8c' }}>{requisition?.title}</Title>
+                            <Title level={4} style={{ margin: '4px 0 12px 0', color: '#003a8c' }}>
+                                {requisition?.title}
+                                {requisition?.isConfidential && <Tag color="error" style={{ marginLeft: 12 }}>CONFIDENCIAL</Tag>}
+                            </Title>
 
                             <Space direction="vertical" size={4} style={{ width: '100%' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -116,29 +119,18 @@ const SmartMatchingModal: React.FC<SmartMatchingModalProps> = ({ visible, onClos
                                     {(requisition?.state?.name || fullZone?.state?.name) && (
                                         <Tag color="orange" style={{ borderRadius: '4px' }}>Estado: {requisition?.state?.name || fullZone?.state?.name}</Tag>
                                     )}
-                                    {requisition?.location && <Text type="secondary" style={{ fontSize: '13px' }}>• {requisition.location}</Text>}
                                 </div>
-
-                                {(fullZone?.coordinator || fullZone?.geographicRoute) && (
-                                    <div style={{ background: 'rgba(255,255,255,0.5)', padding: '8px 12px', borderRadius: '8px', marginTop: '8px' }}>
-                                        {fullZone?.coordinator && (
-                                            <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
-                                                <strong>Coordinador:</strong> {fullZone.coordinator} {fullZone.coordinatorNum && <small style={{ color: '#1890ff' }}>({fullZone.coordinatorNum})</small>}
-                                            </Text>
-                                        )}
-                                        {fullZone?.geographicRoute && (
-                                            <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
-                                                <strong>Ruta/Detalles:</strong> {fullZone.geographicRoute}
-                                            </Text>
-                                        )}
-                                    </div>
+                                {fullZone?.coordinator && (
+                                    <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: 4 }}>
+                                        <strong>Coordinador:</strong> {fullZone.coordinator}
+                                    </Text>
                                 )}
                             </Space>
                         </Col>
                         <Col span={8} style={{ textAlign: 'right' }}>
                             <Card size="small" style={{ borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.7)' }}>
                                 <Statistic
-                                    title="Disponibles"
+                                    title="Posibles Candidatos"
                                     value={availableCandidates.length}
                                     valueStyle={{ color: '#1890ff', fontSize: '20px', fontWeight: 700 }}
                                 />
@@ -240,7 +232,6 @@ const SmartMatchingModal: React.FC<SmartMatchingModalProps> = ({ visible, onClos
                 />
             </Modal>
 
-            {/* Candidate Detail Drawer */}
             <CandidateDrawer
                 open={isDrawerVisible}
                 onClose={() => setIsDrawerVisible(false)}

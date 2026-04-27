@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { Modal, Form, Select, Input, Button, Divider, message, Space, Card, Descriptions } from 'antd';
+import { Modal, Form, Select, Input, Button, Divider, message, Space, Card, Descriptions, Checkbox, DatePicker } from 'antd';
+import { DeleteOutlined, PlusOutlined, WarningOutlined } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import {
     selectPositions,
     addCompany, addPosition, removePosition
 } from '../../../store/masterDataSlice';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { createRequisition, updateRequisition } from '../store/requisitionsSlice';
 import { VENEZUELA_STATES } from '../../../constants/venezuela';
 import type { Priority, Zone, Requisition } from '../../../types';
 import { zonesService } from '../../../services/zonesService';
+import dayjs from 'dayjs';
 
 const { Option } = Select;
+const { TextArea } = Input;
 
 interface RequisitionFormProps {
     open: boolean;
@@ -20,12 +22,13 @@ interface RequisitionFormProps {
     loading?: boolean;
 }
 
-const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requisition, loading = false }) => {
+const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requisition, loading }) => {
     const [form] = Form.useForm();
     const [zoneForm] = Form.useForm();
     const dispatch = useAppDispatch();
     const selectedZoneId = Form.useWatch('zoneId', form);
     const selectedCompanyId = Form.useWatch('companyId', form);
+    const isConfidential = Form.useWatch('isConfidential', form);
 
     const positions = useAppSelector(selectPositions);
 
@@ -41,10 +44,12 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
             if (requisition) {
                 console.log('Populating form with requisition:', requisition);
 
-                // Populate municipalities if state exists
-                if (requisition.stateId) {
-                    const found = VENEZUELA_STATES.find(s => s.id === requisition.stateId);
+                const currentStateId = requisition.stateId || requisition.state?.id;
+                if (currentStateId) {
+                    const found = VENEZUELA_STATES.find(s => s.id === currentStateId);
                     setMunicipalities(found ? found.municipalities : []);
+                } else {
+                    setMunicipalities([]);
                 }
 
                 // Populate zones if company exists
@@ -65,17 +70,58 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                     requestedBy: requisition.requestedBy,
                     priority: requisition.priority,
                     position: requisition.title,
-                    stateId: requisition.stateId,
+                    stateId: currentStateId,
                     municipalityId: requisition.municipalityId,
                     zoneId: resolvedZoneId,
+                    comments: requisition.comments,
+                    isConfidential: requisition.isConfidential || false,
+                    createdAt: requisition.createdAt ? dayjs(requisition.createdAt) : (requisition.createdDate ? dayjs(requisition.createdDate) : dayjs()),
                 });
             } else {
                 form.resetFields();
+                form.setFieldsValue({ createdAt: dayjs() });
                 setMunicipalities([]);
                 setZones([]);
             }
         }
     }, [open, requisition, form]);
+
+    const handleSubmit = async (values: any) => {
+        try {
+            const requisitionData: any = {
+                title: values.position,
+                priority: values.priority as Priority,
+                companyId: values.companyId,
+                zoneId: values.zoneId,
+                stateId: values.stateId,
+                municipalityId: values.municipalityId,
+                requestedBy: values.requestedBy,
+                comments: values.comments,
+                isConfidential: values.isConfidential,
+            };
+
+            // Send date if present
+            if (values.createdAt) {
+                requisitionData.createdAt = values.createdAt.toISOString();
+            }
+
+            if (requisition) {
+                await dispatch(updateRequisition({ id: requisition.id, data: requisitionData })).unwrap();
+                message.success('Requisición actualizada con éxito');
+            } else {
+                // Add defaults for new
+                requisitionData.requiresVehicle = false;
+                requisitionData.vacanciesCount = 1;
+                await dispatch(createRequisition(requisitionData)).unwrap();
+                message.success('Requisición creada con éxito');
+            }
+
+            form.resetFields();
+            onClose();
+        } catch (error: any) {
+            message.error(error || 'Error al procesar la requisición');
+        }
+    };
 
     const COMPANIES = [
         { id: 1, name: 'Febeca' },
@@ -87,9 +133,9 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
     const [newItemName, setNewItemName] = useState('');
 
     const handleStateChange = (stateId: number) => {
-        form.setFieldValue('municipalityId', undefined);
         const found = VENEZUELA_STATES.find(s => s.id === stateId);
         setMunicipalities(found ? found.municipalities : []);
+        form.setFieldValue('municipalityId', undefined);
     };
 
     const handleCreateNew = (type: 'company' | 'position') => {
@@ -101,7 +147,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
     };
 
     const handleDeletePosition = (positionName: string, event: React.MouseEvent) => {
-        event.stopPropagation(); // Prevent dropdown item selection
+        event.stopPropagation();
         Modal.confirm({
             title: '¿Estás seguro de eliminar este cargo?',
             content: `Se eliminará el cargo "${positionName}" de la lista de opciones.`,
@@ -111,7 +157,6 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
             onOk: () => {
                 dispatch(removePosition(positionName));
                 message.success(`Cargo "${positionName}" eliminado correctamente`);
-                // If the deleted position was selected, clear it
                 if (form.getFieldValue('position') === positionName) {
                     form.setFieldValue('position', undefined);
                 }
@@ -142,7 +187,6 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
         const companyId = form.getFieldValue('companyId');
         setCreatingZone(true);
         try {
-            // Resolve state name from the local constant so the backend can upsert it
             const selectedState = VENEZUELA_STATES.find(s => s.id === values.stateId);
             const newZone = await zonesService.createZone({
                 name: values.name,
@@ -165,8 +209,6 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
         }
     };
 
-
-    // Add remote search for zones
     const handleZoneSearch = async (value: string) => {
         if (!selectedCompanyId) return;
         setLoadingZones(true);
@@ -174,45 +216,9 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
             const res = await zonesService.fetchZones(selectedCompanyId, value);
             setZones(res.data);
         } catch {
-            // Already handled by error message in other places
+            // Error handled globally or ignored for search
         } finally {
             setLoadingZones(false);
-        }
-    };
-
-    // Submit handler
-    const handleSubmit = async (values: any) => {
-        try {
-            const selectedState = VENEZUELA_STATES.find(s => s.id === values.stateId);
-            const selectedMuni = municipalities.find(m => m.id === values.municipalityId);
-
-            const requisitionData: any = {
-                title: values.position,
-                priority: values.priority as Priority,
-                companyId: values.companyId,
-                zoneId: values.zoneId,
-                stateId: values.stateId,
-                municipalityId: values.municipalityId,
-                stateName: selectedState?.name,
-                municipalityName: selectedMuni?.name,
-                requestedBy: values.requestedBy,
-            };
-
-            if (requisition) {
-                await dispatch(updateRequisition({ id: requisition.id, data: requisitionData })).unwrap();
-                message.success('Requisición actualizada con éxito');
-            } else {
-                // Add defaults for new
-                requisitionData.requiresVehicle = false;
-                requisitionData.vacanciesCount = 1;
-                await dispatch(createRequisition(requisitionData)).unwrap();
-                message.success('Requisición creada con éxito');
-            }
-
-            form.resetFields();
-            onClose();
-        } catch (error: any) {
-            message.error(error || 'Error al procesar la requisición');
         }
     };
 
@@ -244,7 +250,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                 okText={requisition ? "Guardar Cambios" : "Crear Requisición"}
                 cancelText="Cancelar"
                 confirmLoading={loading}
-                width={600}
+                width={650}
                 style={{ top: 20 }}
                 zIndex={1100}
             >
@@ -269,7 +275,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                         </Form.Item>
 
                         <Form.Item name="position" label="Cargo / Posición" rules={[{ required: true }]}>
-                            <Select popupRender={renderPositionDropdown} placeholder="Seleccionar cargo">
+                            <Select popupRender={renderPositionDropdown} placeholder="Seleccionar cargo" showSearch>
                                 {positions.map(p => (
                                     <Option key={p} value={p}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -279,7 +285,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                                                 size="small"
                                                 icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />}
                                                 onClick={(e) => handleDeletePosition(p, e)}
-                                                onMouseDown={(e) => e.stopPropagation()} // Extra precaution for AntD Select
+                                                onMouseDown={(e) => e.stopPropagation()}
                                             />
                                         </div>
                                     </Option>
@@ -288,13 +294,13 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                         </Form.Item>
 
                         <Form.Item name="stateId" label="Estado" rules={[{ required: true }]}>
-                            <Select showSearch onChange={handleStateChange}>
+                            <Select showSearch onChange={handleStateChange} placeholder="Seleccionar estado">
                                 {VENEZUELA_STATES.map(s => <Option key={s.id} value={s.id}>{s.name}</Option>)}
                             </Select>
                         </Form.Item>
 
-                        <Form.Item name="municipalityId" label="Municipio" rules={[{ required: true }]}>
-                            <Select showSearch disabled={municipalities.length === 0}>
+                        <Form.Item name="municipalityId" label="Municipio">
+                            <Select showSearch placeholder="Seleccionar municipio">
                                 {municipalities.map(m => <Option key={m.id} value={m.id}>{m.name}</Option>)}
                             </Select>
                         </Form.Item>
@@ -333,6 +339,28 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                                 {zones.map(z => <Option key={z.id} value={z.id}>{z.name}</Option>)}
                             </Select>
                         </Form.Item>
+
+                        <Form.Item name="isConfidential" valuePropName="checked" style={{ gridColumn: 'span 2', marginBottom: 8 }}>
+                            <Checkbox>
+                                <span style={{ color: isConfidential ? '#ff4d4f' : 'inherit', fontWeight: isConfidential ? 600 : 400 }}>
+                                    {isConfidential && <WarningOutlined style={{ marginRight: 8 }} />}
+                                    ¿Esta vacante es Confidencial?
+                                </span>
+                            </Checkbox>
+                        </Form.Item>
+
+                        <Form.Item
+                            name="createdAt"
+                            label="Fecha de Solicitud"
+                            style={{ gridColumn: 'span 2' }}
+                            extra="Si no se modifica, se asignará la fecha de hoy automáticamente."
+                        >
+                            <DatePicker showTime format="DD/MM/YYYY HH:mm" style={{ width: '100%' }} />
+                        </Form.Item>
+
+                        <Form.Item name="comments" label="Comentarios / Observaciones" style={{ gridColumn: 'span 2' }}>
+                            <TextArea rows={3} placeholder="Agrega notas o comentarios adicionales..." />
+                        </Form.Item>
                     </div>
 
                     {selectedZoneId && zones.find(z => z.id === selectedZoneId) && (
@@ -359,7 +387,6 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                 </Form>
             </Modal>
 
-            {/* Create Zone Modal */}
             <Modal
                 title={
                     <Space>
@@ -374,6 +401,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                 cancelText="Cancelar"
                 confirmLoading={creatingZone}
                 width={480}
+                zIndex={1200}
             >
                 <Form form={zoneForm} layout="vertical" onFinish={handleCreateZone} style={{ marginTop: '16px' }}>
                     <Form.Item name="name" label="Nombre de la zona" rules={[{ required: true, message: 'El nombre es requerido' }]}>
@@ -403,7 +431,7 @@ const RequisitionForm: React.FC<RequisitionFormProps> = ({ open, onClose, requis
                     <Form.Item name="geographicRoute" label="Ruta / Detalles Geográficos">
                         <Input.TextArea
                             rows={2}
-                            placeholder="Describe la ruta o zona geográfica que cubre esta zona..."
+                            placeholder="Describe la ruta o zona geográfica..."
                         />
                     </Form.Item>
                 </Form>
