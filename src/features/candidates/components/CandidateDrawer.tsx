@@ -47,7 +47,7 @@ const getWhatsAppMessage = (candidate: any) => {
     const firstName = candidate.firstName || 'Candidato';
     const currentApp = candidate.applications?.[0];
     const stageId = currentApp?.currentStageId;
-    
+
     switch (stageId) {
         case 2: // Etapa de video
             return `Hola 👋 te saluda el equipo de captación de Grupo Mayoreo.
@@ -136,6 +136,13 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             setResendCVSuccess(false);
         }
     }, [infoModalOpen]);
+
+    useEffect(() => {
+        setResendSuccess(false);
+        setResendCVSuccess(false);
+        setResendVideoSuccess(false);
+        setResendPsychSuccess(false);
+    }, [candidate?.id]);
 
 
     const handleAssignRequisition = async (requisitionId: string | null) => {
