@@ -10,7 +10,9 @@ interface RequisitionsState {
     loading: boolean;
     error: string | null;
     analytics: {
-        totalParticipants: number;
+        totalActiveParticipants: number;
+        totalHiredParticipants: number;
+        totalRejected: number;
         countsByStage: Record<number, number>;
         countsByState: Record<string, number>;
         advanceRate?: number;

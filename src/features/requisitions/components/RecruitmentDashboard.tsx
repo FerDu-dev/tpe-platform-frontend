@@ -88,7 +88,6 @@ const RecruitmentDashboard: React.FC = () => {
             companyId: filters.companyId,
             jobRequisitionId: filters.jobRequisitionId,
             stateId: filters.stateId,
-            excludeRejected: true
         }));
 
         candidateService.fetch_candidates_active({ stageId: 1 })
@@ -119,7 +118,6 @@ const RecruitmentDashboard: React.FC = () => {
         dispatch(loadRecruitmentAnalytics({
             companyId: filters.companyId,
             jobRequisitionId: filters.jobRequisitionId,
-            excludeRejected: true
         }));
         if (filters.jobRequisitionId) {
             requisitionService.findOne(filters.jobRequisitionId.toString()).then(setFullRequisition);
@@ -225,12 +223,12 @@ const RecruitmentDashboard: React.FC = () => {
                             <Col xs={24} sm={8}>
                                 <Card style={{ ...gradientCard('#722ed1'), height: '140px' }} bodyStyle={{ padding: '20px' }}>
                                     <Statistic
-                                        title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos Totales</Text>}
-                                        value={analytics?.totalParticipants || 0}
+                                        title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos Activos</Text>}
+                                        value={analytics?.totalActiveParticipants || 0}
                                         prefix={<TeamOutlined />}
                                         valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
                                     />
-                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>Asignados a todas las vacantes</Text>
+                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>En proceso activo en todas las vacantes</Text>
                                 </Card>
                             </Col>
                             <Col xs={24} sm={8}>
@@ -373,8 +371,8 @@ const RecruitmentDashboard: React.FC = () => {
                         <Col xs={24} sm={8}>
                             <Card style={{ ...gradientCard('#1890ff') }} bodyStyle={{ padding: '20px' }}>
                                 <Statistic
-                                    title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos en Proceso</Text>}
-                                    value={analytics?.totalParticipants || 0}
+                                    title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos Activos</Text>}
+                                    value={analytics?.totalActiveParticipants || 0}
                                     prefix={<TeamOutlined />}
                                     valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
                                 />
@@ -388,8 +386,8 @@ const RecruitmentDashboard: React.FC = () => {
                         <Col xs={24} sm={8}>
                             <Card style={{ ...gradientCard('#722ed1') }} bodyStyle={{ padding: '20px' }} hoverable onClick={() => setIsModalVisible(true)}>
                                 <Statistic
-                                    title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos Totales</Text>}
-                                    value={analytics?.totalParticipants || 0}
+                                    title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos Activos</Text>}
+                                    value={analytics?.totalActiveParticipants || 0}
                                     prefix={<TeamOutlined />}
                                     valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
                                 />

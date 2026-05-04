@@ -53,11 +53,11 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick }) => 
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                 <div>
-                    <Text strong style={{ fontSize: '15px', color: '#1f1f1f', display: 'block' }}>
+                    <Text strong style={{ fontSize: '15px', color: '#1f1f1f', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>
                         {candidate.firstName} {candidate.lastName}
                     </Text>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <Text type="secondary" style={{ fontSize: '11px', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <Text type="secondary" style={{ fontSize: '11px', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>
                             {candidate.profession || 'Sin profesión'}
                         </Text>
                         <div style={{ marginTop: 4 }}>
@@ -69,7 +69,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick }) => 
                             </Tag>
                             {candidate.requisitionZoneName && (
                                 <div style={{ marginTop: '4px' }}>
-                                    <Text type="secondary" style={{ fontSize: '11px', fontWeight: 600, color: '#2b457c' }}>
+                                    <Text type="secondary" style={{ fontSize: '11px', fontWeight: 600, color: '#2b457c', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>
                                         📍 ZONA: {candidate.requisitionZoneName}
                                     </Text>
                                 </div>
@@ -115,7 +115,10 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick }) => 
                         border: '1px solid #adc6ff',
                         width: '100%',
                         textAlign: 'center',
-                        fontSize: '11px'
+                        fontSize: '11px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
                     }}>
                         {candidate.municipality ? `${candidate.municipality.name} - ${candidate.municipality.state?.name || ''}` : 'Sin ubicación'}
                     </Tag>

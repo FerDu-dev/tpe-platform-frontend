@@ -10,6 +10,7 @@ interface CandidatesState {
     loading: boolean;
     error: string | null;
     selectedCandidate: Candidate | null;
+    kanban: Record<number, { data: Candidate[]; meta: PaginationMeta | null; loading: boolean }>;
 }
 
 const initialState: CandidatesState = {
@@ -19,6 +20,7 @@ const initialState: CandidatesState = {
     loading: false,
     error: null,
     selectedCandidate: null,
+    kanban: {},
 };
 
 // Async thunk to load candidates
@@ -39,6 +41,26 @@ export const loadCandidates = createAsyncThunk(
                 response = await candidateService.fetch_candidates_active({ ...filters, ...restParams });
             }
             return response;
+        } catch (error) {
+            return rejectWithValue((error as Error).message);
+        }
+    }
+);
+
+export const loadKanbanStage = createAsyncThunk(
+    'candidates/loadKanbanStage',
+    async (params: { stageId: number; page: number; limit?: number }, { getState, rejectWithValue }) => {
+        const state = getState() as RootState;
+        const filters = state.candidates.filters;
+        
+        try {
+            const response = await candidateService.fetch_candidates_active({ 
+                ...filters, 
+                stageId: params.stageId,
+                page: params.page,
+                limit: params.limit || 20 
+            });
+            return { stageId: params.stageId, response };
         } catch (error) {
             return rejectWithValue((error as Error).message);
         }
@@ -132,6 +154,43 @@ const candidatesSlice = createSlice({
             .addCase(loadCandidateById.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
+            })
+            // Load Kanban Stage (Infinite Scroll)
+            .addCase(loadKanbanStage.pending, (state, action) => {
+                const stageId = action.meta.arg.stageId;
+                if (!state.kanban[stageId]) {
+                    state.kanban[stageId] = { data: [], meta: null, loading: true };
+                } else {
+                    state.kanban[stageId].loading = true;
+                }
+            })
+            .addCase(loadKanbanStage.fulfilled, (state, action) => {
+                const { stageId, response } = action.payload;
+                const existing = state.kanban[stageId] || { data: [], meta: null, loading: false };
+                
+                // If it's page 1, replace. Otherwise, append unique candidates.
+                if (response.meta.page === 1) {
+                    state.kanban[stageId] = {
+                        data: response.data,
+                        meta: response.meta,
+                        loading: false
+                    };
+                } else {
+                    const existingIds = new Set(existing.data.map(c => c.id));
+                    const newData = response.data.filter(c => !existingIds.has(c.id));
+                    
+                    state.kanban[stageId] = {
+                        data: [...existing.data, ...newData],
+                        meta: response.meta,
+                        loading: false
+                    };
+                }
+            })
+            .addCase(loadKanbanStage.rejected, (state, action) => {
+                const stageId = action.meta.arg.stageId;
+                if (state.kanban[stageId]) {
+                    state.kanban[stageId].loading = false;
+                }
             });
     },
 });

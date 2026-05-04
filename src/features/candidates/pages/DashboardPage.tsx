@@ -14,6 +14,10 @@ import {
     selectFilters,
     setFilters,
 } from '../store/candidatesSlice';
+import {
+    loadRecruitmentAnalytics,
+    selectRecruitmentAnalytics,
+} from '../../requisitions/store/requisitionsSlice';
 import { loadStages } from '../../../store/workflowSlice';
 import type { Candidate } from '../../../types';
 
@@ -21,9 +25,10 @@ const { Title, Text } = Typography;
 
 const DashboardPage: React.FC = () => {
     const dispatch = useAppDispatch();
-    const candidates = useAppSelector(selectFilteredCandidates); // Now backend filtered
+    const candidates = useAppSelector(selectFilteredCandidates);
     const filters = useAppSelector(selectFilters);
     const meta = useAppSelector(state => state.candidates.meta);
+    const analytics = useAppSelector(selectRecruitmentAnalytics);
     const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
     const [viewMode, setViewMode] = useState<'board' | 'list'>('list');
     const [category, setCategory] = useState<'eligible' | 'not_eligible' | 'rejected'>('eligible');
@@ -31,6 +36,7 @@ const DashboardPage: React.FC = () => {
     // Load workflow stages on mount
     useEffect(() => {
         dispatch(loadStages(1));
+        dispatch(loadRecruitmentAnalytics({}));
     }, [dispatch]);
 
     // Load candidates on mount or when filters/category change
@@ -91,7 +97,7 @@ const DashboardPage: React.FC = () => {
     };
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
 
             {/* Header Area */}
@@ -158,8 +164,8 @@ const DashboardPage: React.FC = () => {
                 </div>
             )}
 
-            <Row gutter={[20, 20]} style={{ flex: 1, minHeight: 0, marginTop: 16 }}>
-                <Col span={24} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+            <Row gutter={[20, 0]} style={{ flex: 1, minHeight: 0, marginTop: 16, width: '100%', margin: 0 }}>
+                <Col span={24} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, padding: 0 }}>
                     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         {category !== 'eligible' ? (
                             <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -172,7 +178,7 @@ const DashboardPage: React.FC = () => {
                         ) : viewMode === 'board' ? (
                             <KanbanBoard
                                 onCardClick={setSelectedCandidate}
-                                candidates={candidates}
+                                totalCountsByStage={analytics?.countsByStage}
                             />
                         ) : (
                             <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -203,8 +209,8 @@ const DashboardPage: React.FC = () => {
                 <div style={{ display: 'none' }}> {/* Place holder or keep drawer for board? */} </div>
             )}
 
-            {/* Pagination Footer */}
-            {meta && (
+            {/* Pagination Footer - Only for List and Rejected views */}
+            {meta && viewMode !== 'board' && (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
                     <Pagination
                         current={meta.page}
