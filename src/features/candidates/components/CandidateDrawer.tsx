@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Candidate, Requisition } from '../../../types';
+import { VENEZUELA_STATES } from '../../../constants/venezuela';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { loadCandidateById, selectSelectedCandidate, removeCandidate } from '../store/candidatesSlice';
 import { selectStages } from '../../../store/workflowSlice';
@@ -119,7 +120,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     const [matchingModalOpen, setMatchingModalOpen] = useState(false);
 
     // --- Edit state for the info modal ---
-    type EditSection = 'personal' | 'vehiculo' | 'ventas' | 'economica' | 'referencias' | null;
+    type EditSection = 'personal' | 'ubicacion' | 'vehiculo' | 'ventas' | 'economica' | 'referencias' | null;
+    const [editMunicipalities, setEditMunicipalities] = useState<{id: number; name: string}[]>([]);
     const [editingSection, setEditingSection] = useState<EditSection>(null);
     const [editForm, setEditForm] = useState<Record<string, any>>({});
     const [saving, setSaving] = useState(false);
@@ -408,7 +410,14 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             address: c.address || '',
             personalReferences: Array.isArray(c.personalReferences) ? JSON.parse(JSON.stringify(c.personalReferences)).filter(Boolean) : [],
             workReferences: Array.isArray(c.workReferences) ? JSON.parse(JSON.stringify(c.workReferences)).filter(Boolean) : [],
+            municipalityId: c.municipalityId || null,
+            editStateId: c.municipality?.state?.id || null,
         };
+        // Pre-load municipalities if editing ubicacion and state is known
+        if (section === 'ubicacion' && (c.municipality?.state?.id)) {
+            const found = VENEZUELA_STATES.find(s => s.id === c.municipality?.state?.id);
+            setEditMunicipalities(found ? found.municipalities : []);
+        }
         setEditForm(base);
         setEditingSection(section);
     };
@@ -450,6 +459,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 payload.previousCompanies = editForm.previousCompanies;
                 payload.currentMonthlyIncome = editForm.currentMonthlyIncome;
                 payload.salaryAspiration = editForm.salaryAspiration;
+            } else if (section === 'ubicacion') {
+                payload.municipalityId = editForm.municipalityId;
             } else if (section === 'referencias') {
                 payload.personalReferences = editForm.personalReferences;
                 payload.workReferences = editForm.workReferences;
@@ -616,14 +627,63 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                         </Card>
                     </Col>
 
-                    {/* Ubicación (read-only) + Vehículo (editable) */}
+                    {/* Ubicación (editable) + Vehículo (editable) */}
                     <Col span={12}>
                         <Space direction="vertical" size={16} style={{ width: '100%' }}>
-                            <Card title={<Space><InfoCircleOutlined /> Ubicación</Space>} size="small" variant="borderless" style={{ background: '#f5f5f5', borderRadius: 12 }}>
-                                <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
-                                    <Descriptions.Item label="Estado">{activeCandidate.municipality?.state?.name || 'N/A'}</Descriptions.Item>
-                                    <Descriptions.Item label="Municipio">{activeCandidate.municipality?.name || 'N/A'}</Descriptions.Item>
-                                </Descriptions>
+                            <Card
+                                title={editCardTitle(<InfoCircleOutlined />, 'Ubicación', 'ubicacion')}
+                                size="small"
+                                variant="borderless"
+                                style={{ background: '#f5f5f5', borderRadius: 12 }}
+                            >
+                                {editingSection === 'ubicacion' ? (
+                                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                        <div>
+                                            <Text style={{ fontSize: 11, color: '#8c8c8c' }}>Estado</Text>
+                                            <Select
+                                                value={editForm.editStateId}
+                                                onChange={(stateId: number) => {
+                                                    const found = VENEZUELA_STATES.find(s => s.id === stateId);
+                                                    setEditMunicipalities(found ? found.municipalities : []);
+                                                    setEditForm((f: any) => ({ ...f, editStateId: stateId, municipalityId: null }));
+                                                }}
+                                                placeholder="Seleccione estado"
+                                                style={{ width: '100%' }}
+                                                showSearch
+                                                optionFilterProp="children"
+                                                size="small"
+                                            >
+                                                {VENEZUELA_STATES.map(s => (
+                                                    <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>
+                                                ))}
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Text style={{ fontSize: 11, color: '#8c8c8c' }}>Municipio</Text>
+                                            <Select
+                                                value={editForm.municipalityId}
+                                                onChange={(municipalityId: number) => {
+                                                    setEditForm((f: any) => ({ ...f, municipalityId }));
+                                                }}
+                                                placeholder="Seleccione municipio"
+                                                style={{ width: '100%' }}
+                                                showSearch
+                                                optionFilterProp="children"
+                                                size="small"
+                                                disabled={!editForm.editStateId}
+                                            >
+                                                {editMunicipalities.map(m => (
+                                                    <Select.Option key={m.id} value={m.id}>{m.name}</Select.Option>
+                                                ))}
+                                            </Select>
+                                        </div>
+                                    </Space>
+                                ) : (
+                                    <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
+                                        <Descriptions.Item label="Estado">{activeCandidate.municipality?.state?.name || 'N/A'}</Descriptions.Item>
+                                        <Descriptions.Item label="Municipio">{activeCandidate.municipality?.name || 'N/A'}</Descriptions.Item>
+                                    </Descriptions>
+                                )}
                             </Card>
 
                             <Card
