@@ -13,6 +13,7 @@ interface RequisitionsState {
         totalActiveParticipants: number;
         totalHiredParticipants: number;
         totalRejected: number;
+        totalNotEligible: number;
         countsByStage: Record<number, number>;
         countsByState: Record<string, number>;
         advanceRate?: number;

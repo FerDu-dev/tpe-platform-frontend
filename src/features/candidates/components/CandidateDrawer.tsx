@@ -21,6 +21,7 @@ import {
     DeleteOutlined,
     SaveOutlined,
     CloseOutlined,
+    CalendarOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Candidate, Requisition } from '../../../types';
@@ -118,6 +119,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     const [resendPsychSuccess, setResendPsychSuccess] = useState(false);
     const [noteComment, setNoteComment] = useState('');
     const [matchingModalOpen, setMatchingModalOpen] = useState(false);
+    const [uploadingType, setUploadingType] = useState<string | null>(null);
 
     // --- Edit state for the info modal ---
     type EditSection = 'personal' | 'ubicacion' | 'vehiculo' | 'ventas' | 'economica' | 'referencias' | null;
@@ -168,7 +170,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
         const { file } = info;
         if (!activeCandidate) return;
 
-        setSubmitting(true);
+        setUploadingType('PsychTest');
         try {
             await candidateService.uploadCandidateDocument(activeCandidate.id, 'PsychTest', file);
             message.success('Prueba psicotécnica cargada exitosamente');
@@ -176,7 +178,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
         } catch (error: any) {
             message.error(error.response?.data?.message || 'Error al cargar la prueba');
         } finally {
-            setSubmitting(false);
+            setUploadingType(null);
         }
     };
     const handleAction = async (action: () => Promise<any>, shouldRefresh: boolean = true, shouldClose: boolean = false) => {
@@ -195,6 +197,36 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             message.error(error.response?.data?.message || 'Error al procesar la acción');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleInterviewUpload = async (info: any, type: 'PersonalInterview' | 'TechnicalInterview' | 'CV' | 'Video' | 'MedicalCheckup' | 'JobOffer') => {
+        const { file } = info;
+        if (!activeCandidate) return;
+
+        setUploadingType(type);
+        try {
+            await candidateService.uploadCandidateDocument(activeCandidate.id, type, file);
+            message.success('Documento cargado exitosamente');
+            await dispatch(loadCandidateById(activeCandidate.id));
+        } catch (error: any) {
+            message.error(error.response?.data?.message || 'Error al cargar el documento');
+        } finally {
+            setUploadingType(null);
+        }
+    };
+
+    const handleUpdateInterviewDate = async (date: any, type: 'Personal' | 'Technical') => {
+        if (!activeCandidate) return;
+        const field = type === 'Personal' ? 'personalInterviewDate' : 'technicalInterviewDate';
+        try {
+            await candidateService.updateCandidate(activeCandidate.id, {
+                [field]: date ? date.toISOString() : null
+            });
+            message.success('Fecha de entrevista actualizada');
+            dispatch(loadCandidateById(activeCandidate.id));
+        } catch (error: any) {
+            message.error('Error al actualizar la fecha');
         }
     };
 
@@ -1233,180 +1265,382 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 <Descriptions.Item label="Ubicación">
                     {activeCandidate.municipality ? `${activeCandidate.municipality.state?.name || ''}, ${activeCandidate.municipality.name}` : 'Sin ubicación'}
                 </Descriptions.Item>
-
             </Descriptions>
 
-            <Divider orientation="left">Adjuntos y Herramientas</Divider>
-            <Space direction="vertical" style={{ width: '100%' }}>
-                {activeCandidate.cvUrl ? (
-                    <Button block icon={<FilePdfOutlined />} style={{ textAlign: 'left' }} href={activeCandidate.cvUrl} target="_blank">
-                        Currículum Vitae (Original)
-                    </Button>
-                ) : (
-                    currentStageId === 1 && (
-                        <Card size="small" style={{ background: '#fff2f0', border: '1px solid #ffccc7' }}>
-                            <Space direction="vertical" style={{ width: '100%' }}>
-                                <Text type="danger" strong><InfoCircleOutlined /> Currículum no encontrado</Text>
-                                <Button
-                                    block
-                                    type="primary"
-                                    danger={!resendCVSuccess}
-                                    icon={<MailOutlined />}
-                                    loading={submitting}
-                                    disabled={resendCVSuccess}
-                                    onClick={() => {
-                                        Modal.confirm({
-                                            title: '¿Re-solicitar Currículum?',
-                                            content: 'Se enviará un correo al candidato solicitándole que suba su currículum a través del portal.',
-                                            okText: 'Enviar Solicitud',
-                                            cancelText: 'Cancelar',
-                                            onOk: async () => {
-                                                await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'CV'));
-                                                setResendCVSuccess(true);
-                                            }
-                                        });
-                                    }}
-                                >
-                                    {resendCVSuccess ? 'Solicitud de CV Enviada' : 'Re-solicitar CV al candidato'}
-                                </Button>
-                            </Space>
-                        </Card>
-                    )
-                )}
-                {activeCandidate.videoUrl ? (
-                    <Button block icon={<VideoCameraOutlined />} style={{ textAlign: 'left' }} href={activeCandidate.videoUrl} target="_blank">
-                        Video Presentación
-                    </Button>
-                ) : (
-                    currentStageId >= 2 && (
-                        <Card size="small" style={{ background: '#fff7e6', border: '1px solid #ffd591' }}>
-                            <Space direction="vertical" style={{ width: '100%' }}>
-                                <Text strong style={{ color: '#d46b08' }}><InfoCircleOutlined /> Video de presentación no subido</Text>
-                                <Text type="secondary" style={{ fontSize: 12 }}>El candidato aún no ha cargado su video. Puedes enviarle un recordatorio por correo.</Text>
-                                <Button
-                                    block
-                                    type="primary"
-                                    icon={<MailOutlined />}
-                                    loading={submitting}
-                                    disabled={resendVideoSuccess}
-                                    style={{
-                                        backgroundColor: resendVideoSuccess ? undefined : '#fa8c16',
-                                        borderColor: resendVideoSuccess ? undefined : '#fa8c16'
-                                    }}
-                                    onClick={() => {
-                                        Modal.confirm({
-                                            title: '¿Enviar recordatorio de video?',
-                                            content: 'Se enviará un correo al candidato solicitándole que suba su video de presentación.',
-                                            okText: 'Enviar Recordatorio',
-                                            cancelText: 'Cancelar',
-                                            onOk: async () => {
-                                                await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'Video'));
-                                                setResendVideoSuccess(true);
-                                            }
-                                        });
-                                    }}
-                                >
-                                    {resendVideoSuccess ? 'Recordatorio Enviado ✓' : 'Enviar recordatorio de video'}
-                                </Button>
-                            </Space>
-                        </Card>
-                    )
-                )}
+            <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                <Divider style={{ margin: '16px 0 12px 0' }}>Acciones y Documentación</Divider>
 
-                {/* PsychTest Results - Stage 3 specific or global view if exists */}
-                {activeCandidate.psychTestUrl ? (
-                    <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+                {/* CV Section */}
+                <Card
+                    size="small"
+                    title={<Space><FilePdfOutlined style={{ color: '#1890ff' }} /> <Text strong>Currículum Vitae (CV)</Text></Space>}
+                    style={{ marginTop: '0px', border: '1px solid #1890ff50', background: '#e6f7ff50' }}
+                >
+                    <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            {activeCandidate.cvUrl && (
+                                <Button
+                                    icon={<FilePdfOutlined />}
+                                    href={activeCandidate.cvUrl}
+                                    target="_blank"
+                                    type="dashed"
+                                    size="small"
+                                    style={{ flex: 1 }}
+                                >
+                                    Ver CV
+                                </Button>
+                            )}
+                            <Upload
+                                accept=".pdf"
+                                showUploadList={false}
+                                customRequest={(info) => handleInterviewUpload(info, 'CV')}
+                                style={{ flex: 1, display: 'flex' }}
+                            >
+                                <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'CV'}>
+                                    {activeCandidate.cvUrl ? 'Actualizar' : 'Subir'} CV
+                                </Button>
+                            </Upload>
+                        </div>
+
                         <Button
                             block
-                            icon={<FilePdfOutlined />}
-                            href={activeCandidate.psychTestUrl}
-                            target="_blank"
-                            style={{ textAlign: 'left' }}
+                            size="small"
+                            icon={<MailOutlined />}
+                            loading={submitting}
+                            disabled={resendCVSuccess}
+                            style={{
+                                backgroundColor: resendCVSuccess ? undefined : '#1890ff20',
+                                borderColor: '#1890ff',
+                                color: '#1890ff',
+                            }}
+                            onClick={() => {
+                                Modal.confirm({
+                                    title: '¿Enviar recordatorio de CV?',
+                                    content: 'Se enviará un correo al candidato solicitándole que cargue su CV actualizado.',
+                                    okText: 'Enviar Recordatorio',
+                                    cancelText: 'Cancelar',
+                                    onOk: async () => {
+                                        await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'CV'));
+                                        setResendCVSuccess(true);
+                                    }
+                                });
+                            }}
                         >
-                            Resultados Prueba Psicotécnica (PDF)
+                            {resendCVSuccess ? 'Recordatorio Enviado ✓' : 'Resolicitar CV'}
                         </Button>
-                        {currentStageId === 3 && (
-                            <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                    </Space>
+                </Card>
+
+                {/* Video Section */}
+                {(currentStageId >= 2 || activeCandidate.videoUrl) && (
+                    <Card
+                        size="small"
+                        title={<Space><VideoCameraOutlined style={{ color: '#722ed1' }} /> <Text strong>Video de Presentación</Text></Space>}
+                        style={{ marginTop: '12px', border: '1px solid #722ed150', background: '#f9f0ff50' }}
+                    >
+                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                {activeCandidate.videoUrl && (
+                                    <Button
+                                        icon={<VideoCameraOutlined />}
+                                        href={activeCandidate.videoUrl}
+                                        target="_blank"
+                                        type="dashed"
+                                        size="small"
+                                        style={{ flex: 1 }}
+                                    >
+                                        Ver Video
+                                    </Button>
+                                )}
+                                <Upload
+                                    accept="video/*"
+                                    showUploadList={false}
+                                    customRequest={(info) => handleInterviewUpload(info, 'Video')}
+                                    style={{ flex: 1, display: 'flex' }}
+                                >
+                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'Video'}>
+                                        {activeCandidate.videoUrl ? 'Actualizar' : 'Subir'} Video
+                                    </Button>
+                                </Upload>
+                            </div>
+
+                            <Button
+                                block
+                                size="small"
+                                icon={<MailOutlined />}
+                                loading={submitting}
+                                disabled={resendVideoSuccess}
+                                style={{
+                                    backgroundColor: resendVideoSuccess ? undefined : '#722ed120',
+                                    borderColor: '#722ed1',
+                                    color: '#722ed1',
+                                }}
+                                onClick={() => {
+                                    Modal.confirm({
+                                        title: '¿Enviar recordatorio de Video?',
+                                        content: 'Se enviará un correo al candidato con las pautas para cargar su video de presentación.',
+                                        okText: 'Enviar Recordatorio',
+                                        cancelText: 'Cancelar',
+                                        onOk: async () => {
+                                            await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'Video'));
+                                            setResendVideoSuccess(true);
+                                        }
+                                    });
+                                }}
+                            >
+                                {resendVideoSuccess ? 'Recordatorio Enviado ✓' : 'Resolicitar Video'}
+                            </Button>
+                        </Space>
+                    </Card>
+                )}
+
+                {/* PsychTest Results */}
+                {currentStageId >= 3 && (
+                    <Card
+                        size="small"
+                        title={<Space><BulbOutlined style={{ color: '#faad14' }} /> <Text strong>Prueba Psicotécnica</Text></Space>}
+                        style={{ marginTop: '12px', border: '1px solid #faad1450', background: '#fffbe650' }}
+                    >
+                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                {activeCandidate.psychTestUrl && (
+                                    <Button
+                                        icon={<FilePdfOutlined />}
+                                        href={activeCandidate.psychTestUrl}
+                                        target="_blank"
+                                        type="dashed"
+                                        size="small"
+                                        style={{ flex: 1 }}
+                                    >
+                                        Ver Resultados
+                                    </Button>
+                                )}
                                 <Upload
                                     accept=".pdf"
                                     showUploadList={false}
                                     customRequest={handlePsychTestUpload}
+                                    style={{ flex: 1, display: 'flex' }}
                                 >
-                                    <Button type="link" size="small" loading={submitting}>Actualizar Resultados (PDF)</Button>
+                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'PsychTest'}>
+                                        {activeCandidate.psychTestUrl ? 'Actualizar' : 'Subir'} Resultados
+                                    </Button>
                                 </Upload>
                             </div>
-                        )}
-                    </div>
-                ) : (
-                    currentStageId === 3 && (
-                        <Space direction="vertical" style={{ width: '100%' }}>
-                            <Upload
-                                accept=".pdf"
-                                showUploadList={false}
-                                customRequest={handlePsychTestUpload}
+
+                            <Button
+                                block
+                                size="small"
+                                icon={<MailOutlined />}
+                                loading={submitting}
+                                disabled={resendPsychSuccess}
+                                style={{
+                                    backgroundColor: resendPsychSuccess ? undefined : '#faad1420',
+                                    borderColor: '#faad14',
+                                    color: '#faad14',
+                                }}
+                                onClick={() => {
+                                    Modal.confirm({
+                                        title: '¿Enviar recordatorio de prueba psicotécnica?',
+                                        content: 'Se enviará un correo al candidato recordándole que tiene pendiente la prueba psicotécnica.',
+                                        okText: 'Enviar Recordatorio',
+                                        cancelText: 'Cancelar',
+                                        onOk: async () => {
+                                            await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'PsychTest'));
+                                            setResendPsychSuccess(true);
+                                        }
+                                    });
+                                }}
                             >
-                                <Button
-                                    block
-                                    icon={<UploadOutlined />}
-                                    loading={submitting}
-                                    style={{
-                                        marginTop: '8px',
-                                        height: '45px',
-                                        border: '2px dashed #2b457c',
-                                        color: '#2b457c',
-                                        fontWeight: 600
-                                    }}
-                                >
-                                    Subir Resultados Prueba (PDF)
-                                </Button>
-                            </Upload>
-                            <Card size="small" style={{ background: '#fffbe6', border: '1px solid #ffe58f' }}>
-                                <Space direction="vertical" style={{ width: '100%' }}>
-                                    <Text strong style={{ color: '#ad8b00' }}><InfoCircleOutlined /> Prueba Psicotécnica pendiente</Text>
-                                    <Text type="secondary" style={{ fontSize: 12 }}>Debes subir los resultados (PDF) para poder avanzar al candidato a la siguiente etapa.</Text>
-                                    <Button
-                                        block
-                                        icon={<MailOutlined />}
-                                        loading={submitting}
-                                        disabled={resendPsychSuccess}
-                                        style={{
-                                            backgroundColor: resendPsychSuccess ? undefined : '#faad14',
-                                            borderColor: resendPsychSuccess ? undefined : '#faad14',
-                                            color: resendPsychSuccess ? undefined : '#fff',
-                                        }}
-                                        onClick={() => {
-                                            Modal.confirm({
-                                                title: '¿Enviar recordatorio de prueba psicotécnica?',
-                                                content: 'Se enviará un correo al candidato recordándole que tiene pendiente la prueba psicotécnica.',
-                                                okText: 'Enviar Recordatorio',
-                                                cancelText: 'Cancelar',
-                                                onOk: async () => {
-                                                    await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'PsychTest'));
-                                                    setResendPsychSuccess(true);
-                                                }
-                                            });
-                                        }}
-                                    >
-                                        {resendPsychSuccess ? 'Recordatorio Enviado ✓' : 'Enviar recordatorio de prueba'}
-                                    </Button>
-                                </Space>
-                            </Card>
+                                {resendPsychSuccess ? 'Recordatorio Enviado ✓' : 'Resolicitar Prueba'}
+                            </Button>
                         </Space>
-                    )
+                    </Card>
                 )}
 
+                {/* WhatsApp Schedule button - Stage 4 only */}
                 {currentStageId === 4 && (
                     <Button
                         block
                         type="primary"
                         icon={<WhatsAppOutlined />}
-                        style={{ backgroundColor: '#25D366', borderColor: '#25D366', height: '45px', marginTop: '12px' }}
+                        style={{ backgroundColor: '#25D366', borderColor: '#25D366', height: '40px', marginTop: '12px', borderRadius: '8px' }}
                         href={`https://wa.me/${formatWhatsAppPhone(activeCandidate.phone)}?text=${encodeURIComponent(getWhatsAppMessage(activeCandidate))}`}
                         target="_blank"
                         rel="noreferrer"
                     >
-                        Agendar entrevista con {activeCandidate.firstName}
+                        Agendar entrevista por WhatsApp
                     </Button>
+                )}
+
+                {/* Interview Action Cards (Personal & Technical) */}
+                {(currentStageId >= 4 || activeCandidate.personalInterviewUrl || activeCandidate.personalInterviewDate) && (
+                    <Card
+                        size="small"
+                        title={<Space><CalendarOutlined style={{ color: '#13c2c2' }} /> <Text strong>Entrevista Personal</Text></Space>}
+                        style={{ marginTop: '12px', border: '1px solid #13c2c250', background: '#e6fffb50' }}
+                    >
+                        <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={{ fontSize: '12px' }} type="secondary">Fecha Agendada:</Text>
+                                <DatePicker
+                                    size="small"
+                                    placeholder="Seleccionar fecha"
+                                    value={activeCandidate.personalInterviewDate ? dayjs(activeCandidate.personalInterviewDate) : null}
+                                    onChange={(date) => handleUpdateInterviewDate(date, 'Personal')}
+                                    format="DD/MM/YYYY"
+                                    style={{ width: '140px' }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                {activeCandidate.personalInterviewUrl && (
+                                    <Button
+                                        icon={<FilePdfOutlined />}
+                                        href={activeCandidate.personalInterviewUrl}
+                                        target="_blank"
+                                        type="dashed"
+                                        size="small"
+                                        style={{ flex: 1 }}
+                                    >
+                                        Ver Resumen
+                                    </Button>
+                                )}
+                                <Upload
+                                    accept=".pdf"
+                                    showUploadList={false}
+                                    customRequest={(info) => handleInterviewUpload(info, 'PersonalInterview')}
+                                    style={{ flex: 1, display: 'flex' }}
+                                >
+                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'PersonalInterview'}>
+                                        {activeCandidate.personalInterviewUrl ? 'Actualizar' : 'Subir'} Resumen
+                                    </Button>
+                                </Upload>
+                            </div>
+                        </Space>
+                    </Card>
+                )}
+
+                {(currentStageId >= 5 || activeCandidate.technicalInterviewUrl || activeCandidate.technicalInterviewDate) && (
+                    <Card
+                        size="small"
+                        title={<Space><CalendarOutlined style={{ color: '#2f54eb' }} /> <Text strong>Entrevista Técnica</Text></Space>}
+                        style={{ marginTop: '12px', border: '1px solid #2f54eb50', background: '#f0f5ff50' }}
+                    >
+                        <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={{ fontSize: '12px' }} type="secondary">Fecha Agendada:</Text>
+                                <DatePicker
+                                    size="small"
+                                    placeholder="Seleccionar fecha"
+                                    value={activeCandidate.technicalInterviewDate ? dayjs(activeCandidate.technicalInterviewDate) : null}
+                                    onChange={(date) => handleUpdateInterviewDate(date, 'Technical')}
+                                    format="DD/MM/YYYY"
+                                    style={{ width: '140px' }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                {activeCandidate.technicalInterviewUrl && (
+                                    <Button
+                                        icon={<FilePdfOutlined />}
+                                        href={activeCandidate.technicalInterviewUrl}
+                                        target="_blank"
+                                        type="dashed"
+                                        size="small"
+                                        style={{ flex: 1 }}
+                                    >
+                                        Ver Resumen
+                                    </Button>
+                                )}
+                                <Upload
+                                    accept=".pdf"
+                                    showUploadList={false}
+                                    customRequest={(info) => handleInterviewUpload(info, 'TechnicalInterview')}
+                                    style={{ flex: 1, display: 'flex' }}
+                                >
+                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'TechnicalInterview'}>
+                                        {activeCandidate.technicalInterviewUrl ? 'Actualizar' : 'Subir'} Resumen
+                                    </Button>
+                                </Upload>
+                            </div>
+                        </Space>
+                    </Card>
+                )}
+
+                {/* Medical Checkup - Stage 6 */}
+                {(currentStageId >= 6 || activeCandidate.medicalCheckupUrl) && (
+                    <Card
+                        size="small"
+                        title={<Space><TeamOutlined style={{ color: '#52c41a' }} /> <Text strong>Pruebas Médicas/AP/Ref</Text></Space>}
+                        style={{ marginTop: '12px', border: '1px solid #52c41a50', background: '#f6ffed50' }}
+                    >
+                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                {activeCandidate.medicalCheckupUrl && (
+                                    <Button
+                                        icon={<FilePdfOutlined />}
+                                        href={activeCandidate.medicalCheckupUrl}
+                                        target="_blank"
+                                        type="dashed"
+                                        size="small"
+                                        style={{ flex: 1 }}
+                                    >
+                                        Ver Resultados
+                                    </Button>
+                                )}
+                                <Upload
+                                    accept=".pdf"
+                                    showUploadList={false}
+                                    customRequest={(info) => handleInterviewUpload(info, 'MedicalCheckup')}
+                                    style={{ flex: 1, display: 'flex' }}
+                                >
+                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'MedicalCheckup'}>
+                                        {activeCandidate.medicalCheckupUrl ? 'Actualizar' : 'Subir'} Resultados
+                                    </Button>
+                                </Upload>
+                            </div>
+
+
+                        </Space>
+                    </Card>
+                )}
+
+                {/* Job Offer - Stage 7 */}
+                {(currentStageId >= 7 || activeCandidate.jobOfferUrl) && (
+                    <Card
+                        size="small"
+                        title={<Space><SaveOutlined style={{ color: '#13c2c2' }} /> <Text strong>Oferta Laboral</Text></Space>}
+                        style={{ marginTop: '12px', border: '1px solid #13c2c250', background: '#e6fffb50' }}
+                    >
+                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                {activeCandidate.jobOfferUrl && (
+                                    <Button
+                                        icon={<FilePdfOutlined />}
+                                        href={activeCandidate.jobOfferUrl}
+                                        target="_blank"
+                                        type="dashed"
+                                        size="small"
+                                        style={{ flex: 1 }}
+                                    >
+                                        Ver Oferta
+                                    </Button>
+                                )}
+                                <Upload
+                                    accept=".pdf"
+                                    showUploadList={false}
+                                    customRequest={(info) => handleInterviewUpload(info, 'JobOffer')}
+                                    style={{ flex: 1, display: 'flex' }}
+                                >
+                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'JobOffer'}>
+                                        {activeCandidate.jobOfferUrl ? 'Actualizar' : 'Subir'} Oferta
+                                    </Button>
+                                </Upload>
+                            </div>
+
+
+                        </Space>
+                    </Card>
                 )}
             </Space>
 

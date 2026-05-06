@@ -111,41 +111,65 @@ const DashboardPage: React.FC = () => {
                 </Col>
                 <Col>
                     <Space size="middle">
-                    <Button
-                        type={category === 'not_eligible' ? 'primary' : 'default'}
-                        onClick={() => handleToggleCategory('not_eligible')}
-                        style={{
-                            backgroundColor: category === 'not_eligible' ? '#faad14' : 'rgba(250, 173, 20, 0.1)',
-                            borderColor: '#faad14',
-                            color: category === 'not_eligible' ? '#fff' : '#faad14',
-                        }}
-                    >
-                        No Elegibles
-                    </Button>
-                    <Button
-                        type={category === 'rejected' ? 'primary' : 'default'}
-                        onClick={() => handleToggleCategory('rejected')}
-                        style={{
-                            backgroundColor: category === 'rejected' ? '#ff4d4f' : 'rgba(255, 77, 79, 0.1)',
-                            borderColor: '#ff4d4f',
-                            color: category === 'rejected' ? '#fff' : '#ff4d4f',
-                        }}
-                    >
-                        Rechazados
-                    </Button>
+                        <Button
+                            type={category === 'not_eligible' ? 'primary' : 'default'}
+                            onClick={() => handleToggleCategory('not_eligible')}
+                            style={{
+                                backgroundColor: category === 'not_eligible' ? '#faad14' : 'rgba(250, 173, 20, 0.05)',
+                                borderColor: '#faad14',
+                                color: category === 'not_eligible' ? '#fff' : '#faad14',
+                                height: '42px',
+                                borderRadius: '10px',
+                                fontWeight: category === 'not_eligible' ? 600 : 500
+                            }}
+                        >
+                            No Elegibles
+                        </Button>
+                        <Button
+                            type={category === 'rejected' ? 'primary' : 'default'}
+                            onClick={() => handleToggleCategory('rejected')}
+                            style={{
+                                backgroundColor: category === 'rejected' ? '#ff4d4f' : 'rgba(255, 77, 79, 0.05)',
+                                borderColor: '#ff4d4f',
+                                color: category === 'rejected' ? '#fff' : '#ff4d4f',
+                                height: '42px',
+                                borderRadius: '10px',
+                                fontWeight: category === 'rejected' ? 600 : 500
+                            }}
+                        >
+                            Rechazados
+                        </Button>
 
-                    <Divider type="vertical" style={{ height: '32px' }} />
+                        <Divider type="vertical" style={{ height: '32px' }} />
 
-                    {category === 'eligible' && (
-                        <Segmented
-                            value={viewMode}
-                            onChange={(val) => setViewMode(val as 'board' | 'list')}
-                            options={[
-                                { label: 'Tablero', value: 'board', icon: <AppstoreOutlined /> },
-                                { label: 'Lista', value: 'list', icon: <BarsOutlined /> },
-                            ]}
-                        />
-                    )}
+                        <div style={{ 
+                            background: category === 'eligible' ? 'rgba(24, 144, 255, 0.1)' : 'rgba(0, 0, 0, 0.03)',
+                            padding: '3px',
+                            borderRadius: '10px',
+                            border: category === 'eligible' ? '1px solid #1890ff40' : '1px solid transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            height: '42px',
+                            transition: 'all 0.3s ease'
+                        }}>
+                            <Segmented
+                                value={category === 'eligible' ? viewMode : undefined}
+                                onChange={(val) => {
+                                    if (category !== 'eligible') {
+                                        setCategory('eligible');
+                                        dispatch(setFilters({}));
+                                    }
+                                    setViewMode(val as 'board' | 'list');
+                                }}
+                                options={[
+                                    { label: 'Tablero', value: 'board', icon: <AppstoreOutlined /> },
+                                    { label: 'Lista', value: 'list', icon: <BarsOutlined /> },
+                                ]}
+                                style={{
+                                    background: 'transparent'
+                                }}
+                            />
+                        </div>
                     </Space>
                 </Col>
             </Row>
@@ -166,6 +190,35 @@ const DashboardPage: React.FC = () => {
 
             <Row gutter={[20, 0]} style={{ flex: 1, minHeight: 0, marginTop: 16, width: '100%', margin: 0 }}>
                 <Col span={24} style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, padding: 0 }}>
+                    {/* Category Summary Indicator */}
+                    <div style={{ marginBottom: '12px' }}>
+                        <Space align="center" style={{ 
+                            background: category === 'eligible' ? 'rgba(24, 144, 255, 0.05)' : category === 'rejected' ? 'rgba(255, 77, 79, 0.05)' : 'rgba(250, 173, 20, 0.05)',
+                            padding: '4px 16px',
+                            borderRadius: '20px',
+                            border: `1px solid ${category === 'eligible' ? '#1890ff30' : category === 'rejected' ? '#ff4d4f30' : '#faad1430'}`
+                        }}>
+                            <Text strong style={{ 
+                                fontSize: '11px', 
+                                textTransform: 'uppercase', 
+                                color: category === 'eligible' ? '#1890ff' : category === 'rejected' ? '#ff4d4f' : '#faad14',
+                                letterSpacing: '0.5px'
+                            }}>
+                                {category === 'eligible' ? 'Candidatos activos' : category === 'rejected' ? 'Candidatos rechazados' : 'Candidatos no elegibles'}
+                            </Text>
+                            <span style={{ 
+                                background: category === 'eligible' ? '#1890ff' : category === 'rejected' ? '#ff4d4f' : '#faad14',
+                                color: '#fff',
+                                padding: '0 8px',
+                                borderRadius: '10px',
+                                fontSize: '12px',
+                                fontWeight: 700
+                            }}>
+                                {category === 'eligible' ? (analytics?.totalActiveParticipants || 0) : category === 'rejected' ? (analytics?.totalRejected || 0) : (analytics?.totalNotEligible || 0)}
+                            </span>
+                        </Space>
+                    </div>
+
                     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         {category !== 'eligible' ? (
                             <div style={{ flex: 1, overflowY: 'auto' }}>

@@ -141,6 +141,10 @@ export const candidateService = {
             videoUrl: c.videoUrl,
             cvUrl: c.cvUrl,
             psychTestUrl: c.psychTestUrl,
+            personalInterviewUrl: c.personalInterviewUrl,
+            technicalInterviewUrl: c.technicalInterviewUrl,
+            personalInterviewDate: c.personalInterviewDate,
+            technicalInterviewDate: c.technicalInterviewDate,
             driveFolderUrl: c.driveFolderUrl,
             email: c.email,
             phone: c.phone,
@@ -268,7 +272,7 @@ export const candidateService = {
         return response.data;
     },
 
-    async resendDocumentationRequest(candidateId: string, type: 'CV' | 'Video' | 'PsychTest'): Promise<any> {
+    async resendDocumentationRequest(candidateId: string, type: 'CV' | 'Video' | 'PsychTest' | 'PersonalInterview' | 'TechnicalInterview' | 'MedicalCheckup' | 'JobOffer'): Promise<any> {
         const response = await api.post(`/candidates/${candidateId}/resend-docs`, { type });
         return response.data;
     },
@@ -278,7 +282,7 @@ export const candidateService = {
         return response.data;
     },
 
-    async uploadCandidateDocument(candidateId: string, type: 'CV' | 'Video' | 'PsychTest', file: File | any): Promise<any> {
+    async uploadCandidateDocument(candidateId: string, type: 'CV' | 'Video' | 'PsychTest' | 'PersonalInterview' | 'TechnicalInterview' | 'MedicalCheckup' | 'JobOffer', file: File | any): Promise<any> {
         const formData = new FormData();
         formData.append('type', type);
         formData.append('file', file);

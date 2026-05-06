@@ -127,6 +127,12 @@ export interface Candidate {
     cvUrl?: string;
     videoUrl?: string;
     psychTestUrl?: string;
+    personalInterviewUrl?: string;
+    technicalInterviewUrl?: string;
+    personalInterviewDate?: string;
+    technicalInterviewDate?: string;
+    medicalCheckupUrl?: string;
+    jobOfferUrl?: string;
     driveFolderUrl?: string;
     gender?: string;
     hasChildren?: boolean;
