@@ -52,31 +52,31 @@ const getWhatsAppMessage = (candidate: any) => {
 
     switch (stageId) {
         case 2: // Etapa de video
-            return `Hola 👋 te saluda el equipo de captación de Grupo Mayoreo.
-¡Felicidades! 🙌 Ya estás participando en el proceso de selección para ser parte de la Fuerza de Ventas más grande del País.
-Ahora queremos conocerte mejor 🎥
+            return `Hola te saluda el equipo de captación de Grupo Mayoreo.
+¡Felicidades! Ya estás participando en el proceso de selección para ser parte de la Fuerza de Ventas más grande del País.
+Ahora queremos conocerte mejor
 Notamos que aún no hemos recibido tu video.
-Puedes subirlo en tu portal o, si prefieres, enviarlo por aquí 👍
-No pierdas esta oportunidad de avanzar en el proceso 🚀
+Puedes subirlo en tu portal o, si prefieres, enviarlo por aquí
+No pierdas esta oportunidad de avanzar en el proceso
 ¡Feliz día!`;
 
         case 3: // Etapa de pruebas
-            return `Hola 👋 te saluda el equipo de captación de Grupo Mayoreo.
+            return `Hola te saluda el equipo de captación de Grupo Mayoreo.
 Te enviamos las pruebas psicotécnicas a tu correo. También puedes acceder a ellas desde tu portal.
 Estamos a la espera de que las completes para poder continuar con tu proceso.
-🚀 Estás cada vez más cerca de formar parte de una de las fuerzas de ventas más importantes del país.
+Estás cada vez más cerca de formar parte de una de las fuerzas de ventas más importantes del país.
 ¡Feliz día!`;
 
         case 4: // Entrevista
         case 5:
-            return `Hola 👋 te saluda el equipo de Grupo Mayoreo.
+            return `Hola te saluda el equipo de Grupo Mayoreo.
 ¡Felicidades! Superaste las pruebas psicotécnicas y sigues avanzando en el proceso.
 Nos encantaría invitarte a tu entrevista personal para seguir conociéndote.
-🚀 Estás cada vez más cerca de formar parte de la fuerza de ventas más importante del país.
+Estás cada vez más cerca de formar parte de la fuerza de ventas más importante del país.
 Cuéntanos tu disponibilidad y la coordinamos.`;
 
         default:
-            return `Hola 👋 *${firstName}*, te saluda el equipo de captación de Grupo Mayoreo. ¡Felicidades! 🙌 Ya estás participando en el proceso de selección de la fuerza de ventas más grande del país.`;
+            return `Hola *${firstName}*, te saluda el equipo de captación de Grupo Mayoreo. ¡Felicidades! Ya estás participando en el proceso de selección de la fuerza de ventas más grande del país.`;
     }
 };
 
@@ -123,7 +123,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
 
     // --- Edit state for the info modal ---
     type EditSection = 'personal' | 'ubicacion' | 'vehiculo' | 'ventas' | 'economica' | 'referencias' | null;
-    const [editMunicipalities, setEditMunicipalities] = useState<{id: number; name: string}[]>([]);
+    const [editMunicipalities, setEditMunicipalities] = useState<{ id: number; name: string }[]>([]);
     const [editingSection, setEditingSection] = useState<EditSection>(null);
     const [editForm, setEditForm] = useState<Record<string, any>>({});
     const [saving, setSaving] = useState(false);
