@@ -168,6 +168,7 @@ export interface Candidate {
     zone?: any;
     location?: string;
     rejectionReason?: string;
+    applicationId?: string;
     requisitionZoneName?: string;
     createdAt: string;
     updatedAt: string;

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Table, Tag, Avatar, Space, Typography, Spin, Empty } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { UserOutlined, UndoOutlined } from '@ant-design/icons';
 import { candidateService, STAGE_COLORS } from '../../../services/candidateService';
 import { Candidate } from '../../../types';
+import { Button, message, Popconfirm } from 'antd';
 
 const { Text, Title } = Typography;
 
@@ -17,16 +18,32 @@ interface CandidateListModalProps {
     };
     onViewCandidate?: (candidate: Candidate) => void;
     refreshKey?: number;
+    mode?: 'active' | 'rejected';
+    onRefresh?: () => void;
 }
 
-const CandidateListModal: React.FC<CandidateListModalProps> = ({ visible, onClose, title, filters, onViewCandidate, refreshKey }) => {
+const CandidateListModal: React.FC<CandidateListModalProps> = ({ 
+    visible, 
+    onClose, 
+    title, 
+    filters, 
+    onViewCandidate, 
+    refreshKey,
+    mode = 'active',
+    onRefresh
+}) => {
     const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [loading, setLoading] = useState(false);
+    const [localRefresh, setLocalRefresh] = useState(0);
 
     useEffect(() => {
         if (visible) {
             setLoading(true);
-            candidateService.fetch_candidates_active({ ...filters, limit: 100 })
+            const fetchMethod = mode === 'active' 
+                ? candidateService.fetch_candidates_active({ ...filters, limit: 100 })
+                : candidateService.fetch_candidates_rejected({ ...filters, limit: 100 });
+
+            fetchMethod
                 .then(res => {
                     setCandidates(res.data);
                     setLoading(false);
@@ -35,7 +52,23 @@ const CandidateListModal: React.FC<CandidateListModalProps> = ({ visible, onClos
                     setLoading(false);
                 });
         }
-    }, [visible, filters, refreshKey]);
+    }, [visible, filters, refreshKey, mode, localRefresh]);
+
+    const handleRescue = async (candidate: Candidate) => {
+        if (!candidate.applicationId) {
+            message.error('No se puede rescatar: ID de aplicación no encontrado');
+            return;
+        }
+
+        try {
+            await candidateService.rescueCandidate(candidate.applicationId);
+            message.success('Candidato rescatado exitosamente');
+            setLocalRefresh(prev => prev + 1);
+            onRefresh?.();
+        } catch (error: any) {
+            message.error('Error al rescatar candidato: ' + (error.response?.data?.message || error.message));
+        }
+    };
 
     const columns = [
         {
@@ -43,7 +76,7 @@ const CandidateListModal: React.FC<CandidateListModalProps> = ({ visible, onClos
             key: 'name',
             render: (_: any, record: Candidate) => (
                 <Space>
-                    <Avatar icon={<UserOutlined />} src={record.videoUrl ? undefined : undefined} />
+                    <Avatar icon={<UserOutlined />} />
                     <div>
                         <Text strong>{record.firstName} {record.lastName}</Text>
                         <br />
@@ -74,12 +107,43 @@ const CandidateListModal: React.FC<CandidateListModalProps> = ({ visible, onClos
                 </Tag>
             ),
         },
-        {
-            title: 'Sub-estado',
-            dataIndex: 'subStatus',
-            key: 'subStatus',
-            render: (text: string) => <Text style={{ fontSize: '13px' }}>{text}</Text>
-        }
+        ...(mode === 'active' ? [
+            {
+                title: 'Sub-estado',
+                dataIndex: 'subStatus',
+                key: 'subStatus',
+                render: (text: string) => <Text style={{ fontSize: '13px' }}>{text}</Text>
+            }
+        ] : [
+            {
+                title: 'Motivo de Rechazo',
+                dataIndex: 'rejectionReason',
+                key: 'rejectionReason',
+                render: (text: string) => <Text type="danger" style={{ fontSize: '13px' }}>{text || 'Sin motivo especificado'}</Text>
+            },
+            {
+                title: 'Acciones',
+                key: 'actions',
+                render: (_: any, record: Candidate) => (
+                    <Popconfirm
+                        title="¿Rescatar candidato?"
+                        description="Esto lo devolverá al flujo activo de selección."
+                        onConfirm={() => handleRescue(record)}
+                        okText="Sí, rescatar"
+                        cancelText="No"
+                    >
+                        <Button 
+                            type="primary" 
+                            size="small" 
+                            icon={<UndoOutlined />}
+                            style={{ background: '#52c41a', border: 'none' }}
+                        >
+                            Rescatar
+                        </Button>
+                    </Popconfirm>
+                )
+            }
+        ])
     ];
 
     return (
@@ -88,7 +152,7 @@ const CandidateListModal: React.FC<CandidateListModalProps> = ({ visible, onClos
             open={visible}
             onCancel={onClose}
             footer={null}
-            width={900}
+            width={mode === 'rejected' ? 1100 : 900}
             styles={{ body: { padding: '0 24px 24px 24px' } }}
         >
             <div style={{ marginTop: '20px' }}>
@@ -97,7 +161,7 @@ const CandidateListModal: React.FC<CandidateListModalProps> = ({ visible, onClos
                         <Spin size="large" tip="Cargando candidatos..." />
                     </div>
                 ) : candidates.length === 0 ? (
-                    <Empty description="No se encontraron candidatos activos para esta selección." />
+                    <Empty description={mode === 'active' ? "No se encontraron candidatos activos." : "No hay candidatos rechazados."} />
                 ) : (
                     <Table 
                         dataSource={candidates} 
@@ -106,7 +170,11 @@ const CandidateListModal: React.FC<CandidateListModalProps> = ({ visible, onClos
                         pagination={{ pageSize: 10 }}
                         size="middle"
                         onRow={(record) => ({
-                            onClick: () => onViewCandidate?.(record),
+                            onClick: (e: any) => {
+                                // Don't trigger view if clicking the rescue button
+                                if (e.target.closest('button')) return;
+                                onViewCandidate?.(record);
+                            },
                             style: { cursor: 'pointer' }
                         })}
                     />

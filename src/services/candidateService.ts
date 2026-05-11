@@ -165,7 +165,8 @@ export const candidateService = {
             daysInStage: activeApp?.updatedAt
                 ? Math.floor((Date.now() - new Date(activeApp.updatedAt).getTime()) / (1000 * 60 * 60 * 24))
                 : 0,
-            rejectionReason: activeApp?.rejectionReason
+            rejectionReason: activeApp?.rejectionReason,
+            applicationId: activeApp?.id
         };
     },
 

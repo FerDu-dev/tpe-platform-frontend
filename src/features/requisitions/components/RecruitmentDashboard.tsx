@@ -72,8 +72,9 @@ const RecruitmentDashboard: React.FC = () => {
     const [_availableCandidates, setAvailableCandidates] = useState<any[]>([]);
     const [_loadingOps, setLoadingOps] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [modalTitle, _setModalTitle] = useState('');
-    const [selectedStageId, _setSelectedStageId] = useState<number | undefined>(undefined);
+    const [modalMode, setModalMode] = useState<'active' | 'rejected'>('active');
+    const [modalTitle, setModalTitle] = useState('');
+    const [selectedStageId, setSelectedStageId] = useState<number | undefined>(undefined);
     const [isSmartModalVisible, setIsSmartModalVisible] = useState(false);
     const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
     const [drawerVisible, setDrawerVisible] = useState(false);
@@ -111,6 +112,20 @@ const RecruitmentDashboard: React.FC = () => {
     const handleViewCandidate = (candidate: any) => {
         setSelectedCandidate(candidate);
         setDrawerVisible(true);
+    };
+
+    const handleOpenActiveCandidates = () => {
+        setModalTitle('Candidatos Activos');
+        setModalMode('active');
+        setSelectedStageId(undefined);
+        setIsModalVisible(true);
+    };
+
+    const handleOpenRejectedCandidates = () => {
+        setModalTitle('Candidatos Rechazados');
+        setModalMode('rejected');
+        setSelectedStageId(undefined);
+        setIsModalVisible(true);
     };
 
     const handleRefreshData = () => {
@@ -209,7 +224,7 @@ const RecruitmentDashboard: React.FC = () => {
                 >
                     <Space direction="vertical" size="large" style={{ width: '100%' }}>
                         <Row gutter={[24, 24]}>
-                            <Col xs={24} sm={8}>
+                            <Col xs={24} sm={6}>
                                 <Card style={{ ...gradientCard('#1890ff'), height: '140px' }} bodyStyle={{ padding: '20px' }}>
                                     <Statistic
                                         title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Requisiciones Abiertas</Text>}
@@ -220,21 +235,42 @@ const RecruitmentDashboard: React.FC = () => {
                                     <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>Personal de {COMPANIES.find(c => c.id === Number(filters.companyId))?.name || 'la empresa'}</Text>
                                 </Card>
                             </Col>
-                            <Col xs={24} sm={8}>
-                                <Card style={{ ...gradientCard('#722ed1'), height: '140px' }} bodyStyle={{ padding: '20px' }}>
+                            <Col xs={24} sm={6}>
+                                <Card
+                                    style={{ ...gradientCard('#722ed1'), height: '140px' }}
+                                    bodyStyle={{ padding: '20px' }}
+                                    hoverable
+                                    onClick={handleOpenActiveCandidates}
+                                >
                                     <Statistic
                                         title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos Activos</Text>}
                                         value={analytics?.totalActiveParticipants || 0}
                                         prefix={<TeamOutlined />}
                                         valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
                                     />
-                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>En proceso activo en todas las vacantes</Text>
+                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>En proceso activo (Global)</Text>
                                 </Card>
                             </Col>
-                            <Col xs={24} sm={8}>
-                                <Card style={{ ...gradientCard('#ff4d4f'), height: '140px' }} bodyStyle={{ padding: '20px' }}>
+                            <Col xs={24} sm={6}>
+                                <Card
+                                    style={{ ...gradientCard('#ff4d4f'), height: '140px' }}
+                                    bodyStyle={{ padding: '20px' }}
+                                    hoverable
+                                    onClick={handleOpenRejectedCandidates}
+                                >
                                     <Statistic
-                                        title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Búsqueda de Alta Prioridad</Text>}
+                                        title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos Rechazados</Text>}
+                                        value={analytics?.totalRejected || 0}
+                                        prefix={<TeamOutlined />}
+                                        valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
+                                    />
+                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>Total rechazados (Global)</Text>
+                                </Card>
+                            </Col>
+                            <Col xs={24} sm={6}>
+                                <Card style={{ ...gradientCard('#fa8c16'), height: '140px' }} bodyStyle={{ padding: '20px' }}>
+                                    <Statistic
+                                        title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Alta Prioridad(A)</Text>}
                                         value={analytics?.requisitionAnalytics?.priority?.A || 0}
                                         prefix={<FireOutlined />}
                                         valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
@@ -369,22 +405,12 @@ const RecruitmentDashboard: React.FC = () => {
 
                     <Row gutter={[24, 24]}>
                         <Col xs={24} sm={8}>
-                            <Card style={{ ...gradientCard('#1890ff') }} bodyStyle={{ padding: '20px' }}>
-                                <Statistic
-                                    title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos Activos</Text>}
-                                    value={analytics?.totalActiveParticipants || 0}
-                                    prefix={<TeamOutlined />}
-                                    valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
-                                />
-                                {fullRequisition?.vacanciesCount > 0 && (
-                                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
-                                        {fullRequisition.filledCount} de {fullRequisition.vacanciesCount} cubiertas
-                                    </Text>
-                                )}
-                            </Card>
-                        </Col>
-                        <Col xs={24} sm={8}>
-                            <Card style={{ ...gradientCard('#722ed1') }} bodyStyle={{ padding: '20px' }} hoverable onClick={() => setIsModalVisible(true)}>
+                            <Card
+                                style={{ ...gradientCard('#722ed1') }}
+                                bodyStyle={{ padding: '20px' }}
+                                hoverable
+                                onClick={handleOpenActiveCandidates}
+                            >
                                 <Statistic
                                     title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos Activos</Text>}
                                     value={analytics?.totalActiveParticipants || 0}
@@ -394,6 +420,23 @@ const RecruitmentDashboard: React.FC = () => {
                                 <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>Click para lista completa</Text>
                             </Card>
                         </Col>
+                        <Col xs={24} sm={8}>
+                            <Card
+                                style={{ ...gradientCard('#ff4d4f') }}
+                                bodyStyle={{ padding: '20px' }}
+                                hoverable
+                                onClick={handleOpenRejectedCandidates}
+                            >
+                                <Statistic
+                                    title={<Text style={{ color: 'rgba(255,255,255,0.8)' }}>Candidatos Rechazados</Text>}
+                                    value={analytics?.totalRejected || 0}
+                                    prefix={<TeamOutlined />}
+                                    valueStyle={{ color: '#fff', fontSize: '32px', fontWeight: 700 }}
+                                />
+                                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>Click para lista de rechazados</Text>
+                            </Card>
+                        </Col>
+
                         <Col xs={24} sm={8}>
                             <Card style={{ ...gradientCard('#ff4d4f') }} bodyStyle={{ padding: '20px' }}>
                                 <Statistic
@@ -479,11 +522,14 @@ const RecruitmentDashboard: React.FC = () => {
                 visible={isModalVisible}
                 onClose={() => setIsModalVisible(false)}
                 title={modalTitle}
+                mode={modalMode}
+                onRefresh={handleRefreshData}
                 filters={{
                     companyId: filters.companyId,
                     jobRequisitionId: filters.jobRequisitionId,
                     stageId: selectedStageId
                 }}
+                onViewCandidate={handleViewCandidate}
             />
 
             {filters.jobRequisitionId && fullRequisition && (
