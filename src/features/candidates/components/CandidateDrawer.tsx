@@ -243,17 +243,17 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
         const nextStage = stages[currentStepIndex + 1];
         if (!nextStage) return;
 
-        // Validation: Must have a requisition to advance
-        if (!currentApp?.jobRequisitionId) {
+        // Validation: Must have a requisition to advance (REMOVED as per user request)
+        /* if (!currentApp?.jobRequisitionId) {
             return message.error('La vacante que tenía este candidato ya no está disponible. Por favor, asigne una nueva vacante para continuar.');
-        }
+        } */
 
-        // Validation: Assigned requisition must be OPEN to advance at any stage (except rejection/hire)
-        if (currentApp?.jobRequisition?.status !== 'OPEN') {
+        // Validation: Assigned requisition must be OPEN to advance at any stage (REMOVED as per user request)
+        /* if (currentApp?.jobRequisitionId && currentApp?.jobRequisition?.status !== 'OPEN') {
             const statusLabel = currentApp?.jobRequisition?.status === 'PAUSED' ? 'Pausada' :
                 currentApp?.jobRequisition?.status === 'CANCELLED' ? 'Cancelada' : 'Cerrada';
             return message.error(`No se puede avanzar: La vacante asignada está ${statusLabel}. Por favor, asigne una nueva vacante abierta.`);
-        }
+        } */
 
         if (nextStage.id === 3) {
             Modal.confirm({
