@@ -964,6 +964,14 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             width={700}
         >
             <div style={{ padding: '20px', maxHeight: '500px', overflowY: 'auto' }}>
+                <div style={{ marginBottom: '16px', padding: '12px', background: '#f9f0ff', borderRadius: '8px', border: '1px solid #d3adf7' }}>
+                    <Text strong style={{ color: '#531dab' }}>
+                        <HistoryOutlined /> Resumen de Actividad:
+                    </Text>
+                    <div style={{ marginTop: '4px' }}>
+                        Este candidato se ha postulado un total de <Text strong style={{ fontSize: '16px', color: '#722ed1' }}>{activeCandidate.applications?.length || 0}</Text> veces a diferentes vacantes de la empresa.
+                    </div>
+                </div>
                 <Timeline
                     mode="left"
                     items={(currentApp?.logs || []).map((log: any, index: number) => {
@@ -1245,6 +1253,9 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 size="small"
             >
                 <Descriptions.Item label="Cédula">{activeCandidate.nationalId}</Descriptions.Item>
+                <Descriptions.Item label="Nro. Postulaciones">
+                    <Badge count={activeCandidate.applications?.length || 0} overflowCount={99} style={{ backgroundColor: '#722ed1' }} />
+                </Descriptions.Item>
                 <Descriptions.Item label="Email">{activeCandidate.email}</Descriptions.Item>
                 <Descriptions.Item label="Teléfono">
                     <Space>
@@ -1652,6 +1663,21 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             )}
 
             <Divider orientation="left">Notas y Seguimiento</Divider>
+
+            <div style={{ marginBottom: '12px', padding: '0 4px' }}>
+                <Space align="center" style={{ 
+                    background: '#f9f0ff', 
+                    padding: '6px 16px', 
+                    borderRadius: '20px', 
+                    border: '1px solid #d3adf7'
+                }}>
+                    <HistoryOutlined style={{ color: '#722ed1', fontSize: '16px' }} />
+                    <Text strong style={{ color: '#531dab', fontSize: '13px' }}>
+                        Historial: <Text style={{ color: '#722ed1', fontSize: '15px' }}>{activeCandidate.applications?.length || 0}</Text> { (activeCandidate.applications?.length || 0) === 1 ? 'postulación' : 'postulaciones' } en total
+                    </Text>
+                </Space>
+            </div>
+
             <Card size="small" style={{ background: '#f9f9f9', borderRadius: 8 }}>
                 <Space direction="vertical" style={{ width: '100%' }} size={12}>
                     <div style={{ maxHeight: '200px', overflowY: 'auto', paddingRight: '8px' }}>
