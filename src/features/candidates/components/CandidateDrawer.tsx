@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Drawer, Typography, Descriptions, Tag, Button, Space, Divider, message, Timeline, Modal, Input, Badge, Row, Col, Card, Tooltip, DatePicker, Upload, InputNumber, Select, Switch } from 'antd';
+import { Drawer, Typography, Descriptions, Tag, Button, Space, Divider, message, Timeline, Modal, Input, Badge, Row, Col, Card, Tooltip, DatePicker, Upload, InputNumber, Select, Switch, Collapse } from 'antd';
 import {
     FilePdfOutlined,
     VideoCameraOutlined,
@@ -22,6 +22,7 @@ import {
     SaveOutlined,
     CloseOutlined,
     CalendarOutlined,
+    CaretRightOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Candidate, Requisition } from '../../../types';
@@ -45,6 +46,14 @@ interface CandidateDrawerProps {
     onActionComplete?: (shouldClose?: boolean) => void;
     onUpdate?: () => void;
 }
+
+const STATUS_TRANSLATIONS: Record<string, string> = {
+    'ACTIVE': 'En Proceso',
+    'HIRED': 'Contratado',
+    'REJECTED': 'Rechazado',
+    'WITHDRAWN': 'Retirado',
+};
+
 const getWhatsAppMessage = (candidate: any) => {
     const firstName = candidate.firstName || 'Candidato';
     const currentApp = candidate.applications?.[0];
@@ -982,14 +991,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                         if (log.status === 'REJECTED') statusColor = '#ff4d4f';
                         if (isLatest && log.status !== 'REJECTED' && log.status !== 'HIRED') statusColor = '#fa8c16';
 
-                        let displayStatus = log.status;
-                        if (log.status === 'ACTIVE') {
-                            displayStatus = 'COMPLETADO';
-                        } else if (log.status === 'REJECTED') {
-                            displayStatus = 'RECHAZADO';
-                        } else if (log.status === 'HIRED') {
-                            displayStatus = 'CONTRATADO';
-                        }
+                        const displayStatus = log.status === 'ACTIVE' ? 'Completado' : (STATUS_TRANSLATIONS[log.status] || log.status);
 
                         return {
                             children: (
@@ -1678,41 +1680,91 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 </Space>
             </div>
 
-            <Card size="small" style={{ background: '#f9f9f9', borderRadius: 8 }}>
-                <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                    <div style={{ maxHeight: '200px', overflowY: 'auto', paddingRight: '8px' }}>
-                        {(currentApp?.logs || [])
-                            .filter((log: any) => log.comment)
-                            .map((log: any, index: number) => (
-                                <div key={log.id || index} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #f0f0f0' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <Text strong style={{ fontSize: '12px' }}>{log.subStatus || 'Comentario'}</Text>
-                                        <Text type="secondary" style={{ fontSize: '10px' }}>{new Date(log.createdAt).toLocaleDateString()}</Text>
-                                    </div>
-                                    <Paragraph style={{ margin: 0, fontSize: '13px' }}>• {log.comment}</Paragraph>
+            <Collapse
+                ghost
+                defaultActiveKey={['0']}
+                expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+                className="application-history-collapse"
+            >
+                {(activeCandidate.applications || []).map((app: any, appIndex: number) => {
+                    const isCurrent = appIndex === 0;
+                    const appLogs = (app.logs || []).filter((log: any) => log.comment);
+                    const jobTitle = app.jobRequisition?.title || 'Vacante no especificada';
+                    const startDate = dayjs(app.createdAt).format('DD/MM/YYYY');
+
+                    return (
+                        <Collapse.Panel
+                            header={
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '10px' }}>
+                                    <Space direction="vertical" size={0}>
+                                        <Text strong style={{ color: isCurrent ? '#2b457c' : '#595959', fontSize: isCurrent ? '14px' : '13px' }}>
+                                            {isCurrent ? `Postulación Actual: ${jobTitle}` : `Postulación Anterior: ${jobTitle}`}
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: '11px' }}>Iniciada el {startDate}</Text>
+                                    </Space>
+                                    <Tag color={app.status === 'HIRED' ? 'green' : app.status === 'REJECTED' ? 'red' : 'blue'}>
+                                        {app.status === 'ACTIVE' ? (app.subStatus || 'En Proceso') : (STATUS_TRANSLATIONS[app.status] || app.status)}
+                                    </Tag>
                                 </div>
-                            ))}
-                        {!(currentApp?.logs || []).some((log: any) => log.comment) && (
-                            <Text type="secondary" italic>No hay notas registradas.</Text>
-                        )}
-                    </div>
-                    <Input.TextArea
-                        placeholder="Escribe una nota interna o seguimiento..."
-                        rows={2}
-                        value={noteComment}
-                        onChange={e => setNoteComment(e.target.value)}
-                    />
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        loading={submitting}
-                        onClick={handleAddNote}
-                        block
-                    >
-                        Agregar Nota
-                    </Button>
-                </Space>
-            </Card>
+                            }
+                            key={appIndex}
+                            style={{
+                                marginBottom: '12px',
+                                background: isCurrent ? '#ffffff' : '#f5f5f5',
+                                borderRadius: '12px',
+                                border: isCurrent ? '1px solid #2b457c30' : '1px solid #d9d9d960',
+                                overflow: 'hidden',
+                                boxShadow: isCurrent ? '0 2px 8px rgba(43, 69, 124, 0.05)' : 'none'
+                            }}
+                        >
+                            <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                                <div style={{ maxHeight: '250px', overflowY: 'auto', padding: '4px 8px' }}>
+                                    {appLogs.map((log: any, logIndex: number) => (
+                                        <div key={log.id || logIndex} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: logIndex === appLogs.length - 1 ? 'none' : '1px solid #f0f0f0' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                                                <Text strong style={{ fontSize: '12px', color: '#2b457c' }}>{log.subStatus || 'Nota'}</Text>
+                                                <Text type="secondary" style={{ fontSize: '10px' }}>{dayjs(log.createdAt).format('DD/MM/YYYY hh:mm A')}</Text>
+                                            </div>
+                                            <div style={{ padding: '8px 12px', background: '#f9f9f9', borderRadius: '8px', borderLeft: '3px solid #d9d9d9' }}>
+                                                <Paragraph style={{ margin: 0, fontSize: '13px', color: '#434343' }}>{log.comment}</Paragraph>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {appLogs.length === 0 && (
+                                        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                            <Text type="secondary" italic>No hay notas o registros para esta postulación.</Text>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {isCurrent && (
+                                    <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '16px' }}>
+                                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                            <Input.TextArea
+                                                placeholder="Agregar una nota interna para esta postulación..."
+                                                rows={2}
+                                                value={noteComment}
+                                                onChange={e => setNoteComment(e.target.value)}
+                                                style={{ borderRadius: '8px', border: '1px solid #d9d9d9' }}
+                                            />
+                                            <Button
+                                                type="primary"
+                                                icon={<PlusOutlined />}
+                                                loading={submitting}
+                                                onClick={handleAddNote}
+                                                block
+                                                style={{ height: '36px', borderRadius: '8px', fontWeight: 500 }}
+                                            >
+                                                Agregar Nota
+                                            </Button>
+                                        </Space>
+                                    </div>
+                                )}
+                            </Space>
+                        </Collapse.Panel>
+                    );
+                })}
+            </Collapse>
 
             <Divider />
 
