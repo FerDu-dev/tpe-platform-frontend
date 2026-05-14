@@ -31,10 +31,25 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick }) => 
 
         const item = config[subStatus] || { label: subStatus, icon: null, color: 'default' };
         return (
-            <Tag color={item.color} style={{ margin: 0, fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                {item.icon}
-                {item.label}
-            </Tag>
+            <Tooltip title={item.label}>
+                <Tag color={item.color} style={{ 
+                    margin: 0, 
+                    fontSize: '10px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '4px',
+                    maxWidth: '100%',
+                }}>
+                    {item.icon}
+                    <span style={{ 
+                        overflow: 'hidden', 
+                        textOverflow: 'ellipsis', 
+                        whiteSpace: 'nowrap' 
+                    }}>
+                        {item.label}
+                    </span>
+                </Tag>
+            </Tooltip>
         );
     };
 
@@ -82,28 +97,33 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick }) => 
             <Space direction="vertical" size={2} style={{ width: '100%' }}>
 
                 {/* Key Metrics Row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: 4, fontSize: '12px', color: '#595959' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <Space size={4}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', marginTop: 4, fontSize: '12px', color: '#595959' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+                        <Space size={4} style={{ flexShrink: 0 }}>
                             <ClockCircleOutlined />
                             <span>{candidate.daysInStage || 0}d</span>
                         </Space>
-                        {getSubStatusUI(candidate.subStatus)}
+                        <div style={{ minWidth: 0, flex: 1, display: 'flex' }}>
+                             {getSubStatusUI(candidate.subStatus)}
+                        </div>
                     </div>
-                    {candidate.hasVehicle && (
-                        <Tooltip title="Posee Vehículo">
-                            <Tag color="cyan" style={{ margin: 0, fontSize: '10px', lineHeight: '16px' }}>
-                                <CarOutlined /> Auto
-                            </Tag>
-                        </Tooltip>
-                    )}
-                    {candidate.driveFolderUrl && (
-                        <Tooltip title="Carpeta Drive Creada">
-                            <Tag color="success" style={{ margin: 0, fontSize: '10px', lineHeight: '16px' }}>
-                                <FolderOpenOutlined />
-                            </Tag>
-                        </Tooltip>
-                    )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                        {candidate.hasVehicle && (
+                            <Tooltip title="Posee Vehículo">
+                                <Tag color="cyan" style={{ margin: 0, fontSize: '10px', lineHeight: '16px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                    <CarOutlined /> <span>Auto</span>
+                                </Tag>
+                            </Tooltip>
+                        )}
+                        {candidate.driveFolderUrl && (
+                            <Tooltip title="Carpeta Drive Creada">
+                                <Tag color="success" style={{ margin: 0, padding: '0 4px', fontSize: '10px', lineHeight: '16px', display: 'flex', alignItems: 'center' }}>
+                                    <FolderOpenOutlined />
+                                </Tag>
+                            </Tooltip>
+                        )}
+                    </div>
                 </div>
 
                 {/* IDX / Location Tag */}
