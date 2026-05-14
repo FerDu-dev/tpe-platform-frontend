@@ -32,19 +32,20 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick }) => 
         const item = config[subStatus] || { label: subStatus, icon: null, color: 'default' };
         return (
             <Tooltip title={item.label}>
-                <Tag color={item.color} style={{ 
-                    margin: 0, 
-                    fontSize: '10px', 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                <Tag color={item.color} style={{
+                    margin: 0,
+                    fontSize: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     gap: '4px',
-                    maxWidth: '100%',
+                    width: '100%',
                 }}>
                     {item.icon}
-                    <span style={{ 
-                        overflow: 'hidden', 
-                        textOverflow: 'ellipsis', 
-                        whiteSpace: 'nowrap' 
+                    <span style={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
                     }}>
                         {item.label}
                     </span>
@@ -104,7 +105,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick }) => 
                             <span>{candidate.daysInStage || 0}d</span>
                         </Space>
                         <div style={{ minWidth: 0, flex: 1, display: 'flex' }}>
-                             {getSubStatusUI(candidate.subStatus)}
+                            {getSubStatusUI(candidate.subStatus)}
                         </div>
                     </div>
 
@@ -112,7 +113,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick }) => 
                         {candidate.hasVehicle && (
                             <Tooltip title="Posee Vehículo">
                                 <Tag color="cyan" style={{ margin: 0, fontSize: '10px', lineHeight: '16px', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                                    <CarOutlined /> <span>Auto</span>
+                                    <CarOutlined />
                                 </Tag>
                             </Tooltip>
                         )}
