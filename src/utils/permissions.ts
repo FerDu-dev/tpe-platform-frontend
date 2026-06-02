@@ -27,11 +27,6 @@ export const hasPermission = (
         return false;
     }
 
-    // Special case: SUPER_ADMIN has access to everything
-    const roleName = typeof user.role === 'string' ? user.role : user.role.name;
-    if (roleName === 'SUPER_ADMIN') {
-        return true;
-    }
 
     if (typeof user.role === 'string') {
         // If it's a string and not SUPER_ADMIN, we can't check granular permissions
@@ -64,6 +59,7 @@ export const usePermissions = (user: User | null | undefined) => {
 
 
 export const PERMISSIONS = {
+    // === MÓDULO DE VENTAS (Mantiene llaves clásicas por compatibilidad) ===
     candidates: {
         read: 'Ver',
         create: 'Crear',
@@ -79,18 +75,37 @@ export const PERMISSIONS = {
         update: 'Editar',
         delete: 'Eliminar'
     },
-    hires: {
-        read: 'Ver',
-        create: 'Crear',
-        update: 'Editar',
-        delete: 'Eliminar'
-    },
     zones: {
         read: 'Ver',
         create: 'Crear',
         update: 'Editar',
         delete: 'Eliminar'
     },
+    hires: {
+        read: 'Ver'
+    },
+
+    // === MÓDULO ADMINISTRATIVO (Nuevas llaves) ===
+    adminCandidates: {
+        read: 'Ver',
+        create: 'Crear',
+        update: 'Editar',
+        delete: 'Eliminar',
+        advance: 'Avanzar',
+        reject: 'Rechazar',
+        hire: 'Contratar'
+    },
+    adminRequisitions: {
+        read: 'Ver',
+        create: 'Crear',
+        update: 'Editar',
+        delete: 'Eliminar'
+    },
+    adminHires: {
+        read: 'Ver'
+    },
+
+    // === MÓDULO DE CONFIGURACIÓN ===
     users: {
         read: 'Ver',
         create: 'Crear',
@@ -103,7 +118,12 @@ export const PERMISSIONS = {
         update: 'Editar',
         delete: 'Eliminar'
     },
-    dashboard: {
-        read: 'Ver'
-    },
+    companies: {
+        read: 'Ver',
+        create: 'Crear',
+        update: 'Editar',
+        delete: 'Eliminar'
+    }
+
+
 } as const;

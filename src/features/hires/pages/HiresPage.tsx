@@ -95,19 +95,14 @@ const HiresPage: React.FC = () => {
             }
         },
         {
-            title: 'Fecha Inicio',
-            dataIndex: 'effectiveStartDate',
+            title: 'Fecha de Contratación',
+            dataIndex: 'hiredAt',
             render: (date) => (
                 <Space>
                     <CalendarOutlined style={{ color: '#1890ff' }} />
                     <Text>{date ? new Date(date).toLocaleDateString() : 'N/A'}</Text>
                 </Space>
             )
-        },
-        {
-            title: 'Estado',
-            key: 'status',
-            render: () => <Tag color="green" icon={<TrophyOutlined />}>CONTRATADO</Tag>
         },
         {
             title: 'Acciones',

@@ -139,6 +139,22 @@ export interface Candidate {
     childrenCount?: number;
     maritalStatus?: string;
     metadata?: any;
+    englishLevel?: string;
+    adminReferences?: any[];
+    yearsOfExperience?: string;
+    areasOfWork?: string;
+    isWorkingNow?: boolean;
+    currentCompanyAndPosition?: string;
+    availability?: string;
+    preferredSchedule?: string;
+    currentIncome?: number;
+    expectedIncome?: number;
+    academicPeriodStart?: string;
+    currentStudyLevel?: string;
+    studyModality?: string;
+    classShift?: string;
+    isInternshipMandatory?: boolean;
+    internshipHours?: number;
     salesExperienceYears?: number;
     salesExperienceTypes?: string[];
     commercializedGoodsTypes?: string[];
@@ -156,6 +172,7 @@ export interface Candidate {
     currentStageId?: number;
     currentStageName?: string;
     subStatus?: string;
+    category?: string;
     daysInStage?: number;
     testUrl?: string;
     testCode?: string;
@@ -176,6 +193,7 @@ export interface Candidate {
 
 export interface CandidateFilters {
     search?: string;
+    category?: string;
     nationalId?: string;
     profession?: string;
     location?: string;
@@ -232,6 +250,47 @@ export interface RequisitionFilters {
     search?: string;
     zoneId?: number;
     companyId?: number;
+    jobRequisitionId?: number;
+    page?: number;
+    limit?: number;
+}
+
+export interface AdministrativeRequisition {
+    id: string;
+    idx: string;
+    company: string;
+    companyId: number;
+    requestedBy?: string;
+    priority: Priority;
+    type: string;
+    department?: string;
+    position?: string;
+    levelAndStep?: string;
+    country?: string;
+    stateId?: number;
+    state?: State;
+    schedule?: string;
+    isConfidential: boolean;
+    requestDate: string;
+    comments?: string;
+    status: RequisitionStatus;
+    statusReason?: string;
+    statusUpdatedAt?: string;
+    vacanciesCount: number;
+    filledCount: number;
+    applicants: number;
+    createdDate: string;
+    createdAt?: string;
+}
+
+export interface AdministrativeRequisitionFilters {
+    companyId?: number;
+    priority?: Priority;
+    status?: RequisitionStatus;
+    stateId?: number;
+    search?: string;
+    type?: string;
+    department?: string;
     jobRequisitionId?: number;
     page?: number;
     limit?: number;

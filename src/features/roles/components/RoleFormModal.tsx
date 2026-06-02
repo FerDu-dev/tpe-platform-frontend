@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, Checkbox, Collapse, Tag, Space, Divider, message } from 'antd';
-import { SafetyCertificateOutlined, SettingOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Checkbox, Collapse, Tag, Space, Divider, message, Tabs } from 'antd';
+import { SafetyCertificateOutlined, SettingOutlined, ShopOutlined, SolutionOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { useAppDispatch } from '../../../app/store';
 import { createRole, updateRole } from '../store/rolesSlice';
 import { PERMISSIONS } from '../../../utils/permissions';
@@ -17,8 +17,10 @@ interface RoleFormModalProps {
 
 const RoleFormModal: React.FC<RoleFormModalProps> = ({ visible, onCancel, onSuccess, role }) => {
     const [form] = Form.useForm();
+    const [activeTab, setActiveTab] = useState('sales');
     const dispatch = useAppDispatch();
     const [loading, setLoading] = useState(false);
+    const permissionsWatch = Form.useWatch('permissions', form);
 
     useEffect(() => {
         if (visible) {
@@ -31,19 +33,36 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({ visible, onCancel, onSucc
             } else {
                 form.resetFields();
             }
+            setActiveTab('sales');
         }
     }, [visible, role, form]);
 
     const handleOk = async () => {
         try {
+            // Validamos los campos visibles
             const values = await form.validateFields();
+            
+            // Obtenemos TODOS los valores del store interno del formulario, 
+            // incluyendo los campos que pudieran no estar renderizados o activos
+            const allValues = form.getFieldsValue(true);
+
+            // Mezclamos para asegurar que no se pierdan los permisos preexistentes no editados
+            const finalData = {
+                ...values,
+                permissions: {
+                    ...(role?.permissions || {}),
+                    ...(allValues.permissions || {}),
+                    ...(values.permissions || {})
+                }
+            };
+
             setLoading(true);
 
             if (role) {
-                await dispatch(updateRole({ id: role.id, data: values })).unwrap();
+                await dispatch(updateRole({ id: role.id, data: finalData })).unwrap();
                 message.success('Rol actualizado correctamente');
             } else {
-                await dispatch(createRole(values)).unwrap();
+                await dispatch(createRole(finalData)).unwrap();
                 message.success('Rol creado exitosamente');
             }
 
@@ -56,47 +75,97 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({ visible, onCancel, onSucc
         }
     };
 
-    const renderPermissionsCheckboxes = () => {
-        return Object.keys(PERMISSIONS).map((moduleKey) => {
-            const modulePermissions = (PERMISSIONS as any)[moduleKey];
-            const options = Object.keys(modulePermissions).map((permKey) => ({
-                label: modulePermissions[permKey],
-                value: permKey,
-            }));
+    const renderPanel = (moduleKey: string, label: string) => {
+        const modulePermissions = (PERMISSIONS as any)[moduleKey];
+        if (!modulePermissions) return null;
+        
+        const options = Object.keys(modulePermissions).map((permKey) => ({
+            label: modulePermissions[permKey],
+            value: permKey,
+        }));
 
-            return (
-                <Panel
-                    header={
-                        <Space>
-                            <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>
-                                {moduleKey === 'requisitions' ? 'Requisiciones' : 
-                                 moduleKey === 'candidates' ? 'Candidatos' :
-                                 moduleKey === 'hires' ? 'Contrataciones' :
-                                 moduleKey === 'zones' ? 'Zonas' :
-                                 moduleKey === 'users' ? 'Usuarios' :
-                                 moduleKey === 'roles' ? 'Roles' : moduleKey}
-                            </span>
-                            <Tag color="blue">{options.length} Acciones</Tag>
-                        </Space>
-                    }
-                    key={moduleKey}
-                    style={{ background: '#f8f9fb', borderRadius: '8px', marginBottom: '8px', border: 'none' }}
+        const currentSelected = permissionsWatch 
+            ? (permissionsWatch[moduleKey]?.length || 0) 
+            : (role?.permissions?.[moduleKey]?.length || 0);
+
+        return (
+            <Panel
+                header={
+                    <Space>
+                        <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>
+                            {label}
+                        </span>
+                        <Tag color="blue">{currentSelected} de {options.length} permisos</Tag>
+                    </Space>
+                }
+                key={moduleKey}
+                style={{ background: '#f8f9fb', borderRadius: '8px', marginBottom: '8px', border: 'none' }}
+            >
+                <Form.Item 
+                    name={['permissions', moduleKey]} 
+                    style={{ marginBottom: 0 }}
+                    initialValue={role?.permissions?.[moduleKey] || []}
                 >
-                    <Form.Item name={['permissions', moduleKey]} valuePropName="value" noStyle>
-                        <Checkbox.Group
-                            options={options}
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns: '1fr 1fr',
-                                gap: '12px',
-                                padding: '8px 16px'
-                            }}
-                        />
-                    </Form.Item>
-                </Panel>
-            );
-        });
+                    <Checkbox.Group
+                        options={options}
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: '12px',
+                            padding: '8px 16px'
+                        }}
+                    />
+                </Form.Item>
+            </Panel>
+        );
     };
+
+    const tabItems = [
+        {
+            key: 'sales',
+            label: <Space><ShopOutlined />Área de Ventas</Space>,
+            forceRender: true,
+            children: (
+                <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                    <Collapse ghost expandIconPosition="end">
+                        {renderPanel('candidates', 'Candidatos')}
+                        {renderPanel('requisitions', 'Requisiciones')}
+                        {renderPanel('hires', 'Contrataciones')}
+                        {renderPanel('zones', 'Zonas')}
+                    </Collapse>
+                </div>
+            )
+        },
+        {
+            key: 'admin',
+            label: <Space><SolutionOutlined />Área Administrativa</Space>,
+            forceRender: true,
+            children: (
+                <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                    <Collapse ghost expandIconPosition="end">
+                        {renderPanel('adminCandidates', 'Candidatos')}
+                        {renderPanel('adminRequisitions', 'Requisiciones')}
+                        {renderPanel('adminHires', 'Contrataciones')}
+                    </Collapse>
+                </div>
+            )
+        },
+        {
+            key: 'config',
+            label: <Space><SettingOutlined />Configuración</Space>,
+            forceRender: true,
+            children: (
+                <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                    <Collapse ghost expandIconPosition="end">
+                        {renderPanel('users', 'Usuarios')}
+                        {renderPanel('roles', 'Roles')}
+                        {renderPanel('companies', 'Compañías')}
+                        {renderPanel('dashboard', 'Dashboard (Global)')}
+                    </Collapse>
+                </div>
+            )
+        }
+    ];
 
     return (
         <Modal
@@ -121,7 +190,7 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({ visible, onCancel, onSucc
                 requiredMark="optional"
             >
                 <Divider orientation="left" style={{ marginTop: 0 }}>
-                    <Space><SettingOutlined /> Información General</Space>
+                    <Space><AppstoreOutlined /> Información General</Space>
                 </Divider>
 
                 <Form.Item
@@ -143,11 +212,13 @@ const RoleFormModal: React.FC<RoleFormModalProps> = ({ visible, onCancel, onSucc
                     <Space><SafetyCertificateOutlined /> Matriz de Permisos</Space>
                 </Divider>
 
-                <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                    <Collapse ghost expandIconPosition="end">
-                        {renderPermissionsCheckboxes()}
-                    </Collapse>
-                </div>
+                <Tabs 
+                    activeKey={activeTab} 
+                    onChange={setActiveTab} 
+                    items={tabItems}
+                    type="card"
+                    style={{ marginTop: '16px' }}
+                />
             </Form>
         </Modal>
     );

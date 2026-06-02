@@ -79,7 +79,7 @@ export const getStatusTagStyle = (subStatus?: string) => {
     };
 };
 
-export const candidateService = {
+export const adminCandidateService = {
     _mapCandidate(c: any): Candidate {
         // Prefer ACTIVE application; for rejected/notSelectable candidates pick the most recent one
         const activeApp =
@@ -96,7 +96,7 @@ export const candidateService = {
 
         return {
             id: c.id,
-            idx: activeApp?.salesRequisitionId || 'N/A',
+            idx: activeApp?.administrativeRequisitionId || 'N/A',
             nationalId: c.nationalId,
             firstName: c.firstName,
             lastName: c.lastName,
@@ -109,11 +109,12 @@ export const candidateService = {
             maritalStatus: c.maritalStatus,
             hasChildren: c.hasChildren,
             childrenCount: c.childrenCount,
+            category: c.category,
             metadata: c.metadata,
             stage: mappedStage,
             currentStageId: activeApp?.currentStageId,
             currentStageName: STAGE_DISPLAY_MAPPING[activeApp?.currentStageId] || 'Postulado',
-            requisitionZoneName: activeApp?.salesRequisition?.zone?.name,
+            requisitionZoneName: activeApp?.administrativeRequisition?.position,
             subStatus: (activeApp?.logs?.[0] && (
                 activeApp.logs[0].stageId === activeApp.currentStageId ||
                 activeApp.logs[0].comment?.toLowerCase().includes('exitosamente')
@@ -138,6 +139,23 @@ export const candidateService = {
             personalReferences: tryParse(c.personalReferences),
             workReferences: tryParse(c.workReferences),
 
+            englishLevel: c.englishLevel,
+            adminReferences: tryParse(c.adminReferences),
+            yearsOfExperience: c.yearsOfExperience,
+            areasOfWork: c.areasOfWork,
+            isWorkingNow: c.isWorkingNow,
+            currentCompanyAndPosition: c.currentCompanyAndPosition,
+            availability: c.availability,
+            preferredSchedule: c.preferredSchedule,
+            currentIncome: c.currentIncome,
+            expectedIncome: c.expectedIncome,
+            academicPeriodStart: c.academicPeriodStart,
+            currentStudyLevel: c.currentStudyLevel,
+            studyModality: c.studyModality,
+            classShift: c.classShift,
+            isInternshipMandatory: c.isInternshipMandatory,
+            internshipHours: c.internshipHours,
+
             videoUrl: c.videoUrl,
             cvUrl: c.cvUrl,
             psychTestUrl: c.psychTestUrl,
@@ -152,7 +170,7 @@ export const candidateService = {
             state: c.municipality?.state || c.state,
             municipality: c.municipality,
             municipalityId: c.municipalityId,
-            zone: activeApp?.salesRequisition?.zone?.name || 'N/A',
+            zone: activeApp?.administrativeRequisition?.company?.name || 'N/A',
             applications: c.applications,
             logs: activeApp?.logs,
             testUrl: activeApp?.testUrl,
@@ -171,40 +189,40 @@ export const candidateService = {
     },
 
     async fetchCandidates(filters: CandidateFilters & { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Candidate>> {
-        const response = await api.get('/sales-candidates', { params: filters });
+        const response = await api.get('/administrative-candidates', { params: filters });
         const { data, meta } = response.data;
         return { data: data.map((c: any) => this._mapCandidate(c)), meta };
     },
 
     async fetchCandidateById(id: string): Promise<Candidate> {
-        const response = await api.get(`/sales-candidates/${id}`);
+        const response = await api.get(`/administrative-candidates/${id}`);
         return this._mapCandidate(response.data);
     },
 
     async fetchCandidateProfile(): Promise<Candidate> {
-        const response = await api.get('/sales-candidates/profile');
+        const response = await api.get('/administrative-candidates/profile');
         return this._mapCandidate(response.data);
     },
 
     async fetchCandidateCurrentProcess(): Promise<any> {
-        const response = await api.get('/sales-candidates/current-process');
+        const response = await api.get('/administrative-candidates/current-process');
         return response.data;
     },
 
     async fetch_candidates_active(filters: CandidateFilters & { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Candidate>> {
-        const response = await api.get('/sales-candidates', { params: filters });
+        const response = await api.get('/administrative-candidates', { params: filters });
         const { data, meta } = response.data;
         return { data: data.map((c: any) => this._mapCandidate(c)), meta };
     },
 
     async fetch_candidates_rejected(filters: CandidateFilters & { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Candidate>> {
-        const response = await api.get('/sales-candidates_rejected', { params: filters });
+        const response = await api.get('/administrative-candidates_rejected', { params: filters });
         const { data, meta } = response.data;
         return { data: data.map((c: any) => this._mapCandidate(c)), meta };
     },
 
     async fetch_candidates_notSelectable(filters: CandidateFilters & { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Candidate>> {
-        const response = await api.get('/sales-candidates_notSelectable', { params: filters });
+        const response = await api.get('/administrative-candidates_notSelectable', { params: filters });
         const { data, meta } = response.data;
         return { data: data.map((c: any) => this._mapCandidate(c)), meta };
     },
@@ -221,7 +239,7 @@ export const candidateService = {
         const targetStageId = typeof newStage === 'number' ? newStage : FRONTEND_TO_BACKEND_STAGE[newStage];
 
         try {
-            const response = await api.get(`/sales-candidates/${id}`);
+            const response = await api.get(`/administrative-candidates/${id}`);
             const fullCandidate = response.data;
             const appId = fullCandidate.applications?.find((a: any) => a.status === 'ACTIVE')?.id || fullCandidate.applications?.[0]?.id;
 
@@ -242,7 +260,7 @@ export const candidateService = {
     },
 
     async updateSubStatus(candidateId: string, subStatus: string, comment?: string): Promise<Candidate> {
-        const response = await api.get(`/sales-candidates/${candidateId}`);
+        const response = await api.get(`/administrative-candidates/${candidateId}`);
         const appId = response.data.applications?.find((a: any) => a.status === 'ACTIVE')?.id || response.data.applications?.[0]?.id;
 
         await api.patch(`/applications/${appId}/sub-status`, { subStatus, comment });
@@ -252,7 +270,7 @@ export const candidateService = {
     },
 
     async rejectCandidate(candidateId: string, reason: string): Promise<void> {
-        const response = await api.get(`/sales-candidates/${candidateId}`);
+        const response = await api.get(`/administrative-candidates/${candidateId}`);
         const appId = response.data.applications?.find((a: any) => a.status === 'ACTIVE')?.id || response.data.applications?.[0]?.id;
 
         if (!appId) throw new Error('No se encontró aplicación para rechazar');
@@ -262,7 +280,7 @@ export const candidateService = {
     },
 
     async registerCandidate(formData: FormData): Promise<any> {
-        const response = await api.post('/sales-candidates/register', formData, {
+        const response = await api.post('/administrative-candidates/register', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
         });
         return response.data;
@@ -274,7 +292,7 @@ export const candidateService = {
     },
 
     async resendDocumentationRequest(candidateId: string, type: 'CV' | 'Video' | 'PsychTest' | 'PersonalInterview' | 'TechnicalInterview' | 'MedicalCheckup' | 'JobOffer'): Promise<any> {
-        const response = await api.post(`/sales-candidates/${candidateId}/resend-docs`, { type });
+        const response = await api.post(`/administrative-candidates/${candidateId}/resend-docs`, { type });
         return response.data;
     },
 
@@ -287,7 +305,7 @@ export const candidateService = {
         const formData = new FormData();
         formData.append('type', type);
         formData.append('file', file);
-        const response = await api.post(`/sales-candidates/${candidateId}/upload-doc`, formData, {
+        const response = await api.post(`/administrative-candidates/${candidateId}/upload-doc`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
         return response.data;
@@ -299,24 +317,24 @@ export const candidateService = {
     },
 
     async updateCandidate(id: string, data: any): Promise<Candidate> {
-        const response = await api.patch(`/sales-candidates/${id}`, data);
+        const response = await api.patch(`/administrative-candidates/${id}`, data);
         return this._mapCandidate(response.data);
     },
 
-    async updateApplicationRequisition(candidateId: string, salesRequisitionId: number | null): Promise<Candidate> {
-        const response = await api.get(`/sales-candidates/${candidateId}`);
+    async updateApplicationRequisition(candidateId: string, administrativeRequisitionId: number | null): Promise<Candidate> {
+        const response = await api.get(`/administrative-candidates/${candidateId}`);
         const appId = response.data.applications?.find((a: any) => a.status === 'ACTIVE')?.id || response.data.applications?.[0]?.id;
 
         if (!appId) throw new Error('No se encontró aplicación activa');
 
-        await api.patch(`/applications/${appId}/requisition`, { salesRequisitionId });
+        await api.patch(`/applications/${appId}/requisition`, { administrativeRequisitionId });
 
         // Re-fetch to get updated state
         return this.fetchCandidateById(candidateId);
     },
 
     async hireCandidate(candidateId: string, effectiveStartDate: string, comment?: string): Promise<void> {
-        const response = await api.get(`/sales-candidates/${candidateId}`);
+        const response = await api.get(`/administrative-candidates/${candidateId}`);
         const appId = response.data.applications?.find((a: any) => a.status === 'ACTIVE')?.id || response.data.applications?.[0]?.id;
 
         if (!appId) throw new Error('No se encontró aplicación para contratar');
@@ -325,7 +343,7 @@ export const candidateService = {
     },
 
     async resendAccessCredentials(candidateId: string): Promise<any> {
-        const response = await api.post(`/sales-candidates/${candidateId}/resend-access`);
+        const response = await api.post(`/administrative-candidates/${candidateId}/resend-access`);
         return response.data;
     },
 };

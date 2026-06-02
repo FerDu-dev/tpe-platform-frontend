@@ -1,10 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './features/auth/pages/LoginPage';
-import DashboardPage from './features/candidates/pages/DashboardPage';
-import RequisitionsPage from './features/requisitions/pages/RequisitionsPage';
+import DashboardPage from './features/sales-candidates/pages/DashboardPage';
+import AdminDashboardPage from './features/administrative-candidates/pages/DashboardPage';
+import SalesRequisitionsPage from './features/sales-requisitions/pages/RequisitionsPage';
+import AdminRequisitionsPage from './features/administrative-requisitions/pages/RequisitionsPage';
 import UsersPage from './features/users/pages/UsersPage';
 import RolesPage from './features/roles/pages/RolesPage';
+import CompaniesPage from './features/companies/pages/CompaniesPage';
 import ZonesPage from './features/zones/pages/ZonesPage';
 import ProtectedRoute from './features/auth/components/ProtectedRoute';
 import PermissionRoute from './features/auth/components/PermissionRoute';
@@ -17,11 +20,11 @@ const App: React.FC = () => {
             <Routes>
                 {/* Public Routes */}
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/" element={<Navigate to="/sales-candidates" replace />} />
 
                 {/* Admin Routes */}
                 <Route
-                    path="/dashboard"
+                    path="/sales-candidates"
                     element={
                         <ProtectedRoute allowedEntity="staff" redirectTo="/login">
                             <PermissionRoute module="candidates">
@@ -33,12 +36,24 @@ const App: React.FC = () => {
                     }
                 />
                 <Route
-                    path="/requisitions"
+                    path="/sales-requisitions"
                     element={
                         <ProtectedRoute allowedEntity="staff" redirectTo="/login">
                             <PermissionRoute module="requisitions">
                                 <MainLayout>
-                                    <RequisitionsPage />
+                                    <SalesRequisitionsPage />
+                                </MainLayout>
+                            </PermissionRoute>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/administrative-requisitions"
+                    element={
+                        <ProtectedRoute allowedEntity="staff" redirectTo="/login">
+                            <PermissionRoute module="requisitions">
+                                <MainLayout>
+                                    <AdminRequisitionsPage />
                                 </MainLayout>
                             </PermissionRoute>
                         </ProtectedRoute>
@@ -69,7 +84,18 @@ const App: React.FC = () => {
                     }
                 />
 
-
+                <Route
+                    path="/companies"
+                    element={
+                        <ProtectedRoute allowedEntity="staff" redirectTo="/login">
+                            <PermissionRoute module="companies">
+                                <MainLayout>
+                                    <CompaniesPage />
+                                </MainLayout>
+                            </PermissionRoute>
+                        </ProtectedRoute>
+                    }
+                />
 
                 <Route
                     path="/zones"
@@ -83,9 +109,21 @@ const App: React.FC = () => {
                         </ProtectedRoute>
                     }
                 />
+                <Route
+                    path="/administrative-candidates"
+                    element={
+                        <ProtectedRoute allowedEntity="staff" redirectTo="/login">
+                            <PermissionRoute module="candidates">
+                                <MainLayout>
+                                    <AdminDashboardPage />
+                                </MainLayout>
+                            </PermissionRoute>
+                        </ProtectedRoute>
+                    }
+                />
 
                 {/* Fallbacks */}
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                <Route path="*" element={<Navigate to="/sales-candidates" replace />} />
             </Routes>
         </Router>
     );

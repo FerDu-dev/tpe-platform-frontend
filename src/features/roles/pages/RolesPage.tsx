@@ -22,11 +22,21 @@ const MODULE_TRANSLATIONS: Record<string, string> = {
     requisitions: 'Requisiciones',
     hires: 'Contrataciones',
     zones: 'Zonas',
+    adminCandidates: 'Candidatos (Admin)',
+    adminRequisitions: 'Requisiciones (Admin)',
+    adminHires: 'Contrataciones (Admin)',
     users: 'Usuarios',
     roles: 'Roles y Permisos',
+    companies: 'Compañías',
     dashboard: 'Dashboard',
     workflows: 'Flujos de Trabajo'
 };
+
+const MODULE_GROUPS = [
+    { title: 'Área de Ventas', keys: ['candidates', 'requisitions', 'hires', 'zones'] },
+    { title: 'Área Administrativa', keys: ['adminCandidates', 'adminRequisitions', 'adminHires'] },
+    { title: 'Configuración y Global', keys: ['users', 'roles', 'companies', 'dashboard', 'workflows'] }
+];
 
 const RolesPage: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -299,26 +309,38 @@ const RolesPage: React.FC = () => {
             >
                 <div style={{ marginTop: '16px' }}>
                     {detailRole && Object.keys(detailRole.permissions || {}).length > 0 ? (
-                        Object.keys(detailRole.permissions).map(module => (
-                            detailRole.permissions[module]?.length > 0 && (
-                                <div key={module} style={{ marginBottom: '16px' }}>
-                                    <Text strong style={{ fontSize: '14px', color: '#1a3d8f' }}>
-                                        {MODULE_TRANSLATIONS[module] || module}
-                                    </Text>
-                                    <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                        {detailRole.permissions[module].map((perm: string) => (
-                                            <Tag key={perm} color="blue" style={{ border: 'none', background: '#e6f7ff', color: '#1890ff', borderRadius: '4px' }}>
-                                                {perm === 'read' ? 'Ver' : 
-                                                 perm === 'create' ? 'Crear' :
-                                                 perm === 'update' ? 'Editar' :
-                                                 perm === 'delete' ? 'Eliminar' : perm}
-                                            </Tag>
-                                        ))}
-                                    </div>
-                                    <Divider style={{ margin: '12px 0' }} />
+                        MODULE_GROUPS.map(group => {
+                            const groupModules = group.keys.filter(key => detailRole.permissions[key]?.length > 0);
+                            if (groupModules.length === 0) return null;
+                            
+                            return (
+                                <div key={group.title} style={{ marginBottom: '20px' }}>
+                                    <Divider orientation="left" style={{ margin: '8px 0', borderColor: '#2b457c', color: '#2b457c' }}>
+                                        {group.title}
+                                    </Divider>
+                                    {groupModules.map(module => (
+                                        <div key={module} style={{ marginBottom: '12px', paddingLeft: '16px' }}>
+                                            <Text strong style={{ fontSize: '13px', color: '#595959' }}>
+                                                {MODULE_TRANSLATIONS[module] || module}
+                                            </Text>
+                                            <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                {detailRole.permissions[module].map((perm: string) => (
+                                                    <Tag key={perm} color="blue" style={{ border: 'none', background: '#e6f7ff', color: '#1890ff', borderRadius: '4px' }}>
+                                                        {perm === 'read' ? 'Ver' : 
+                                                         perm === 'create' ? 'Crear' :
+                                                         perm === 'update' ? 'Editar' :
+                                                         perm === 'delete' ? 'Eliminar' :
+                                                         perm === 'advance' ? 'Avanzar' :
+                                                         perm === 'reject' ? 'Rechazar' :
+                                                         perm === 'hire' ? 'Contratar' : perm}
+                                                    </Tag>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            )
-                        ))
+                            );
+                        })
                     ) : (
                         <Text type="secondary">Este rol no tiene permisos asignados.</Text>
                     )}

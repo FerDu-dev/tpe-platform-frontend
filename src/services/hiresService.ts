@@ -1,6 +1,5 @@
 import { api } from './api';
 import { PaginatedResponse, Candidate, Requisition } from '../types';
-import { candidateService } from './candidateService';
 
 export interface HireRecord {
     id: string;
@@ -23,18 +22,24 @@ export const hiresService = {
         const { data, meta } = response.data;
         
         return {
-            data: data.map((app: any) => ({
-                id: app.id,
-                candidate: candidateService._mapCandidate(app.candidate),
-                jobRequisition: {
-                    ...app.jobRequisition,
-                    company: app.jobRequisition?.company?.name || app.jobRequisition?.company || 'N/A',
-                    zone: app.jobRequisition?.zone?.name || app.jobRequisition?.zone || 'N/A'
-                },
-                hiredAt: app.hiredAt,
-                effectiveStartDate: app.effectiveStartDate,
-                status: app.status
-            })),
+            data: data.map((app: any) => {
+                const rawCandidate = app.salesCandidate || app.administrativeCandidate || {};
+                const rawRequisition = app.salesRequisition || app.administrativeRequisition || {};
+                
+                return {
+                    id: app.id,
+                    candidate: rawCandidate,
+                    jobRequisition: {
+                        ...rawRequisition,
+                        title: rawRequisition.title || rawRequisition.position || 'N/A',
+                        company: rawRequisition.company?.name || rawRequisition.company || 'N/A',
+                        zone: rawRequisition.zone?.name || rawRequisition.zone || 'N/A'
+                    },
+                    hiredAt: app.hiredAt,
+                    effectiveStartDate: app.effectiveStartDate,
+                    status: app.status
+                };
+            }),
             meta
         };
     }

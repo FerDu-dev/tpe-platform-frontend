@@ -10,6 +10,8 @@ import {
 import { motion } from 'framer-motion';
 import { zonesService } from '../../../services/zonesService';
 import { VENEZUELA_STATES } from '../../../constants/venezuela';
+import { useAppSelector } from '../../../app/store';
+import { selectCompanies } from '../../../store/masterDataSlice';
 import PermissionGuard from '../../../components/PermissionGuard';
 import type { Zone } from '../../../types';
 import type { ColumnsType } from 'antd/es/table';
@@ -17,14 +19,8 @@ import type { ColumnsType } from 'antd/es/table';
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-const COMPANIES = [
-    { id: 1, name: 'Febeca' },
-    { id: 2, name: 'Beval' },
-    { id: 3, name: 'Sillaca' },
-    { id: 4, name: 'Grupo' },
-];
-
 const ZonesPage: React.FC = () => {
+    const companies = useAppSelector(selectCompanies);
     const [zones, setZones] = useState<Zone[]>([]);
     const [totalZones, setTotalZones] = useState(0);
     const [currentPage, setCurrentPage] = useState(1);
@@ -152,7 +148,7 @@ const ZonesPage: React.FC = () => {
     };
 
 
-    const companyName = (id: number) => COMPANIES.find(c => c.id === id)?.name || `Empresa ${id}`;
+    const companyName = (id: number) => companies.find(c => c.id === id)?.name || `Empresa ${id}`;
     const stateName = (id?: number) => VENEZUELA_STATES.find(s => s.id === id)?.name;
 
     const columns: ColumnsType<Zone> = [
@@ -295,7 +291,7 @@ const ZonesPage: React.FC = () => {
                                 value={filterCompanyId}
                                 onChange={(val) => setFilterCompanyId(val)}
                             >
-                                {COMPANIES.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
+                                {companies.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
                             </Select>
                         </Col>
                         <Col xs={24} sm={7}>
@@ -478,7 +474,7 @@ const ZonesPage: React.FC = () => {
                             rules={[{ required: true, message: 'La empresa es requerida' }]}
                         >
                             <Select placeholder="Seleccionar empresa">
-                                {COMPANIES.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
+                                {companies.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
                             </Select>
                         </Form.Item>
 

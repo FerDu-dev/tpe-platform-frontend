@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import logoSvg from '../assets/logo.png';
 import { Layout, Menu, Avatar, Dropdown, Typography, Button, Space } from 'antd';
 import {
@@ -7,13 +7,15 @@ import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     TeamOutlined,
-    FileTextOutlined,
     UsergroupAddOutlined,
-    GlobalOutlined,
     SafetyCertificateOutlined,
+    SettingOutlined,
+    BankOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/store';
+import { setCompanies } from '../store/masterDataSlice';
+import { companiesService } from '../services/companiesService';
 import { logoutUser, selectCurrentUser } from '../features/auth/store/authSlice';
 import '../App.css'; // Ensure CSS is imported
 
@@ -38,6 +40,18 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         navigate('/login', { replace: true });
     };
 
+    useEffect(() => {
+        const initGlobalData = async () => {
+            try {
+                const data = await companiesService.getAll();
+                dispatch(setCompanies(data));
+            } catch (error) {
+                console.error('Error fetching global companies:', error);
+            }
+        };
+        initGlobalData();
+    }, [dispatch]);
+
     const userMenuItems = [
         {
             key: 'profile',
@@ -57,46 +71,113 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
     const allMenuItems = [
         {
-            key: '/dashboard',
-            icon: <UsergroupAddOutlined style={{ fontSize: '18px' }} />,
-            label: 'Candidatos',
-            module: 'candidates',
-            onClick: () => navigate('/dashboard'),
-        },
-        {
-            key: '/requisitions',
-            icon: <FileTextOutlined style={{ fontSize: '18px' }} />,
-            label: 'Requisiciones',
-            module: 'requisitions',
-            onClick: () => navigate('/requisitions'),
-        },
-        {
-            key: '/zones',
-            icon: <GlobalOutlined style={{ fontSize: '18px' }} />,
-            label: 'Zonas',
-            module: 'zones',
-            onClick: () => navigate('/zones'),
-        },
-
-        {
-            key: '/users',
+            key: 'vendedores-group',
             icon: <TeamOutlined style={{ fontSize: '18px' }} />,
-            label: 'Usuarios',
-            module: 'users',
-            onClick: () => navigate('/users'),
+            label: 'Vendedores',
+            module: 'sales-group', // Dummy module for filtering logic
+            children: [
+                {
+                    key: '/sales-candidates',
+                    label: 'Candidatos',
+                    onClick: () => navigate('/sales-candidates'),
+                    module: 'candidates',
+                },
+                {
+                    key: '/sales-requisitions',
+                    label: 'Requisiciones',
+                    onClick: () => navigate('/sales-requisitions'),
+                    module: 'requisitions',
+                },
+                {
+                    key: '/zones',
+                    label: 'Zonas',
+                    onClick: () => navigate('/zones'),
+                    module: 'zones',
+                },
+            ]
         },
         {
-            key: '/roles',
-            icon: <SafetyCertificateOutlined style={{ fontSize: '18px' }} />,
-            label: 'Roles y Permisos',
-            module: 'roles',
-            onClick: () => navigate('/roles'),
+            key: 'administrativos-group',
+            icon: <UsergroupAddOutlined style={{ fontSize: '18px' }} />,
+            label: 'Administrativo',
+            module: 'admin-group',
+            children: [
+                {
+                    key: '/administrative-candidates',
+                    label: 'Candidatos',
+                    onClick: () => navigate('/administrative-candidates'),
+                    module: 'adminCandidates',
+                },
+                {
+                    key: '/administrative-requisitions',
+                    label: 'Requisiciones',
+                    onClick: () => navigate('/administrative-requisitions'),
+                    module: 'adminRequisitions',
+                }
+            ]
         },
-
-
+        {
+            key: 'configuracion-group',
+            icon: <SettingOutlined style={{ fontSize: '18px' }} />,
+            label: 'Configuración',
+            module: 'config', // Basic grouping wrapper, doesn't inherently block unless we want to
+            children: [
+                {
+                    key: '/users',
+                    icon: <UserOutlined style={{ fontSize: '18px' }} />,
+                    label: 'Usuarios',
+                    module: 'users',
+                    onClick: () => navigate('/users'),
+                },
+                {
+                    key: '/roles',
+                    icon: <SafetyCertificateOutlined style={{ fontSize: '18px' }} />,
+                    label: 'Roles y Permisos',
+                    module: 'roles',
+                    onClick: () => navigate('/roles'),
+                },
+                {
+                    key: '/companies',
+                    icon: <BankOutlined style={{ fontSize: '18px' }} />,
+                    label: 'Empresas',
+                    module: 'companies',
+                    onClick: () => navigate('/companies'),
+                }
+            ]
+        },
     ];
 
-    const menuItems = allMenuItems.filter(item => hasPermission(currentUser, item.module));
+    // Filter menu items based on permissions
+    const filterMenu = (items: any[]): any[] => {
+        return items
+            .map(item => {
+                if (item.children) {
+                    const filteredChildren = filterMenu(item.children);
+                    if (filteredChildren.length > 0) {
+                        return { ...item, children: filteredChildren };
+                    }
+                    return null;
+                }
+                if (hasPermission(currentUser, item.module)) {
+                    return item;
+                }
+                return null;
+            })
+            .filter(Boolean);
+    };
+
+    const menuItems = filterMenu(allMenuItems);
+
+    const getOpenKeys = () => {
+        for (const item of allMenuItems) {
+            if (item.children) {
+                if (item.children.some(child => location.pathname.startsWith(child.key))) {
+                    return [item.key];
+                }
+            }
+        }
+        return [];
+    };
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
@@ -148,6 +229,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <Menu
                     theme="dark"
                     mode="inline"
+                    defaultOpenKeys={getOpenKeys()}
                     selectedKeys={[location.pathname]}
                     items={menuItems}
                     className="premium-menu"
