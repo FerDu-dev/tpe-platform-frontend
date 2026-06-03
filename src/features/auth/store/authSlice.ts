@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { User, AuthCredentials } from '../../../types';
 import { authService } from '../../../services/authService';
+import { isAxiosError } from 'axios';
 import type { RootState } from '../../../app/store';
 
 interface AuthState {
@@ -36,6 +37,11 @@ export const loginUser = createAsyncThunk(
             const user = await authService.login(credentials);
             return user;
         } catch (error) {
+            if (isAxiosError(error) && error.response) {
+                if (error.response.status === 400 || error.response.status === 401 || error.response.status === 404) {
+                    return rejectWithValue('Datos inválidos para iniciar sesión');
+                }
+            }
             return rejectWithValue((error as Error).message);
         }
     }
@@ -48,6 +54,11 @@ export const loginCandidate = createAsyncThunk(
             const user = await authService.loginCandidate(credentials);
             return user;
         } catch (error) {
+            if (isAxiosError(error) && error.response) {
+                if (error.response.status === 400 || error.response.status === 401 || error.response.status === 404) {
+                    return rejectWithValue('Datos inválidos para iniciar sesión');
+                }
+            }
             return rejectWithValue((error as Error).message);
         }
     }
