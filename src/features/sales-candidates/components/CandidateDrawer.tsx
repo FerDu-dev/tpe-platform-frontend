@@ -1171,7 +1171,23 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 </div>
             }
         >
-            <Row gutter={24}>
+            <Collapse
+                defaultActiveKey={['1']}
+                expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+                style={{
+                    marginBottom: '16px',
+                    background: '#ffffff',
+                    borderRadius: '12px',
+                    border: '1px solid #d9d9d960',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(43, 69, 124, 0.05)'
+                }}
+                items={[
+                    {
+                        key: '1',
+                        label: <span style={{ fontWeight: 600, fontSize: '15px' }}>Información</span>,
+                        children: (
+                            <Row gutter={24}>
                 <Col span={12}>
                     <div style={{ background: '#f0f2f5', padding: '16px', borderRadius: '12px', marginBottom: '24px', height: '100%' }}>
                         <Row gutter={16} align="middle">
@@ -1290,6 +1306,10 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                     </div>
                 </Col>
             </Row>
+                        )
+                    }
+                ]}
+            />
 
             {/* ===== CUSTOM ZIG-ZAG SNAKE TIMELINE ===== */}
             {(() => {
@@ -1312,9 +1332,22 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
 
                 return (
                     <div>
-                        <Divider orientation="left" style={{ margin: '16px 0 12px 0' }}>Acciones y Documentación</Divider>
-
-                        <div style={{ padding: '8px 0' }}>
+                        <Collapse
+                            style={{
+                                marginBottom: '16px',
+                                background: '#ffffff',
+                                borderRadius: '12px',
+                                border: '1px solid #d9d9d960',
+                                overflow: 'hidden',
+                                boxShadow: '0 2px 8px rgba(43, 69, 124, 0.05)'
+                            }}
+                            defaultActiveKey={['1']}
+                            items={[
+                                {
+                                    key: '1',
+                                    label: <span style={{ fontWeight: 600, fontSize: '15px' }}>Acciones y Documentación</span>,
+                                    children: (
+                                        <div style={{ padding: '8px 0' }}>
                             {stageRows.map((row, rowIdx) => {
                                 const lastColCenter = ((row.length - 0.5) / COLS * 100);
                                 const firstColCenter = (0.5 / COLS * 100);
@@ -1450,6 +1483,10 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                 );
                             })}
                         </div>
+                                    )
+                                }
+                            ]}
+                        />
 
                         {/* WhatsApp button moved inside interview modals */}
 
@@ -1641,8 +1678,23 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 </div>
             )}
 
-            <Divider orientation="left">Notas y Seguimiento</Divider>
-
+            <Collapse
+                defaultActiveKey={['1']}
+                expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+                style={{
+                    marginBottom: '16px',
+                    background: '#ffffff',
+                    borderRadius: '12px',
+                    border: '1px solid #d9d9d960',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(43, 69, 124, 0.05)'
+                }}
+                items={[
+                    {
+                        key: '1',
+                        label: <span style={{ fontWeight: 600, fontSize: '15px' }}>Notas y Seguimiento</span>,
+                        children: (
+                            <div style={{ padding: '4px 0' }}>
             <div style={{ marginBottom: '12px', padding: '0 4px' }}>
                 <Space align="center" style={{ 
                     background: '#f9f0ff', 
@@ -1741,7 +1793,12 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                         </Collapse.Panel>
                     );
                 })}
-            </Collapse>
+                                </Collapse>
+                            </div>
+                        )
+                    }
+                ]}
+            />
 
             <Divider />
 
