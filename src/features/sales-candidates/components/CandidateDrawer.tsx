@@ -23,9 +23,6 @@ import {
     CloseOutlined,
     CalendarOutlined,
     CaretRightOutlined,
-    CheckCircleFilled,
-    ClockCircleFilled,
-    MoreOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Candidate, Requisition } from '../../../types';
@@ -132,7 +129,6 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     const [noteComment, setNoteComment] = useState('');
     const [matchingModalOpen, setMatchingModalOpen] = useState(false);
     const [uploadingType, setUploadingType] = useState<string | null>(null);
-    const [activeStageModal, setActiveStageModal] = useState<string | null>(null);
 
     // --- Edit state for the info modal ---
     type EditSection = 'personal' | 'ubicacion' | 'vehiculo' | 'ventas' | 'economica' | 'referencias' | null;
@@ -1188,488 +1184,525 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                         label: <span style={{ fontWeight: 600, fontSize: '15px' }}>Información</span>,
                         children: (
                             <Row gutter={24}>
-                <Col span={12}>
-                    <div style={{ background: '#f0f2f5', padding: '16px', borderRadius: '12px', marginBottom: '24px', height: '100%' }}>
-                        <Row gutter={16} align="middle">
-                            <Col span={14}>
-                                <Space direction="vertical" size={2}>
-                                    <Text type="secondary" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Etapa Actual</Text>
-                                    <Title level={4} style={{ margin: 0, color: '#2b457c' }}>{stages[currentStepIndex]?.name || 'Bienvenida'}</Title>
-                                    {currentApp?.logs?.[0]?.subStatus && (
-                                        <Space size={4}>
-                                            <Text type="secondary" style={{ fontSize: '12px' }}>Estado:</Text>
-                                            <Text style={{ fontSize: '12px', color: '#595959', fontWeight: 500 }}>{currentApp.logs[0].subStatus}</Text>
-                                        </Space>
-                                    )}
-                                </Space>
-                            </Col>
-                            <Col span={10} style={{ textAlign: 'right' }}>
-                                <Button
-                                    icon={<HistoryOutlined />}
-                                    onClick={() => setHistoryModalOpen(true)}
-                                    style={{ borderRadius: '8px' }}
-                                >
-                                    Ver Historial
-                                </Button>
-                            </Col>
-                        </Row>
+                                <Col span={12}>
+                                    <div style={{ background: '#f0f2f5', padding: '16px', borderRadius: '12px', marginBottom: '24px', height: '100%' }}>
+                                        <Row gutter={16} align="middle">
+                                            <Col span={14}>
+                                                <Space direction="vertical" size={2}>
+                                                    <Text type="secondary" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Etapa Actual</Text>
+                                                    <Title level={4} style={{ margin: 0, color: '#2b457c' }}>{stages[currentStepIndex]?.name || 'Bienvenida'}</Title>
+                                                    {currentApp?.logs?.[0]?.subStatus && (
+                                                        <Space size={4}>
+                                                            <Text type="secondary" style={{ fontSize: '12px' }}>Estado:</Text>
+                                                            <Text style={{ fontSize: '12px', color: '#595959', fontWeight: 500 }}>{currentApp.logs[0].subStatus}</Text>
+                                                        </Space>
+                                                    )}
+                                                </Space>
+                                            </Col>
+                                            <Col span={10} style={{ textAlign: 'right' }}>
+                                                <Button
+                                                    icon={<HistoryOutlined />}
+                                                    onClick={() => setHistoryModalOpen(true)}
+                                                    style={{ borderRadius: '8px' }}
+                                                >
+                                                    Ver Historial
+                                                </Button>
+                                            </Col>
+                                        </Row>
 
-                        <Divider style={{ margin: '12px 0' }} />
+                                        <Divider style={{ margin: '12px 0' }} />
 
-                        <div style={{ marginTop: '8px' }}>
-                            <Text strong style={{ fontSize: '13px', display: 'block', marginBottom: '8px' }}>
-                                📌 Vacante / Requisición Asignada:
-                            </Text>
-                            <Card size="small" style={{ borderRadius: '8px', border: '1px solid #d9d9d9', background: '#fff' }}>
-                                <Row align="middle" gutter={16}>
-                                    <Col flex="auto">
-                                        {currentApp?.salesRequisition ? (
-                                            <Space direction="vertical" size={0}>
-                                                <Text strong style={{ color: '#2b457c' }}>
-                                                    {typeof currentApp.salesRequisition.zone === 'object' && currentApp.salesRequisition.zone !== null ? currentApp.salesRequisition.zone.name : (currentApp.salesRequisition.zone || 'N/A')} | {currentApp.salesRequisition.title}
-                                                </Text>
-                                                <Text type="secondary" style={{ fontSize: '12px' }}>
-                                                    {typeof currentApp.salesRequisition.company === 'object' && currentApp.salesRequisition.company !== null ? currentApp.salesRequisition.company.name : (currentApp.salesRequisition.company || 'N/A')}
-                                                </Text>
-                                            </Space>
-                                        ) : (
-                                            <Text type="secondary" italic>Ninguna vacante asignada</Text>
-                                        )}
-                                    </Col>
-                                    <Col>
-                                        <Button
-                                            type="primary"
+                                        <div style={{ marginTop: '8px' }}>
+                                            <Text strong style={{ fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                                📌 Vacante / Requisición Asignada:
+                                            </Text>
+                                            <Card size="small" style={{ borderRadius: '8px', border: '1px solid #d9d9d9', background: '#fff' }}>
+                                                <Row align="middle" gutter={16}>
+                                                    <Col flex="auto">
+                                                        {currentApp?.salesRequisition ? (
+                                                            <Space direction="vertical" size={0}>
+                                                                <Text strong style={{ color: '#2b457c' }}>
+                                                                    {typeof currentApp.salesRequisition.zone === 'object' && currentApp.salesRequisition.zone !== null ? currentApp.salesRequisition.zone.name : (currentApp.salesRequisition.zone || 'N/A')} | {currentApp.salesRequisition.title}
+                                                                </Text>
+                                                                <Text type="secondary" style={{ fontSize: '12px' }}>
+                                                                    {typeof currentApp.salesRequisition.company === 'object' && currentApp.salesRequisition.company !== null ? currentApp.salesRequisition.company.name : (currentApp.salesRequisition.company || 'N/A')}
+                                                                </Text>
+                                                            </Space>
+                                                        ) : (
+                                                            <Text type="secondary" italic>Ninguna vacante asignada</Text>
+                                                        )}
+                                                    </Col>
+                                                    <Col>
+                                                        <Button
+                                                            type="primary"
+                                                            size="small"
+                                                            icon={<SearchOutlined />}
+                                                            onClick={() => setMatchingModalOpen(true)}
+                                                            style={{ borderRadius: '6px' }}
+                                                        >
+                                                            {currentApp?.salesRequisition ? 'Cambiar' : 'Asignar'}
+                                                        </Button>
+                                                    </Col>
+                                                </Row>
+                                            </Card>
+                                        </div>
+                                    </div>
+                                </Col>
+
+                                <Col span={12}>
+                                    <div style={{ background: '#f0f2f5', padding: '16px', borderRadius: '12px', marginBottom: '24px', height: '100%' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px' }}>
+                                            <Text type="secondary" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Información General</Text>
+                                            <Button
+                                                type="primary"
+                                                size="small"
+                                                icon={<InfoCircleOutlined />}
+                                                onClick={() => setInfoModalOpen(true)}
+                                                style={{
+                                                    backgroundColor: '#fff',
+                                                    borderColor: '#d9d9d9',
+                                                    color: '#2b457c',
+                                                    fontWeight: 500
+                                                }}
+                                            >
+                                                Ver más detalles
+                                            </Button>
+                                        </div>
+                                        <Descriptions
+                                            bordered
+                                            column={1}
                                             size="small"
-                                            icon={<SearchOutlined />}
-                                            onClick={() => setMatchingModalOpen(true)}
-                                            style={{ borderRadius: '6px' }}
+                                            style={{ background: '#fff', borderRadius: '8px', overflow: 'hidden' }}
                                         >
-                                            {currentApp?.salesRequisition ? 'Cambiar' : 'Asignar'}
-                                        </Button>
-                                    </Col>
-                                </Row>
-                            </Card>
-                        </div>
-                    </div>
-                </Col>
-                
-                <Col span={12}>
-                    <div style={{ background: '#f0f2f5', padding: '16px', borderRadius: '12px', marginBottom: '24px', height: '100%' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px' }}>
-                            <Text type="secondary" style={{ fontSize: '12px', textTransform: 'uppercase' }}>Información General</Text>
-                            <Button
-                                type="primary"
-                                size="small"
-                                icon={<InfoCircleOutlined />}
-                                onClick={() => setInfoModalOpen(true)}
-                                style={{
-                                    backgroundColor: '#fff',
-                                    borderColor: '#d9d9d9',
-                                    color: '#2b457c',
-                                    fontWeight: 500
-                                }}
-                            >
-                                Ver más detalles
-                            </Button>
-                        </div>
-                        <Descriptions
-                            bordered
-                            column={1}
-                            size="small"
-                            style={{ background: '#fff', borderRadius: '8px', overflow: 'hidden' }}
-                        >
-                            <Descriptions.Item label="Cédula">{activeCandidate.nationalId}</Descriptions.Item>
-                            <Descriptions.Item label="Nro. Postulaciones">
-                                <Badge count={activeCandidate.applications?.length || 0} overflowCount={99} style={{ backgroundColor: '#722ed1' }} />
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Email">{activeCandidate.email}</Descriptions.Item>
-                            <Descriptions.Item label="Teléfono">
-                                <Space>
-                                    {activeCandidate.phone}
-                                    <Tooltip title="Contactar por WhatsApp">
-                                        <Button
-                                            type="text"
-                                            icon={<WhatsAppOutlined style={{ color: '#25D366', fontSize: '18px' }} />}
-                                            href={`https://wa.me/${formatWhatsAppPhone(activeCandidate.phone)}?text=${encodeURIComponent(getWhatsAppMessage(activeCandidate))}`}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            size="small"
-                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                        />
-                                    </Tooltip>
-                                </Space>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Ubicación">
-                                {activeCandidate.municipality ? `${activeCandidate.municipality.state?.name || ''}, ${activeCandidate.municipality.name}` : 'Sin ubicación'}
-                            </Descriptions.Item>
-                        </Descriptions>
-                    </div>
-                </Col>
-            </Row>
+                                            <Descriptions.Item label="Cédula">{activeCandidate.nationalId}</Descriptions.Item>
+                                            <Descriptions.Item label="Nro. Postulaciones">
+                                                <Badge count={activeCandidate.applications?.length || 0} overflowCount={99} style={{ backgroundColor: '#722ed1' }} />
+                                            </Descriptions.Item>
+                                            <Descriptions.Item label="Email">{activeCandidate.email}</Descriptions.Item>
+                                            <Descriptions.Item label="Teléfono">
+                                                <Space>
+                                                    {activeCandidate.phone}
+                                                    <Tooltip title="Contactar por WhatsApp">
+                                                        <Button
+                                                            type="text"
+                                                            icon={<WhatsAppOutlined style={{ color: '#25D366', fontSize: '18px' }} />}
+                                                            href={`https://wa.me/${formatWhatsAppPhone(activeCandidate.phone)}?text=${encodeURIComponent(getWhatsAppMessage(activeCandidate))}`}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            size="small"
+                                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        />
+                                                    </Tooltip>
+                                                </Space>
+                                            </Descriptions.Item>
+                                            <Descriptions.Item label="Ubicación">
+                                                {activeCandidate.municipality ? `${activeCandidate.municipality.state?.name || ''}, ${activeCandidate.municipality.name}` : 'Sin ubicación'}
+                                            </Descriptions.Item>
+                                        </Descriptions>
+                                    </div>
+                                </Col>
+                            </Row>
                         )
                     }
                 ]}
             />
 
             {/* ===== CUSTOM ZIG-ZAG SNAKE TIMELINE ===== */}
-            {(() => {
-                const timelineStages = [
-                    { key: 'cv', stageNum: 1, label: 'Currículum', icon: <FilePdfOutlined />, color: '#1890ff', borderColor: '#1890ff50', bg: '#e6f7ff', done: !!activeCandidate.cvUrl, visible: true },
-                    { key: 'video', stageNum: 2, label: 'Video', icon: <VideoCameraOutlined />, color: '#722ed1', borderColor: '#722ed150', bg: '#f9f0ff', done: !!activeCandidate.videoUrl, visible: currentStageId >= 2 || !!activeCandidate.videoUrl },
-                    { key: 'psychtest', stageNum: 3, label: 'Psicotécnica', icon: <BulbOutlined />, color: '#eb2f96', borderColor: '#eb2f9650', bg: '#fff0f6', done: !!activeCandidate.psychTestUrl, visible: currentStageId >= 3 },
-                    { key: 'personal', stageNum: 4, label: 'Entrev. Personal', icon: <CalendarOutlined />, color: '#13c2c2', borderColor: '#13c2c250', bg: '#e6fffb', done: !!activeCandidate.personalInterviewUrl, visible: currentStageId >= 4 || !!activeCandidate.personalInterviewUrl || !!activeCandidate.personalInterviewDate },
-                    { key: 'technical', stageNum: 5, label: 'Entrev. Técnica', icon: <CalendarOutlined />, color: '#2f54eb', borderColor: '#2f54eb50', bg: '#f0f5ff', done: !!activeCandidate.technicalInterviewUrl, visible: currentStageId >= 5 || !!activeCandidate.technicalInterviewUrl || !!activeCandidate.technicalInterviewDate },
-                    { key: 'medical', stageNum: 6, label: 'Médicas/AP/Ref', icon: <TeamOutlined />, color: '#52c41a', borderColor: '#52c41a50', bg: '#f6ffed', done: !!activeCandidate.medicalCheckupUrl, visible: currentStageId >= 6 || !!activeCandidate.medicalCheckupUrl },
-                    { key: 'joboffer', stageNum: 7, label: 'Oferta Laboral', icon: <SaveOutlined />, color: '#13c2c2', borderColor: '#13c2c250', bg: '#e6fffb', done: !!activeCandidate.jobOfferUrl, visible: currentStageId >= 7 || !!activeCandidate.jobOfferUrl },
-                ];
-                const visibleStages = timelineStages.filter(s => s.visible);
-                const COLS = 4;
-                const stageRows: (typeof visibleStages)[] = [];
-                for (let i = 0; i < visibleStages.length; i += COLS) {
-                    stageRows.push(visibleStages.slice(i, i + COLS));
-                }
-                const CARD_W = 155;
-
-                return (
-                    <div>
-                        <Collapse
-                            style={{
-                                marginBottom: '16px',
-                                background: '#ffffff',
-                                borderRadius: '12px',
-                                border: '1px solid #d9d9d960',
-                                overflow: 'hidden',
-                                boxShadow: '0 2px 8px rgba(43, 69, 124, 0.05)'
-                            }}
-                            defaultActiveKey={['1']}
-                            items={[
-                                {
-                                    key: '1',
-                                    label: <span style={{ fontWeight: 600, fontSize: '15px' }}>Acciones y Documentación</span>,
-                                    children: (
-                                        <div style={{ padding: '8px 0' }}>
-                            {stageRows.map((row, rowIdx) => {
-                                const lastColCenter = ((row.length - 0.5) / COLS * 100);
-                                const firstColCenter = (0.5 / COLS * 100);
-                                const hasNextRow = rowIdx < stageRows.length - 1;
-
-                                return (
-                                    <React.Fragment key={rowIdx}>
-                                        {/* ── Row of timeline nodes ── */}
-                                        <div style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-                                            position: 'relative',
-                                        }}>
-                                            {/* Horizontal connecting line behind all circles */}
-                                            {row.length > 1 && (
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    top: '14px',
-                                                    left: `calc(${firstColCenter}%)`,
-                                                    right: `calc(${(100 - lastColCenter)}%)`,
-                                                    height: '3px',
-                                                    background: `linear-gradient(90deg, ${row[0].color}, ${row[row.length - 1].color})`,
-                                                    zIndex: 0,
-                                                }} />
+            <Collapse
+                style={{
+                    marginBottom: '16px',
+                    background: '#ffffff',
+                    borderRadius: '12px',
+                    border: '1px solid #d9d9d960',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(43, 69, 124, 0.05)'
+                }}
+                defaultActiveKey={['1']}
+                items={[
+                    {
+                        key: '1',
+                        label: <span style={{ fontWeight: 600, fontSize: '15px' }}>Acciones y Documentación</span>,
+                        children: (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', padding: '16px 0', alignItems: 'stretch' }}>
+                                {/* CV Section */}
+                                <Card
+                                    size="small"
+                                    extra={<div style={{ background: '#1890ff', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>Etapa 1</div>}
+                                    title={<Space><FilePdfOutlined style={{ color: '#1890ff' }} /> <Text strong>Currículum Vitae (CV)</Text></Space>}
+                                    style={{ height: '100%', display: 'flex', flexDirection: 'column', border: '1px solid #1890ff50', background: '#e6f7ff50' }}
+                                    bodyStyle={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                                    <Space direction="vertical" style={{ flex: 1, justifyContent: 'space-between', width: '100%' }} size={12}>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            {activeCandidate.cvUrl && (
+                                                <Button
+                                                    icon={<FilePdfOutlined />}
+                                                    href={activeCandidate.cvUrl}
+                                                    target="_blank"
+                                                    type="dashed"
+                                                    size="small"
+                                                    style={{ flex: 1 }}
+                                                >
+                                                    Ver CV
+                                                </Button>
                                             )}
-
-                                            {row.map((stage) => (
-                                                <div key={stage.key} style={{
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    position: 'relative',
-                                                    zIndex: 1,
-                                                }}>
-                                                    {/* ● Stage number circle on the line */}
-                                                    <div style={{
-                                                        width: '30px', height: '30px', borderRadius: '50%',
-                                                        background: stage.done ? stage.color : '#fff',
-                                                        border: `3px solid ${stage.color}`,
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        color: stage.done ? '#fff' : stage.color,
-                                                        fontWeight: 700, fontSize: '13px',
-                                                        boxShadow: `0 0 0 4px ${stage.color}20`,
-                                                    }}>
-                                                        {stage.stageNum}
-                                                    </div>
-
-                                                    {/* Thin connector down to card */}
-                                                    <div style={{ width: '3px', height: '10px', background: stage.color, flexShrink: 0 }} />
-
-                                                    {/* ▸ Card (fixed size, status inside) */}
-                                                    <div
-                                                        onClick={() => setActiveStageModal(stage.key)}
-                                                        style={{
-                                                            position: 'relative',
-                                                            width: `${CARD_W}px`, padding: '10px 12px',
-                                                            borderRadius: '10px',
-                                                            border: `1.5px solid ${stage.borderColor}`,
-                                                            background: stage.bg,
-                                                            cursor: 'pointer',
-                                                            transition: 'box-shadow 0.2s, transform 0.15s',
-                                                            textAlign: 'center',
-                                                            display: 'flex', flexDirection: 'column',
-                                                            alignItems: 'center', gap: '5px',
-                                                        }}
-                                                        onMouseEnter={(e) => {
-                                                            (e.currentTarget as HTMLElement).style.boxShadow = `0 4px 14px ${stage.color}30`;
-                                                            (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-                                                        }}
-                                                        onMouseLeave={(e) => {
-                                                            (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                                                            (e.currentTarget as HTMLElement).style.transform = 'none';
-                                                        }}
-                                                    >
-                                                        {/* 3-dots button at top right */}
-                                                        <MoreOutlined style={{ 
-                                                            position: 'absolute', 
-                                                            top: '6px', 
-                                                            right: '6px', 
-                                                            color: '#595959', 
-                                                            fontSize: '18px', 
-                                                            padding: '2px',
-                                                            borderRadius: '4px',
-                                                            background: 'rgba(0,0,0,0.03)'
-                                                        }} />
-                                                        
-                                                        <span style={{ color: stage.color, fontSize: '22px', lineHeight: 1 }}>{stage.icon}</span>
-                                                        <Text strong style={{ fontSize: '11px', lineHeight: '1.3' }}>{stage.label}</Text>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            {stage.done
-                                                                ? <CheckCircleFilled style={{ color: '#52c41a', fontSize: '13px' }} />
-                                                                : <ClockCircleFilled style={{ color: '#faad14', fontSize: '13px' }} />
-                                                            }
-                                                            <Text style={{ fontSize: '10px', color: stage.done ? '#52c41a' : '#faad14' }}>
-                                                                {stage.done ? 'Listo' : 'Pendiente'}
-                                                            </Text>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                            <Upload
+                                                accept=".pdf"
+                                                showUploadList={false}
+                                                customRequest={(info) => handleInterviewUpload(info, 'CV')}
+                                                style={{ flex: 1, display: 'flex' }}
+                                            >
+                                                <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'CV'}>
+                                                    {activeCandidate.cvUrl ? 'Actualizar' : 'Subir'} CV
+                                                </Button>
+                                            </Upload>
                                         </div>
 
-                                        {/* ── Snake connector (S-curve between rows) ── */}
-                                        {hasNextRow && (
-                                            <div style={{ position: 'relative', height: '48px', margin: '6px 0' }}>
-                                                {/* Vertical drop from last item of this row */}
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    left: `${lastColCenter}%`, top: 0,
-                                                    width: '3px', height: '22px',
-                                                    background: row[row.length - 1].color,
-                                                    transform: 'translateX(-1.5px)',
-                                                }} />
-                                                {/* Horizontal sweep from right to left */}
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    left: `${firstColCenter}%`,
-                                                    right: `${100 - lastColCenter}%`,
-                                                    top: '22px', height: '3px',
-                                                    background: `linear-gradient(90deg, ${stageRows[rowIdx + 1][0].color}, ${row[row.length - 1].color})`,
-                                                }} />
-                                                {/* Vertical drop to first item of next row */}
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    left: `${firstColCenter}%`, top: '22px',
-                                                    width: '3px', height: '26px',
-                                                    background: stageRows[rowIdx + 1][0].color,
-                                                    transform: 'translateX(-1.5px)',
-                                                }} />
+                                        <Button
+                                            block
+                                            size="small"
+                                            icon={<MailOutlined />}
+                                            loading={submitting}
+                                            disabled={resendCVSuccess}
+                                            style={{
+                                                backgroundColor: resendCVSuccess ? undefined : '#1890ff20',
+                                                borderColor: '#1890ff',
+                                                color: '#1890ff',
+                                            }}
+                                            onClick={() => {
+                                                Modal.confirm({
+                                                    title: '¿Enviar recordatorio de CV?',
+                                                    content: 'Se enviará un correo al candidato solicitándole que cargue su CV actualizado.',
+                                                    okText: 'Enviar Recordatorio',
+                                                    cancelText: 'Cancelar',
+                                                    onOk: async () => {
+                                                        await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'CV'));
+                                                        setResendCVSuccess(true);
+                                                    }
+                                                });
+                                            }}
+                                        >
+                                            {resendCVSuccess ? 'Recordatorio Enviado ✓' : 'Resolicitar CV'}
+                                        </Button>
+                                    </Space>
+                                </Card>
+
+                                {/* Video Section */}
+                                {(currentStageId >= 2 || activeCandidate.videoUrl) && (
+                                    <Card
+                                        size="small"
+                                        extra={<div style={{ background: '#722ed1', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>Etapa 2</div>} title={<Space><VideoCameraOutlined style={{ color: '#722ed1' }} /> <Text strong>Video de Presentación</Text></Space>}
+                                        style={{ height: '100%', margin: 0, display: 'flex', flexDirection: 'column', border: '1px solid #722ed150', background: '#f9f0ff50' }} bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                                    >
+                                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                {activeCandidate.videoUrl && (
+                                                    <Button
+                                                        icon={<VideoCameraOutlined />}
+                                                        href={activeCandidate.videoUrl}
+                                                        target="_blank"
+                                                        type="dashed"
+                                                        size="small"
+                                                        style={{ flex: 1 }}
+                                                    >
+                                                        Ver Video
+                                                    </Button>
+                                                )}
+                                                <Upload
+                                                    accept="video/*"
+                                                    showUploadList={false}
+                                                    customRequest={(info) => handleInterviewUpload(info, 'Video')}
+                                                    style={{ flex: 1, display: 'flex' }}
+                                                >
+                                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'Video'}>
+                                                        {activeCandidate.videoUrl ? 'Actualizar' : 'Subir'} Video
+                                                    </Button>
+                                                </Upload>
                                             </div>
-                                        )}
-                                    </React.Fragment>
-                                );
-                            })}
-                        </div>
-                                    )
-                                }
-                            ]}
-                        />
 
-                        {/* WhatsApp button moved inside interview modals */}
+                                            <Button
+                                                block
+                                                size="small"
+                                                icon={<MailOutlined />}
+                                                loading={submitting}
+                                                disabled={resendVideoSuccess}
+                                                style={{
+                                                    backgroundColor: resendVideoSuccess ? undefined : '#722ed120',
+                                                    borderColor: '#722ed1',
+                                                    color: '#722ed1',
+                                                }}
+                                                onClick={() => {
+                                                    Modal.confirm({
+                                                        title: '¿Enviar recordatorio de Video?',
+                                                        content: 'Se enviará un correo al candidato con las pautas para cargar su video de presentación.',
+                                                        okText: 'Enviar Recordatorio',
+                                                        cancelText: 'Cancelar',
+                                                        onOk: async () => {
+                                                            await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'Video'));
+                                                            setResendVideoSuccess(true);
+                                                        }
+                                                    });
+                                                }}
+                                            >
+                                                {resendVideoSuccess ? 'Recordatorio Enviado ✓' : 'Resolicitar Video'}
+                                            </Button>
+                                        </Space>
+                                    </Card>
+                                )}
 
-                        {/* ===== STAGE ACTION MODALS ===== */}
+                                {/* PsychTest Results */}
+                                {currentStageId >= 3 && (
+                                    <Card
+                                        size="small"
+                                        extra={<div style={{ background: '#faad14', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>Etapa 3</div>} title={<Space><BulbOutlined style={{ color: '#faad14' }} /> <Text strong>Prueba Psicotécnica</Text></Space>}
+                                        style={{ height: '100%', margin: 0, display: 'flex', flexDirection: 'column', border: '1px solid #faad1450', background: '#fffbe650' }} bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                                    >
+                                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                {activeCandidate.psychTestUrl && (
+                                                    <Button
+                                                        icon={<FilePdfOutlined />}
+                                                        href={activeCandidate.psychTestUrl}
+                                                        target="_blank"
+                                                        type="dashed"
+                                                        size="small"
+                                                        style={{ flex: 1 }}
+                                                    >
+                                                        Ver Resultados
+                                                    </Button>
+                                                )}
+                                                <Upload
+                                                    accept=".pdf"
+                                                    showUploadList={false}
+                                                    customRequest={handlePsychTestUpload}
+                                                    style={{ flex: 1, display: 'flex' }}
+                                                >
+                                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'PsychTest'}>
+                                                        {activeCandidate.psychTestUrl ? 'Actualizar' : 'Subir'} Resultados
+                                                    </Button>
+                                                </Upload>
+                                            </div>
 
-                        {/* CV Modal */}
-                        <Modal
-                            title={<Space><FilePdfOutlined style={{ color: '#1890ff' }} /> <Text strong>Currículum Vitae (CV)</Text></Space>}
-                            open={activeStageModal === 'cv'}
-                            onCancel={() => setActiveStageModal(null)}
-                            footer={null}
-                            width={480}
-                        >
-                            <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    {activeCandidate.cvUrl && (
-                                        <Button icon={<FilePdfOutlined />} href={activeCandidate.cvUrl} target="_blank" type="dashed" size="small" style={{ flex: 1 }}>Ver CV</Button>
-                                    )}
-                                    <Upload accept=".pdf" showUploadList={false} customRequest={(info) => handleInterviewUpload(info, 'CV')} style={{ flex: 1, display: 'flex' }}>
-                                        <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'CV'}>{activeCandidate.cvUrl ? 'Actualizar' : 'Subir'} CV</Button>
-                                    </Upload>
-                                </div>
-                                <Button block size="small" icon={<MailOutlined />} loading={submitting} disabled={resendCVSuccess}
-                                    style={{ backgroundColor: resendCVSuccess ? undefined : '#1890ff20', borderColor: '#1890ff', color: '#1890ff' }}
-                                    onClick={() => { Modal.confirm({ title: '¿Enviar recordatorio de CV?', content: 'Se enviará un correo al candidato solicitándole que cargue su CV actualizado.', okText: 'Enviar Recordatorio', cancelText: 'Cancelar', onOk: async () => { await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'CV')); setResendCVSuccess(true); } }); }}
-                                >{resendCVSuccess ? 'Recordatorio Enviado ✓' : 'Resolicitar CV'}</Button>
-                            </Space>
-                        </Modal>
+                                            <Button
+                                                block
+                                                size="small"
+                                                icon={<MailOutlined />}
+                                                loading={submitting}
+                                                disabled={resendPsychSuccess}
+                                                style={{
+                                                    backgroundColor: resendPsychSuccess ? undefined : '#faad1420',
+                                                    borderColor: '#faad14',
+                                                    color: '#faad14',
+                                                }}
+                                                onClick={() => {
+                                                    Modal.confirm({
+                                                        title: '¿Enviar recordatorio de prueba psicotécnica?',
+                                                        content: 'Se enviará un correo al candidato recordándole que tiene pendiente la prueba psicotécnica.',
+                                                        okText: 'Enviar Recordatorio',
+                                                        cancelText: 'Cancelar',
+                                                        onOk: async () => {
+                                                            await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'PsychTest'));
+                                                            setResendPsychSuccess(true);
+                                                        }
+                                                    });
+                                                }}
+                                            >
+                                                {resendPsychSuccess ? 'Recordatorio Enviado ✓' : 'Resolicitar Prueba'}
+                                            </Button>
+                                        </Space>
+                                    </Card>
+                                )}
 
-                        {/* Video Modal */}
-                        <Modal
-                            title={<Space><VideoCameraOutlined style={{ color: '#722ed1' }} /> <Text strong>Video de Presentación</Text></Space>}
-                            open={activeStageModal === 'video'}
-                            onCancel={() => setActiveStageModal(null)}
-                            footer={null}
-                            width={480}
-                        >
-                            <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    {activeCandidate.videoUrl && (
-                                        <Button icon={<VideoCameraOutlined />} href={activeCandidate.videoUrl} target="_blank" type="dashed" size="small" style={{ flex: 1 }}>Ver Video</Button>
-                                    )}
-                                    <Upload accept="video/*" showUploadList={false} customRequest={(info) => handleInterviewUpload(info, 'Video')} style={{ flex: 1, display: 'flex' }}>
-                                        <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'Video'}>{activeCandidate.videoUrl ? 'Actualizar' : 'Subir'} Video</Button>
-                                    </Upload>
-                                </div>
-                                <Button block size="small" icon={<MailOutlined />} loading={submitting} disabled={resendVideoSuccess}
-                                    style={{ backgroundColor: resendVideoSuccess ? undefined : '#722ed120', borderColor: '#722ed1', color: '#722ed1' }}
-                                    onClick={() => { Modal.confirm({ title: '¿Enviar recordatorio de Video?', content: 'Se enviará un correo al candidato con las pautas para cargar su video de presentación.', okText: 'Enviar Recordatorio', cancelText: 'Cancelar', onOk: async () => { await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'Video')); setResendVideoSuccess(true); } }); }}
-                                >{resendVideoSuccess ? 'Recordatorio Enviado ✓' : 'Resolicitar Video'}</Button>
-                            </Space>
-                        </Modal>
+                                {/* WhatsApp Schedule button - Stage 4 only */}
+                                {currentStageId === 4 && (
+                                    <Button
+                                        block
+                                        type="primary"
+                                        icon={<WhatsAppOutlined />}
+                                        style={{ backgroundColor: '#25D366', borderColor: '#25D366', height: '40px', margin: 0, borderRadius: '8px' }}
+                                        href={`https://wa.me/${formatWhatsAppPhone(activeCandidate.phone)}?text=${encodeURIComponent(getWhatsAppMessage(activeCandidate))}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        Agendar entrevista por WhatsApp
+                                    </Button>
+                                )}
 
-                        {/* PsychTest Modal */}
-                        <Modal
-                            title={<Space><BulbOutlined style={{ color: '#faad14' }} /> <Text strong>Prueba Psicotécnica</Text></Space>}
-                            open={activeStageModal === 'psychtest'}
-                            onCancel={() => setActiveStageModal(null)}
-                            footer={null}
-                            width={480}
-                        >
-                            <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    {activeCandidate.psychTestUrl && (
-                                        <Button icon={<FilePdfOutlined />} href={activeCandidate.psychTestUrl} target="_blank" type="dashed" size="small" style={{ flex: 1 }}>Ver Resultados</Button>
-                                    )}
-                                    <Upload accept=".pdf" showUploadList={false} customRequest={handlePsychTestUpload} style={{ flex: 1, display: 'flex' }}>
-                                        <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'PsychTest'}>{activeCandidate.psychTestUrl ? 'Actualizar' : 'Subir'} Resultados</Button>
-                                    </Upload>
-                                </div>
-                                <Button block size="small" icon={<MailOutlined />} loading={submitting} disabled={resendPsychSuccess}
-                                    style={{ backgroundColor: resendPsychSuccess ? undefined : '#faad1420', borderColor: '#faad14', color: '#faad14' }}
-                                    onClick={() => { Modal.confirm({ title: '¿Enviar recordatorio de prueba psicotécnica?', content: 'Se enviará un correo al candidato recordándole que tiene pendiente la prueba psicotécnica.', okText: 'Enviar Recordatorio', cancelText: 'Cancelar', onOk: async () => { await handleAction(() => candidateService.resendDocumentationRequest(activeCandidate.id, 'PsychTest')); setResendPsychSuccess(true); } }); }}
-                                >{resendPsychSuccess ? 'Recordatorio Enviado ✓' : 'Resolicitar Prueba'}</Button>
-                            </Space>
-                        </Modal>
+                                {/* Interview Action Cards (Personal & Technical) */}
+                                {(currentStageId >= 4 || activeCandidate.personalInterviewUrl || activeCandidate.personalInterviewDate) && (
+                                    <Card
+                                        size="small"
+                                        extra={<div style={{ background: '#13c2c2', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>Etapa 4</div>} title={<Space><CalendarOutlined style={{ color: '#13c2c2' }} /> <Text strong>Entrevista Personal</Text></Space>}
+                                        style={{ height: '100%', margin: 0, display: 'flex', flexDirection: 'column', border: '1px solid #13c2c250', background: '#e6fffb50' }} bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                                    >
+                                        <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Text style={{ fontSize: '12px' }} type="secondary">Fecha Agendada:</Text>
+                                                <DatePicker
+                                                    size="small"
+                                                    placeholder="Seleccionar fecha"
+                                                    value={activeCandidate.personalInterviewDate ? dayjs(activeCandidate.personalInterviewDate) : null}
+                                                    onChange={(date) => handleUpdateInterviewDate(date, 'Personal')}
+                                                    format="DD/MM/YYYY"
+                                                    style={{ width: '140px' }}
+                                                />
+                                            </div>
 
-                        {/* Personal Interview Modal */}
-                        <Modal
-                            title={<Space><CalendarOutlined style={{ color: '#13c2c2' }} /> <Text strong>Entrevista Personal</Text></Space>}
-                            open={activeStageModal === 'personal'}
-                            onCancel={() => setActiveStageModal(null)}
-                            footer={null}
-                            width={480}
-                        >
-                            <Space direction="vertical" style={{ width: '100%' }} size={8}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Text style={{ fontSize: '12px' }} type="secondary">Fecha Agendada:</Text>
-                                    <DatePicker size="small" placeholder="Seleccionar fecha" value={activeCandidate.personalInterviewDate ? dayjs(activeCandidate.personalInterviewDate) : null} onChange={(date) => handleUpdateInterviewDate(date, 'Personal')} format="DD/MM/YYYY" style={{ width: '160px' }} />
-                                </div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    {activeCandidate.personalInterviewUrl && (
-                                        <Button icon={<FilePdfOutlined />} href={activeCandidate.personalInterviewUrl} target="_blank" type="dashed" size="small" style={{ flex: 1 }}>Ver Resumen</Button>
-                                    )}
-                                    <Upload accept=".pdf" showUploadList={false} customRequest={(info) => handleInterviewUpload(info, 'PersonalInterview')} style={{ flex: 1, display: 'flex' }}>
-                                        <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'PersonalInterview'}>{activeCandidate.personalInterviewUrl ? 'Actualizar' : 'Subir'} Resumen</Button>
-                                    </Upload>
-                                </div>
-                                <Button
-                                    block type="primary" icon={<WhatsAppOutlined />}
-                                    style={{ backgroundColor: '#25D366', borderColor: '#25D366', height: '32px', borderRadius: '6px', marginTop: '4px' }}
-                                    href={`https://wa.me/${formatWhatsAppPhone(activeCandidate.phone)}?text=${encodeURIComponent(getWhatsAppMessage(activeCandidate))}`}
-                                    target="_blank" rel="noreferrer"
-                                >
-                                    Agendar entrevista por WhatsApp
-                                </Button>
-                            </Space>
-                        </Modal>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                {activeCandidate.personalInterviewUrl && (
+                                                    <Button
+                                                        icon={<FilePdfOutlined />}
+                                                        href={activeCandidate.personalInterviewUrl}
+                                                        target="_blank"
+                                                        type="dashed"
+                                                        size="small"
+                                                        style={{ flex: 1 }}
+                                                    >
+                                                        Ver Resumen
+                                                    </Button>
+                                                )}
+                                                <Upload
+                                                    accept=".pdf"
+                                                    showUploadList={false}
+                                                    customRequest={(info) => handleInterviewUpload(info, 'PersonalInterview')}
+                                                    style={{ flex: 1, display: 'flex' }}
+                                                >
+                                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'PersonalInterview'}>
+                                                        {activeCandidate.personalInterviewUrl ? 'Actualizar' : 'Subir'} Resumen
+                                                    </Button>
+                                                </Upload>
+                                            </div>
+                                        </Space>
+                                    </Card>
+                                )}
 
-                        {/* Technical Interview Modal */}
-                        <Modal
-                            title={<Space><CalendarOutlined style={{ color: '#2f54eb' }} /> <Text strong>Entrevista Técnica</Text></Space>}
-                            open={activeStageModal === 'technical'}
-                            onCancel={() => setActiveStageModal(null)}
-                            footer={null}
-                            width={480}
-                        >
-                            <Space direction="vertical" style={{ width: '100%' }} size={8}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Text style={{ fontSize: '12px' }} type="secondary">Fecha Agendada:</Text>
-                                    <DatePicker size="small" placeholder="Seleccionar fecha" value={activeCandidate.technicalInterviewDate ? dayjs(activeCandidate.technicalInterviewDate) : null} onChange={(date) => handleUpdateInterviewDate(date, 'Technical')} format="DD/MM/YYYY" style={{ width: '160px' }} />
-                                </div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    {activeCandidate.technicalInterviewUrl && (
-                                        <Button icon={<FilePdfOutlined />} href={activeCandidate.technicalInterviewUrl} target="_blank" type="dashed" size="small" style={{ flex: 1 }}>Ver Resumen</Button>
-                                    )}
-                                    <Upload accept=".pdf" showUploadList={false} customRequest={(info) => handleInterviewUpload(info, 'TechnicalInterview')} style={{ flex: 1, display: 'flex' }}>
-                                        <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'TechnicalInterview'}>{activeCandidate.technicalInterviewUrl ? 'Actualizar' : 'Subir'} Resumen</Button>
-                                    </Upload>
-                                </div>
-                                <Button
-                                    block type="primary" icon={<WhatsAppOutlined />}
-                                    style={{ backgroundColor: '#25D366', borderColor: '#25D366', height: '32px', borderRadius: '6px', marginTop: '4px' }}
-                                    href={`https://wa.me/${formatWhatsAppPhone(activeCandidate.phone)}?text=${encodeURIComponent(getWhatsAppMessage(activeCandidate))}`}
-                                    target="_blank" rel="noreferrer"
-                                >
-                                    Agendar entrevista por WhatsApp
-                                </Button>
-                            </Space>
-                        </Modal>
+                                {(currentStageId >= 5 || activeCandidate.technicalInterviewUrl || activeCandidate.technicalInterviewDate) && (
+                                    <Card
+                                        size="small"
+                                        extra={<div style={{ background: '#2f54eb', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>Etapa 5</div>} title={<Space><CalendarOutlined style={{ color: '#2f54eb' }} /> <Text strong>Entrevista Técnica</Text></Space>}
+                                        style={{ height: '100%', margin: 0, display: 'flex', flexDirection: 'column', border: '1px solid #2f54eb50', background: '#f0f5ff50' }} bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                                    >
+                                        <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Text style={{ fontSize: '12px' }} type="secondary">Fecha Agendada:</Text>
+                                                <DatePicker
+                                                    size="small"
+                                                    placeholder="Seleccionar fecha"
+                                                    value={activeCandidate.technicalInterviewDate ? dayjs(activeCandidate.technicalInterviewDate) : null}
+                                                    onChange={(date) => handleUpdateInterviewDate(date, 'Technical')}
+                                                    format="DD/MM/YYYY"
+                                                    style={{ width: '140px' }}
+                                                />
+                                            </div>
 
-                        {/* Medical Checkup Modal */}
-                        <Modal
-                            title={<Space><TeamOutlined style={{ color: '#52c41a' }} /> <Text strong>Pruebas Médicas/AP/Ref</Text></Space>}
-                            open={activeStageModal === 'medical'}
-                            onCancel={() => setActiveStageModal(null)}
-                            footer={null}
-                            width={480}
-                        >
-                            <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    {activeCandidate.medicalCheckupUrl && (
-                                        <Button icon={<FilePdfOutlined />} href={activeCandidate.medicalCheckupUrl} target="_blank" type="dashed" size="small" style={{ flex: 1 }}>Ver Resultados</Button>
-                                    )}
-                                    <Upload accept=".pdf" showUploadList={false} customRequest={(info) => handleInterviewUpload(info, 'MedicalCheckup')} style={{ flex: 1, display: 'flex' }}>
-                                        <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'MedicalCheckup'}>{activeCandidate.medicalCheckupUrl ? 'Actualizar' : 'Subir'} Resultados</Button>
-                                    </Upload>
-                                </div>
-                            </Space>
-                        </Modal>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                {activeCandidate.technicalInterviewUrl && (
+                                                    <Button
+                                                        icon={<FilePdfOutlined />}
+                                                        href={activeCandidate.technicalInterviewUrl}
+                                                        target="_blank"
+                                                        type="dashed"
+                                                        size="small"
+                                                        style={{ flex: 1 }}
+                                                    >
+                                                        Ver Resumen
+                                                    </Button>
+                                                )}
+                                                <Upload
+                                                    accept=".pdf"
+                                                    showUploadList={false}
+                                                    customRequest={(info) => handleInterviewUpload(info, 'TechnicalInterview')}
+                                                    style={{ flex: 1, display: 'flex' }}
+                                                >
+                                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'TechnicalInterview'}>
+                                                        {activeCandidate.technicalInterviewUrl ? 'Actualizar' : 'Subir'} Resumen
+                                                    </Button>
+                                                </Upload>
+                                            </div>
+                                        </Space>
+                                    </Card>
+                                )}
 
-                        {/* Job Offer Modal */}
-                        <Modal
-                            title={<Space><SaveOutlined style={{ color: '#13c2c2' }} /> <Text strong>Oferta Laboral</Text></Space>}
-                            open={activeStageModal === 'joboffer'}
-                            onCancel={() => setActiveStageModal(null)}
-                            footer={null}
-                            width={480}
-                        >
-                            <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    {activeCandidate.jobOfferUrl && (
-                                        <Button icon={<FilePdfOutlined />} href={activeCandidate.jobOfferUrl} target="_blank" type="dashed" size="small" style={{ flex: 1 }}>Ver Oferta</Button>
-                                    )}
-                                    <Upload accept=".pdf" showUploadList={false} customRequest={(info) => handleInterviewUpload(info, 'JobOffer')} style={{ flex: 1, display: 'flex' }}>
-                                        <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'JobOffer'}>{activeCandidate.jobOfferUrl ? 'Actualizar' : 'Subir'} Oferta</Button>
-                                    </Upload>
-                                </div>
-                            </Space>
-                        </Modal>
-                    </div>
-                );
-            })()}
+                                {/* Medical Checkup - Stage 6 */}
+                                {(currentStageId >= 6 || activeCandidate.medicalCheckupUrl) && (
+                                    <Card
+                                        size="small"
+                                        extra={<div style={{ background: '#52c41a', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>Etapa 6</div>} title={<Space><TeamOutlined style={{ color: '#52c41a' }} /> <Text strong>Pruebas Médicas/AP/Ref</Text></Space>}
+                                        style={{ height: '100%', margin: 0, display: 'flex', flexDirection: 'column', border: '1px solid #52c41a50', background: '#f6ffed50' }} bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                                    >
+                                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                {activeCandidate.medicalCheckupUrl && (
+                                                    <Button
+                                                        icon={<FilePdfOutlined />}
+                                                        href={activeCandidate.medicalCheckupUrl}
+                                                        target="_blank"
+                                                        type="dashed"
+                                                        size="small"
+                                                        style={{ flex: 1 }}
+                                                    >
+                                                        Ver Resultados
+                                                    </Button>
+                                                )}
+                                                <Upload
+                                                    accept=".pdf"
+                                                    showUploadList={false}
+                                                    customRequest={(info) => handleInterviewUpload(info, 'MedicalCheckup')}
+                                                    style={{ flex: 1, display: 'flex' }}
+                                                >
+                                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'MedicalCheckup'}>
+                                                        {activeCandidate.medicalCheckupUrl ? 'Actualizar' : 'Subir'} Resultados
+                                                    </Button>
+                                                </Upload>
+                                            </div>
+
+
+                                        </Space>
+                                    </Card>
+                                )}
+
+                                {/* Job Offer - Stage 7 */}
+                                {(currentStageId >= 7 || activeCandidate.jobOfferUrl) && (
+                                    <Card
+                                        size="small"
+                                        extra={<div style={{ background: '#eb2f96', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>Etapa 7</div>} title={<Space><SaveOutlined style={{ color: '#eb2f96' }} /> <Text strong>Oferta Laboral</Text></Space>}
+                                        style={{ height: '100%', margin: 0, display: 'flex', flexDirection: 'column', border: '1px solid #13c2c250', background: '#e6fffb50' }} bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                                    >
+                                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                {activeCandidate.jobOfferUrl && (
+                                                    <Button
+                                                        icon={<FilePdfOutlined />}
+                                                        href={activeCandidate.jobOfferUrl}
+                                                        target="_blank"
+                                                        type="dashed"
+                                                        size="small"
+                                                        style={{ flex: 1 }}
+                                                    >
+                                                        Ver Oferta
+                                                    </Button>
+                                                )}
+                                                <Upload
+                                                    accept=".pdf"
+                                                    showUploadList={false}
+                                                    customRequest={(info) => handleInterviewUpload(info, 'JobOffer')}
+                                                    style={{ flex: 1, display: 'flex' }}
+                                                >
+                                                    <Button block size="small" icon={<UploadOutlined />} loading={uploadingType === 'JobOffer'}>
+                                                        {activeCandidate.jobOfferUrl ? 'Actualizar' : 'Subir'} Oferta
+                                                    </Button>
+                                                </Upload>
+                                            </div>
+
+
+                                        </Space>
+                                    </Card>
+                                )}
+
+                            </div>
+                        )
+                    }
+                ]}
+            />
 
             {activeCandidate.rejectionReason && (
                 <div style={{ marginTop: 24, padding: 12, background: '#fff1f0', borderRadius: 8, border: '1px solid #ffa39e' }}>
@@ -1695,104 +1728,104 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                         label: <span style={{ fontWeight: 600, fontSize: '15px' }}>Notas y Seguimiento</span>,
                         children: (
                             <div style={{ padding: '4px 0' }}>
-            <div style={{ marginBottom: '12px', padding: '0 4px' }}>
-                <Space align="center" style={{ 
-                    background: '#f9f0ff', 
-                    padding: '6px 16px', 
-                    borderRadius: '20px', 
-                    border: '1px solid #d3adf7'
-                }}>
-                    <HistoryOutlined style={{ color: '#722ed1', fontSize: '16px' }} />
-                    <Text strong style={{ color: '#531dab', fontSize: '13px' }}>
-                        Historial: <Text style={{ color: '#722ed1', fontSize: '15px' }}>{activeCandidate.applications?.length || 0}</Text> { (activeCandidate.applications?.length || 0) === 1 ? 'postulación' : 'postulaciones' } en total
-                    </Text>
-                </Space>
-            </div>
-
-            <Collapse
-                ghost
-                defaultActiveKey={['0']}
-                expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-                className="application-history-collapse"
-            >
-                {(activeCandidate.applications || []).map((app: any, appIndex: number) => {
-                    const isCurrent = appIndex === 0;
-                    const appLogs = (app.logs || []).filter((log: any) => log.comment);
-                    const jobTitle = app.salesRequisition?.title || 'Vacante no especificada';
-                    const startDate = dayjs(app.createdAt).format('DD/MM/YYYY');
-
-                    return (
-                        <Collapse.Panel
-                            header={
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '10px' }}>
-                                    <Space direction="vertical" size={0}>
-                                        <Text strong style={{ color: isCurrent ? '#2b457c' : '#595959', fontSize: isCurrent ? '14px' : '13px' }}>
-                                            {isCurrent ? `Postulación Actual: ${jobTitle}` : `Postulación Anterior: ${jobTitle}`}
+                                <div style={{ marginBottom: '12px', padding: '0 4px' }}>
+                                    <Space align="center" style={{
+                                        background: '#f9f0ff',
+                                        padding: '6px 16px',
+                                        borderRadius: '20px',
+                                        border: '1px solid #d3adf7'
+                                    }}>
+                                        <HistoryOutlined style={{ color: '#722ed1', fontSize: '16px' }} />
+                                        <Text strong style={{ color: '#531dab', fontSize: '13px' }}>
+                                            Historial: <Text style={{ color: '#722ed1', fontSize: '15px' }}>{activeCandidate.applications?.length || 0}</Text> {(activeCandidate.applications?.length || 0) === 1 ? 'postulación' : 'postulaciones'} en total
                                         </Text>
-                                        <Text type="secondary" style={{ fontSize: '11px' }}>Iniciada el {startDate}</Text>
                                     </Space>
-                                    <Tag color={app.status === 'HIRED' ? 'green' : app.status === 'REJECTED' ? 'red' : 'blue'}>
-                                        {app.status === 'ACTIVE' ? (app.subStatus || 'En Proceso') : (STATUS_TRANSLATIONS[app.status] || app.status)}
-                                    </Tag>
-                                </div>
-                            }
-                            key={appIndex}
-                            style={{
-                                marginBottom: '12px',
-                                background: isCurrent ? '#ffffff' : '#f5f5f5',
-                                borderRadius: '12px',
-                                border: isCurrent ? '1px solid #2b457c30' : '1px solid #d9d9d960',
-                                overflow: 'hidden',
-                                boxShadow: isCurrent ? '0 2px 8px rgba(43, 69, 124, 0.05)' : 'none'
-                            }}
-                        >
-                            <Space direction="vertical" style={{ width: '100%' }} size={16}>
-                                <div style={{ maxHeight: '250px', overflowY: 'auto', padding: '4px 8px' }}>
-                                    {appLogs.map((log: any, logIndex: number) => (
-                                        <div key={log.id || logIndex} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: logIndex === appLogs.length - 1 ? 'none' : '1px solid #f0f0f0' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-                                                <Text strong style={{ fontSize: '12px', color: '#2b457c' }}>{log.subStatus || 'Nota'}</Text>
-                                                <Text type="secondary" style={{ fontSize: '10px' }}>{dayjs(log.createdAt).format('DD/MM/YYYY hh:mm A')}</Text>
-                                            </div>
-                                            <div style={{ padding: '8px 12px', background: '#f9f9f9', borderRadius: '8px', borderLeft: '3px solid #d9d9d9' }}>
-                                                <Paragraph style={{ margin: 0, fontSize: '13px', color: '#434343' }}>{log.comment}</Paragraph>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {appLogs.length === 0 && (
-                                        <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                                            <Text type="secondary" italic>No hay notas o registros para esta postulación.</Text>
-                                        </div>
-                                    )}
                                 </div>
 
-                                {isCurrent && (
-                                    <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '16px' }}>
-                                        <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                                            <Input.TextArea
-                                                placeholder="Agregar una nota interna para esta postulación..."
-                                                rows={2}
-                                                value={noteComment}
-                                                onChange={e => setNoteComment(e.target.value)}
-                                                style={{ borderRadius: '8px', border: '1px solid #d9d9d9' }}
-                                            />
-                                            <Button
-                                                type="primary"
-                                                icon={<PlusOutlined />}
-                                                loading={submitting}
-                                                onClick={handleAddNote}
-                                                block
-                                                style={{ height: '36px', borderRadius: '8px', fontWeight: 500 }}
+                                <Collapse
+                                    ghost
+                                    defaultActiveKey={['0']}
+                                    expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+                                    className="application-history-collapse"
+                                >
+                                    {(activeCandidate.applications || []).map((app: any, appIndex: number) => {
+                                        const isCurrent = appIndex === 0;
+                                        const appLogs = (app.logs || []).filter((log: any) => log.comment);
+                                        const jobTitle = app.salesRequisition?.title || 'Vacante no especificada';
+                                        const startDate = dayjs(app.createdAt).format('DD/MM/YYYY');
+
+                                        return (
+                                            <Collapse.Panel
+                                                header={
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '10px' }}>
+                                                        <Space direction="vertical" size={0}>
+                                                            <Text strong style={{ color: isCurrent ? '#2b457c' : '#595959', fontSize: isCurrent ? '14px' : '13px' }}>
+                                                                {isCurrent ? `Postulación Actual: ${jobTitle}` : `Postulación Anterior: ${jobTitle}`}
+                                                            </Text>
+                                                            <Text type="secondary" style={{ fontSize: '11px' }}>Iniciada el {startDate}</Text>
+                                                        </Space>
+                                                        <Tag color={app.status === 'HIRED' ? 'green' : app.status === 'REJECTED' ? 'red' : 'blue'}>
+                                                            {app.status === 'ACTIVE' ? (app.subStatus || 'En Proceso') : (STATUS_TRANSLATIONS[app.status] || app.status)}
+                                                        </Tag>
+                                                    </div>
+                                                }
+                                                key={appIndex}
+                                                style={{
+                                                    marginBottom: '12px',
+                                                    background: isCurrent ? '#ffffff' : '#f5f5f5',
+                                                    borderRadius: '12px',
+                                                    border: isCurrent ? '1px solid #2b457c30' : '1px solid #d9d9d960',
+                                                    overflow: 'hidden',
+                                                    boxShadow: isCurrent ? '0 2px 8px rgba(43, 69, 124, 0.05)' : 'none'
+                                                }}
                                             >
-                                                Agregar Nota
-                                            </Button>
-                                        </Space>
-                                    </div>
-                                )}
-                            </Space>
-                        </Collapse.Panel>
-                    );
-                })}
+                                                <Space direction="vertical" style={{ width: '100%' }} size={16}>
+                                                    <div style={{ maxHeight: '250px', overflowY: 'auto', padding: '4px 8px' }}>
+                                                        {appLogs.map((log: any, logIndex: number) => (
+                                                            <div key={log.id || logIndex} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: logIndex === appLogs.length - 1 ? 'none' : '1px solid #f0f0f0' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                                                                    <Text strong style={{ fontSize: '12px', color: '#2b457c' }}>{log.subStatus || 'Nota'}</Text>
+                                                                    <Text type="secondary" style={{ fontSize: '10px' }}>{dayjs(log.createdAt).format('DD/MM/YYYY hh:mm A')}</Text>
+                                                                </div>
+                                                                <div style={{ padding: '8px 12px', background: '#f9f9f9', borderRadius: '8px', borderLeft: '3px solid #d9d9d9' }}>
+                                                                    <Paragraph style={{ margin: 0, fontSize: '13px', color: '#434343' }}>{log.comment}</Paragraph>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        {appLogs.length === 0 && (
+                                                            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                                                <Text type="secondary" italic>No hay notas o registros para esta postulación.</Text>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {isCurrent && (
+                                                        <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '16px' }}>
+                                                            <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                                                                <Input.TextArea
+                                                                    placeholder="Agregar una nota interna para esta postulación..."
+                                                                    rows={2}
+                                                                    value={noteComment}
+                                                                    onChange={e => setNoteComment(e.target.value)}
+                                                                    style={{ borderRadius: '8px', border: '1px solid #d9d9d9' }}
+                                                                />
+                                                                <Button
+                                                                    type="primary"
+                                                                    icon={<PlusOutlined />}
+                                                                    loading={submitting}
+                                                                    onClick={handleAddNote}
+                                                                    block
+                                                                    style={{ height: '36px', borderRadius: '8px', fontWeight: 500 }}
+                                                                >
+                                                                    Agregar Nota
+                                                                </Button>
+                                                            </Space>
+                                                        </div>
+                                                    )}
+                                                </Space>
+                                            </Collapse.Panel>
+                                        );
+                                    })}
                                 </Collapse>
                             </div>
                         )
