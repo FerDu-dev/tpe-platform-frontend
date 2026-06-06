@@ -56,7 +56,7 @@ export const administrativeRequisitionService = {
     async fetchRecruitmentAnalytics(filters: { companyId?: number; stateId?: number; status?: string; jobRequisitionId?: number; excludeRejected?: boolean } = {}): Promise<any> {
         // Analytics can remain hitting the shared/general endpoint if needed, but for isolation let's hit administrative-candidates if available.
         // Assuming it's still using applications/analytics for now.
-        const response = await api.get('/applications/analytics', { params: filters });
+        const response = await api.get('/applications/analytics', { params: { ...filters, type: 'administrative' } });
         return response.data;
     },
     async pause(id: number | string, reason: string): Promise<any> {

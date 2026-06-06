@@ -270,21 +270,17 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 content: (
                     <div style={{ marginTop: '16px' }}>
                         <Space direction="vertical" style={{ width: '100%' }}>
-                            <Text strong>Código de Acceso:</Text>
-                            <Input id="test-code-input" placeholder="Ingresa el código de acceso del candidato en la plataforma de pruebas..." />
+                            <Text>El candidato será avanzado a la fase de pruebas psicotecnicas y recibirá la batería de pruebas correspondientes.</Text>
                             <Text strong style={{ marginTop: '8px' }}>¿Desea dejar algún comentario? (opcional):</Text>
                             <Input.TextArea id="transition-comment-input" placeholder="Escribe un comentario si lo deseas..." rows={2} />
                         </Space>
                     </div>
                 ),
-                okText: 'Enviar y Avanzar',
+                okText: 'Avanzar',
                 cancelText: 'Cancelar',
                 onOk: async () => {
-                    const code = (document.getElementById('test-code-input') as HTMLInputElement).value;
                     const comment = (document.getElementById('transition-comment-input') as HTMLTextAreaElement).value;
-                    if (!code) return message.error('El código de acceso es obligatorio');
                     await handleAction(() => adminCandidateService.updateCandidateStage(activeCandidate.id, nextStage.id, {
-                        testCode: code,
                         comment: comment || undefined
                     }));
                 }

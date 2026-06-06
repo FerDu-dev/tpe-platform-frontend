@@ -50,8 +50,8 @@ export const salesRequisitionService = {
         const response = await api.get(`/sales-requisitions/${id}`);
         return mapRequisition(response.data);
     },
-    async fetchRecruitmentAnalytics(filters: { companyId?: number; stateId?: number; status?: string; jobRequisitionId?: number; excludeRejected?: boolean } = {}): Promise<any> {
-        const response = await api.get('/applications/analytics', { params: filters });
+    async fetchRecruitmentAnalytics(filters: Record<string, any> = {}): Promise<any> {
+        const response = await api.get('/applications/analytics', { params: { ...filters, type: 'sales' } });
         return response.data;
     },
     async pause(id: number | string, reason: string): Promise<any> {
