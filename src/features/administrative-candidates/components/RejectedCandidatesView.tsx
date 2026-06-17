@@ -26,6 +26,19 @@ const RejectedCandidatesView: React.FC<RejectedCandidatesViewProps> = ({ candida
             )
         },
         {
+            title: 'Perfil',
+            key: 'category',
+            width: 130,
+            render: (_, record) => {
+                const isIntern = record.category === 'INTERNSHIP';
+                return (
+                    <Tag color={isIntern ? 'purple' : 'geekblue'} style={{ fontWeight: 600 }}>
+                        {isIntern ? 'Pasante' : 'Profesional/Administrativo'}
+                    </Tag>
+                );
+            }
+        },
+        {
             title: 'Dirección',
             key: 'address',
             width: 180,

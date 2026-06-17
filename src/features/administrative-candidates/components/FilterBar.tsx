@@ -118,7 +118,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ category = 'eligible' }) => {
                         value={filters.category}
                     >
                         <Option value={undefined}>Todos</Option>
-                        <Option value="PROFESSIONAL">Administrador</Option>
+                        <Option value="PROFESSIONAL">Profesional/Administrativo</Option>
                         <Option value="INTERNSHIP">Pasante</Option>
                     </Select>
                 </Col>

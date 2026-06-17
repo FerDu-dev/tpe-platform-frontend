@@ -41,7 +41,7 @@ const CandidateListView: React.FC<CandidateListViewProps> = ({ candidates, onVie
                 const isIntern = record.category === 'INTERNSHIP';
                 return (
                     <Tag color={isIntern ? 'purple' : 'geekblue'} style={{ fontWeight: 600 }}>
-                        {isIntern ? 'Pasante' : 'Administrador'}
+                        {isIntern ? 'Pasante' : 'Profesional/Administrativo'}
                     </Tag>
                 );
             }

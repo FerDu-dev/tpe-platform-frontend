@@ -73,7 +73,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, onClick }) => 
                         {candidate.firstName} {candidate.lastName}
                     </Text>
                     <Tag color={candidate.category === 'INTERNSHIP' ? 'purple' : 'geekblue'} style={{ marginTop: '4px', marginBottom: '2px', display: 'inline-block', fontWeight: 600, fontSize: '10px' }}>
-                        {candidate.category === 'INTERNSHIP' ? 'Pasante' : 'Administrador'}
+                        {candidate.category === 'INTERNSHIP' ? 'Pasante' : 'Profesional/Administrativo'}
                     </Tag>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         <Text type="secondary" style={{ fontSize: '11px', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>

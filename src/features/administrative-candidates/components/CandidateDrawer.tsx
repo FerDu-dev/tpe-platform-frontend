@@ -27,6 +27,7 @@ import {
 import dayjs from 'dayjs';
 import type { Candidate, Requisition } from '../../../types';
 import { VENEZUELA_STATES } from '../../../constants/venezuela';
+import { countriesService, Country } from '../../../services/countriesService';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { loadCandidateById, selectSelectedCandidate, removeCandidate } from '../store/adminCandidatesSlice';
 import { selectStages } from '../../../store/workflowSlice';
@@ -131,11 +132,16 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     const [uploadingType, setUploadingType] = useState<string | null>(null);
 
     // --- Edit state for the info modal ---
-    type EditSection = 'personal' | 'ubicacion' | 'vehiculo' | 'ventas' | 'economica' | 'referencias' | null;
+    type EditSection = 'personal' | 'ubicacion' | 'academica' | 'profesional' | 'idiomas' | 'referencias' | null;
     const [editMunicipalities, setEditMunicipalities] = useState<{ id: number; name: string }[]>([]);
     const [editingSection, setEditingSection] = useState<EditSection>(null);
     const [editForm, setEditForm] = useState<Record<string, any>>({});
     const [saving, setSaving] = useState(false);
+    const [countriesList, setCountriesList] = useState<Country[]>([]);
+
+    useEffect(() => {
+        countriesService.getAllCountries().then(setCountriesList).catch(console.error);
+    }, []);
 
     useEffect(() => {
         if (open && candidate?.id) {
@@ -416,6 +422,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     };
 
     // --- Edit helpers ---
+    const isIntern = activeCandidate?.category === 'INTERNSHIP';
+
     const startEdit = (section: EditSection) => {
         const c = activeCandidate;
         const base: Record<string, any> = {
@@ -431,24 +439,29 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
             maritalStatus: c.maritalStatus || '',
             hasChildren: c.hasChildren ?? false,
             childrenCount: c.childrenCount ?? 0,
-            hasVehicle: c.hasVehicle ?? false,
-            vehicleType: c.vehicleType || '',
-            vehicleBrandModelYear: c.vehicleBrandModelYear || '',
-            isVehicleOwner: c.isVehicleOwner ?? false,
-            vehicleOwnerRelationship: c.vehicleOwnerRelationship || '',
-            salesExperienceYears: c.salesExperienceYears ?? 0,
-            salesExperienceTypes: Array.isArray(c.salesExperienceTypes) ? c.salesExperienceTypes : [],
-            commercializedGoodsTypes: Array.isArray(c.commercializedGoodsTypes) ? c.commercializedGoodsTypes : [],
             profession: c.profession || '',
-            currentCompany: c.currentCompany || '',
-            previousCompanies: c.previousCompanies || '',
-            currentMonthlyIncome: c.currentMonthlyIncome ?? null,
-            salaryAspiration: c.salaryAspiration ?? null,
             address: c.address || '',
-            personalReferences: Array.isArray(c.personalReferences) ? JSON.parse(JSON.stringify(c.personalReferences)).filter(Boolean) : [],
-            workReferences: Array.isArray(c.workReferences) ? JSON.parse(JSON.stringify(c.workReferences)).filter(Boolean) : [],
             municipalityId: c.municipalityId || null,
             editStateId: c.municipality?.state?.id || null,
+            // Administrative fields
+            englishLevel: c.englishLevel || '',
+            adminReferences: Array.isArray(c.adminReferences) ? JSON.parse(JSON.stringify(c.adminReferences)).filter(Boolean) : [],
+            // INTERNSHIP fields
+            academicPeriodStart: c.academicPeriodStart ? dayjs(c.academicPeriodStart) : null,
+            currentStudyLevel: c.currentStudyLevel || '',
+            studyModality: c.studyModality || '',
+            classShift: c.classShift || '',
+            isInternshipMandatory: c.isInternshipMandatory ?? false,
+            internshipHours: c.internshipHours ?? null,
+            // PROFESSIONAL fields
+            yearsOfExperience: c.yearsOfExperience || '',
+            areasOfWork: c.areasOfWork || '',
+            isWorkingNow: c.isWorkingNow ?? false,
+            currentCompanyAndPosition: c.currentCompanyAndPosition || '',
+            availability: c.availability || '',
+            preferredSchedule: c.preferredSchedule || '',
+            currentIncome: c.currentIncome ?? null,
+            expectedIncome: c.expectedIncome ?? null,
         };
         // Pre-load municipalities if editing ubicacion and state is known
         if (section === 'ubicacion' && (c.municipality?.state?.id)) {
@@ -480,27 +493,28 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 payload.address = editForm.address;
                 payload.hasChildren = editForm.hasChildren;
                 payload.childrenCount = editForm.childrenCount;
-            } else if (section === 'vehiculo') {
-                payload.hasVehicle = editForm.hasVehicle;
-                payload.vehicleType = editForm.vehicleType;
-                payload.vehicleBrandModelYear = editForm.vehicleBrandModelYear;
-                payload.isVehicleOwner = editForm.isVehicleOwner;
-                payload.vehicleOwnerRelationship = editForm.vehicleOwnerRelationship;
-            } else if (section === 'ventas') {
-                payload.salesExperienceYears = editForm.salesExperienceYears;
-                payload.salesExperienceTypes = editForm.salesExperienceTypes;
-                payload.commercializedGoodsTypes = editForm.commercializedGoodsTypes;
-                payload.profession = editForm.profession;
-            } else if (section === 'economica') {
-                payload.currentCompany = editForm.currentCompany;
-                payload.previousCompanies = editForm.previousCompanies;
-                payload.currentMonthlyIncome = editForm.currentMonthlyIncome;
-                payload.salaryAspiration = editForm.salaryAspiration;
+            } else if (section === 'academica') {
+                payload.academicPeriodStart = editForm.academicPeriodStart ? editForm.academicPeriodStart.toISOString() : undefined;
+                payload.currentStudyLevel = editForm.currentStudyLevel;
+                payload.studyModality = editForm.studyModality;
+                payload.classShift = editForm.classShift;
+                payload.isInternshipMandatory = editForm.isInternshipMandatory;
+                payload.internshipHours = editForm.internshipHours;
+            } else if (section === 'profesional') {
+                payload.yearsOfExperience = editForm.yearsOfExperience;
+                payload.areasOfWork = editForm.areasOfWork;
+                payload.isWorkingNow = editForm.isWorkingNow;
+                payload.currentCompanyAndPosition = editForm.currentCompanyAndPosition;
+                payload.availability = editForm.availability;
+                payload.preferredSchedule = editForm.preferredSchedule;
+                payload.currentIncome = editForm.currentIncome;
+                payload.expectedIncome = editForm.expectedIncome;
+            } else if (section === 'idiomas') {
+                payload.englishLevel = editForm.englishLevel;
             } else if (section === 'ubicacion') {
                 payload.municipalityId = editForm.municipalityId;
             } else if (section === 'referencias') {
-                payload.personalReferences = editForm.personalReferences;
-                payload.workReferences = editForm.workReferences;
+                payload.adminReferences = editForm.adminReferences;
             }
             await adminCandidateService.updateCandidate(activeCandidate.id, payload);
             message.success('Datos actualizados exitosamente');
@@ -648,16 +662,16 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                 </Space>
                             ) : (
                                 <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
-                                    <Descriptions.Item label="Nombre">{activeCandidate.firstName} {activeCandidate.lastName}</Descriptions.Item>
-                                    <Descriptions.Item label="Cédula">{activeCandidate.nationalId}</Descriptions.Item>
-                                    <Descriptions.Item label="Nivel Académico">{activeCandidate.educationLevel || 'N/A'}</Descriptions.Item>
-                                    <Descriptions.Item label="Email">{activeCandidate.email}</Descriptions.Item>
-                                    <Descriptions.Item label="Teléfono">{activeCandidate.phone}</Descriptions.Item>
-                                    <Descriptions.Item label="Teléfono Alt.">{activeCandidate.altPhone || 'N/A'}</Descriptions.Item>
-                                    <Descriptions.Item label="Dirección">{activeCandidate.address || 'N/A'}</Descriptions.Item>
-                                    <Descriptions.Item label="Fecha Nacimiento">{activeCandidate.birthDate ? dayjs(activeCandidate.birthDate).format('DD/MM/YYYY') : 'N/A'}</Descriptions.Item>
-                                    <Descriptions.Item label="Género">{activeCandidate.gender || 'N/A'}</Descriptions.Item>
-                                    <Descriptions.Item label="Estado Civil">{activeCandidate.maritalStatus || 'N/A'}</Descriptions.Item>
+                                    {activeCandidate.firstName && <Descriptions.Item label="Nombre">{activeCandidate.firstName} {activeCandidate.lastName}</Descriptions.Item>}
+                                    {activeCandidate.nationalId && <Descriptions.Item label="Cédula">{activeCandidate.nationalId}</Descriptions.Item>}
+                                    {activeCandidate.educationLevel && <Descriptions.Item label="Nivel Académico">{activeCandidate.educationLevel}</Descriptions.Item>}
+                                    {activeCandidate.email && <Descriptions.Item label="Email">{activeCandidate.email}</Descriptions.Item>}
+                                    {activeCandidate.phone && <Descriptions.Item label="Teléfono">{activeCandidate.phone}</Descriptions.Item>}
+                                    {activeCandidate.altPhone && <Descriptions.Item label="Teléfono Alt.">{activeCandidate.altPhone}</Descriptions.Item>}
+                                    {activeCandidate.address && <Descriptions.Item label="Dirección">{activeCandidate.address}</Descriptions.Item>}
+                                    {activeCandidate.birthDate && <Descriptions.Item label="Fecha Nacimiento">{dayjs(activeCandidate.birthDate).format('DD/MM/YYYY')}</Descriptions.Item>}
+                                    {activeCandidate.gender && <Descriptions.Item label="Género">{activeCandidate.gender}</Descriptions.Item>}
+                                    {activeCandidate.maritalStatus && <Descriptions.Item label="Estado Civil">{activeCandidate.maritalStatus}</Descriptions.Item>}
                                     <Descriptions.Item label="Hijos">{activeCandidate.hasChildren ? `Sí (${activeCandidate.childrenCount || 0})` : 'No'}</Descriptions.Item>
                                 </Descriptions>
                             )}
@@ -717,157 +731,155 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                     </Space>
                                 ) : (
                                     <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
-                                        <Descriptions.Item label="Estado">{activeCandidate.municipality?.state?.name || 'N/A'}</Descriptions.Item>
-                                        <Descriptions.Item label="Municipio">{activeCandidate.municipality?.name || 'N/A'}</Descriptions.Item>
+                                        {activeCandidate.country?.name && <Descriptions.Item label="País">{activeCandidate.country.name}</Descriptions.Item>}
+                                        {activeCandidate.municipality?.state?.name && <Descriptions.Item label="Estado">{activeCandidate.municipality.state.name}</Descriptions.Item>}
+                                        {activeCandidate.municipality?.name && <Descriptions.Item label="Municipio">{activeCandidate.municipality.name}</Descriptions.Item>}
                                     </Descriptions>
                                 )}
                             </Card>
 
                             <Card
-                                title={editCardTitle(<CarOutlined />, 'Vehículo', 'vehiculo')}
+                                title={editCardTitle(<BulbOutlined />, 'Nivel de Inglés', 'idiomas')}
                                 size="small"
                                 variant="borderless"
                                 style={{ background: '#f5f5f5', borderRadius: 12 }}
                             >
-                                {editingSection === 'vehiculo' ? (
+                                {editingSection === 'idiomas' ? (
                                     <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <Switch checked={editForm.hasVehicle} onChange={v => setEditForm((f: any) => ({ ...f, hasVehicle: v }))} size="small" />
-                                            <Text style={{ fontSize: 12 }}>¿Tiene vehículo?</Text>
-                                        </div>
-                                        {editForm.hasVehicle && (
-                                            <>
-                                                <div><Text type="secondary" style={{ fontSize: 11 }}>Tipo de Vehículo</Text>
-                                                    <Select
-                                                        size="small" style={{ width: '100%' }}
-                                                        value={editForm.vehicleType || undefined}
-                                                        onChange={v => setEditForm((f: any) => ({ ...f, vehicleType: v }))}
-                                                        options={['Moto', 'Carro', 'Camioneta', 'Camión', 'Otro'].map(v => ({ label: v, value: v }))}
-                                                        allowClear placeholder="Seleccionar..."
-                                                    /></div>
-                                                <div><Text type="secondary" style={{ fontSize: 11 }}>Marca / Modelo / Año</Text>
-                                                    <Input value={editForm.vehicleBrandModelYear} onChange={e => setEditForm((f: any) => ({ ...f, vehicleBrandModelYear: e.target.value }))} size="small" placeholder="Ej: Toyota Corolla 2018" /></div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <Switch checked={editForm.isVehicleOwner} onChange={v => setEditForm((f: any) => ({ ...f, isVehicleOwner: v }))} size="small" />
-                                                    <Text style={{ fontSize: 12 }}>¿Es propietario?</Text>
-                                                </div>
-                                                {!editForm.isVehicleOwner && (
-                                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Relación con dueño</Text>
-                                                        <Input value={editForm.vehicleOwnerRelationship} onChange={e => setEditForm((f: any) => ({ ...f, vehicleOwnerRelationship: e.target.value }))} size="small" /></div>
-                                                )}
-                                            </>
-                                        )}
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Nivel de Inglés</Text>
+                                            <Select
+                                                size="small" style={{ width: '100%' }}
+                                                value={editForm.englishLevel || undefined}
+                                                onChange={v => setEditForm((f: any) => ({ ...f, englishLevel: v }))}
+                                                options={['Básico', 'Medio', 'Avanzado', 'Nativo'].map(v => ({ label: v, value: v }))}
+                                                allowClear placeholder="Seleccionar..."
+                                            /></div>
                                     </Space>
                                 ) : (
                                     <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
-                                        <Descriptions.Item label="¿Tiene vehículo?">{activeCandidate.hasVehicle ? 'Sí' : 'No'}</Descriptions.Item>
-                                        {activeCandidate.hasVehicle && (
-                                            <>
-                                                <Descriptions.Item label="Tipo">{activeCandidate.vehicleType || 'N/A'}</Descriptions.Item>
-                                                <Descriptions.Item label="Modelo">{activeCandidate.vehicleBrandModelYear || 'N/A'}</Descriptions.Item>
-                                                <Descriptions.Item label="¿Es propio?">{activeCandidate.isVehicleOwner ? 'Sí' : 'No'}</Descriptions.Item>
-                                                {!activeCandidate.isVehicleOwner && (
-                                                    <Descriptions.Item label="Relación dueño">{activeCandidate.vehicleOwnerRelationship || 'N/A'}</Descriptions.Item>
-                                                )}
-                                            </>
-                                        )}
+                                        {activeCandidate.englishLevel && <Descriptions.Item label="Nivel de Inglés">{activeCandidate.englishLevel}</Descriptions.Item>}
                                     </Descriptions>
                                 )}
                             </Card>
                         </Space>
                     </Col>
 
-                    {/* Experiencia en Ventas */}
-                    <Col span={12}>
-                        <Card
-                            title={editCardTitle(<BulbOutlined />, 'Experiencia en Ventas', 'ventas')}
-                            size="small"
-                            variant="borderless"
-                            style={{ background: '#f5f5f5', borderRadius: 12, height: '100%' }}
-                        >
-                            {editingSection === 'ventas' ? (
-                                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Profesión</Text>
-                                        <Input value={editForm.profession} onChange={e => setEditForm((f: any) => ({ ...f, profession: e.target.value }))} size="small" /></div>
-                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Años de Experiencia en Ventas</Text>
-                                        <InputNumber
-                                            size="small" min={0} max={50} style={{ width: '100%' }}
-                                            value={editForm.salesExperienceYears}
-                                            onChange={v => setEditForm((f: any) => ({ ...f, salesExperienceYears: v }))}
-                                        /></div>
-                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Tipos de Venta</Text>
-                                        <Select
-                                            mode="multiple" size="small" style={{ width: '100%' }}
-                                            value={editForm.salesExperienceTypes}
-                                            onChange={v => setEditForm((f: any) => ({ ...f, salesExperienceTypes: v }))}
-                                            options={['Directa', 'Indirecta', 'Corporativa', 'Retail', 'Telefónica', 'Online', 'Otra'].map(v => ({ label: v, value: v }))}
-                                            placeholder="Seleccionar tipos..."
-                                        /></div>
-                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Tipo de Bienes Comercializados</Text>
-                                        <Select
-                                            mode="multiple" size="small" style={{ width: '100%' }}
-                                            value={editForm.commercializedGoodsTypes}
-                                            onChange={v => setEditForm((f: any) => ({ ...f, commercializedGoodsTypes: v }))}
-                                            options={['Alimentos', 'Bebidas', 'Seguros', 'Tecnología', 'Farmacéutico', 'Automotriz', 'Servicios', 'Otro'].map(v => ({ label: v, value: v }))}
-                                            placeholder="Seleccionar bienes..."
-                                        /></div>
-                                </Space>
-                            ) : (
-                                <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
-                                    <Descriptions.Item label="Profesión">{activeCandidate.profession || 'Sin especificar'}</Descriptions.Item>
-                                    <Descriptions.Item label="Exp. Ventas">{activeCandidate.salesExperienceYears ? `${activeCandidate.salesExperienceYears} año(s)` : 'No'}</Descriptions.Item>
-                                    {activeCandidate.salesExperienceYears ? (
-                                        <>
-                                            <Descriptions.Item label="Tipos">{Array.isArray(activeCandidate.salesExperienceTypes) ? activeCandidate.salesExperienceTypes.join(', ') : (activeCandidate.salesExperienceTypes || 'N/A')}</Descriptions.Item>
-                                            <Descriptions.Item label="Bienes">{Array.isArray(activeCandidate.commercializedGoodsTypes) ? activeCandidate.commercializedGoodsTypes.join(', ') : (activeCandidate.commercializedGoodsTypes || 'N/A')}</Descriptions.Item>
-                                        </>
-                                    ) : null}
-                                </Descriptions>
-                            )}
-                        </Card>
-                    </Col>
+                    {/* Información por Categoría: INTERNSHIP o PROFESSIONAL */}
+                    {isIntern ? (
+                        <Col span={12}>
+                            <Card
+                                title={editCardTitle(<CalendarOutlined />, 'Información Académica y Pasantía', 'academica')}
+                                size="small"
+                                variant="borderless"
+                                style={{ background: '#f9f0ff', borderRadius: 12, height: '100%', border: '1px solid #d3adf7' }}
+                            >
+                                {editingSection === 'academica' ? (
+                                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Inicio Período Académico</Text>
+                                            <DatePicker
+                                                size="small" style={{ width: '100%' }}
+                                                value={editForm.academicPeriodStart}
+                                                onChange={d => setEditForm((f: any) => ({ ...f, academicPeriodStart: d }))}
+                                                format="DD/MM/YYYY"
+                                            /></div>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Nivel de Estudio Actual</Text>
+                                            <Input value={editForm.currentStudyLevel} onChange={e => setEditForm((f: any) => ({ ...f, currentStudyLevel: e.target.value }))} size="small" placeholder="Ej: 5to semestre" /></div>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Modalidad de Estudio</Text>
+                                            <Select
+                                                size="small" style={{ width: '100%' }}
+                                                value={editForm.studyModality || undefined}
+                                                onChange={v => setEditForm((f: any) => ({ ...f, studyModality: v }))}
+                                                options={['Presencial', 'Virtual', 'Mixta'].map(v => ({ label: v, value: v }))}
+                                                allowClear placeholder="Seleccionar..."
+                                            /></div>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Turno de Clases</Text>
+                                            <Select
+                                                size="small" style={{ width: '100%' }}
+                                                value={editForm.classShift || undefined}
+                                                onChange={v => setEditForm((f: any) => ({ ...f, classShift: v }))}
+                                                options={['Mañana', 'Tarde', 'Noche', 'Fines de Semana'].map(v => ({ label: v, value: v }))}
+                                                allowClear placeholder="Seleccionar..."
+                                            /></div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <Switch checked={editForm.isInternshipMandatory} onChange={v => setEditForm((f: any) => ({ ...f, isInternshipMandatory: v }))} size="small" />
+                                            <Text style={{ fontSize: 12 }}>¿Pasantía Obligatoria?</Text>
+                                        </div>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Horas de Pasantía</Text>
+                                            <InputNumber
+                                                size="small" min={0} style={{ width: '100%' }}
+                                                value={editForm.internshipHours}
+                                                onChange={v => setEditForm((f: any) => ({ ...f, internshipHours: v }))}
+                                            /></div>
+                                    </Space>
+                                ) : (
+                                    <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
+                                        {activeCandidate.academicPeriodStart && <Descriptions.Item label="Inicio Período Académico">{dayjs(activeCandidate.academicPeriodStart).format('DD/MM/YYYY')}</Descriptions.Item>}
+                                        {activeCandidate.currentStudyLevel && <Descriptions.Item label="Nivel de Estudio Actual">{activeCandidate.currentStudyLevel}</Descriptions.Item>}
+                                        {activeCandidate.studyModality && <Descriptions.Item label="Modalidad de Estudio">{activeCandidate.studyModality}</Descriptions.Item>}
+                                        {activeCandidate.classShift && <Descriptions.Item label="Turno de Clases">{activeCandidate.classShift}</Descriptions.Item>}
+                                        <Descriptions.Item label="¿Pasantía Obligatoria?">{activeCandidate.isInternshipMandatory ? 'Sí' : 'No'}</Descriptions.Item>
+                                        {activeCandidate.internshipHours != null && <Descriptions.Item label="Horas de Pasantía">{activeCandidate.internshipHours}</Descriptions.Item>}
+                                        {activeCandidate.preferredSchedule && <Descriptions.Item label="Jornada (Disponibilidad)">{activeCandidate.preferredSchedule}</Descriptions.Item>}
+                                    </Descriptions>
+                                )}
+                            </Card>
+                        </Col>
+                    ) : (
+                        <Col span={12}>
+                            <Card
+                                title={editCardTitle(<BankOutlined />, 'Experiencia Profesional', 'profesional')}
+                                size="small"
+                                variant="borderless"
+                                style={{ background: '#f5f5f5', borderRadius: 12, height: '100%' }}
+                            >
+                                {editingSection === 'profesional' ? (
+                                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Años de Experiencia</Text>
+                                            <Input value={editForm.yearsOfExperience} onChange={e => setEditForm((f: any) => ({ ...f, yearsOfExperience: e.target.value }))} size="small" /></div>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Áreas de Trabajo</Text>
+                                            <Input value={editForm.areasOfWork} onChange={e => setEditForm((f: any) => ({ ...f, areasOfWork: e.target.value }))} size="small" /></div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <Switch checked={editForm.isWorkingNow} onChange={v => setEditForm((f: any) => ({ ...f, isWorkingNow: v }))} size="small" />
+                                            <Text style={{ fontSize: 12 }}>¿Trabaja Actualmente?</Text>
+                                        </div>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Empresa / Cargo Actual</Text>
+                                            <Input value={editForm.currentCompanyAndPosition} onChange={e => setEditForm((f: any) => ({ ...f, currentCompanyAndPosition: e.target.value }))} size="small" /></div>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Disponibilidad</Text>
+                                            <Input value={editForm.availability} onChange={e => setEditForm((f: any) => ({ ...f, availability: e.target.value }))} size="small" /></div>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Horario Preferido</Text>
+                                            <Input value={editForm.preferredSchedule} onChange={e => setEditForm((f: any) => ({ ...f, preferredSchedule: e.target.value }))} size="small" /></div>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Ingreso Actual (USD)</Text>
+                                            <InputNumber
+                                                size="small" min={0} style={{ width: '100%' }}
+                                                value={editForm.currentIncome}
+                                                onChange={v => setEditForm((f: any) => ({ ...f, currentIncome: v }))}
+                                                prefix="$"
+                                            /></div>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Ingreso Esperado (USD)</Text>
+                                            <InputNumber
+                                                size="small" min={0} style={{ width: '100%' }}
+                                                value={editForm.expectedIncome}
+                                                onChange={v => setEditForm((f: any) => ({ ...f, expectedIncome: v }))}
+                                                prefix="$"
+                                            /></div>
+                                    </Space>
+                                ) : (
+                                    <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
+                                        {activeCandidate.yearsOfExperience && <Descriptions.Item label="Años de Experiencia">{activeCandidate.yearsOfExperience}</Descriptions.Item>}
+                                        {activeCandidate.areasOfWork && <Descriptions.Item label="Áreas de Trabajo">{activeCandidate.areasOfWork}</Descriptions.Item>}
+                                        <Descriptions.Item label="¿Trabaja Actualmente?">{activeCandidate.isWorkingNow ? 'Sí' : 'No'}</Descriptions.Item>
+                                        {activeCandidate.currentCompanyAndPosition && <Descriptions.Item label="Empresa / Cargo Actual">{activeCandidate.currentCompanyAndPosition}</Descriptions.Item>}
+                                        {activeCandidate.availability && <Descriptions.Item label="Disponibilidad">{activeCandidate.availability}</Descriptions.Item>}
+                                        {activeCandidate.preferredSchedule && <Descriptions.Item label="Horario Preferido">{activeCandidate.preferredSchedule}</Descriptions.Item>}
+                                        {activeCandidate.currentIncome != null && <Descriptions.Item label="Ingreso Actual">{`${activeCandidate.currentIncome} USD`}</Descriptions.Item>}
+                                        {activeCandidate.expectedIncome != null && <Descriptions.Item label="Ingreso Esperado">{`${activeCandidate.expectedIncome} USD`}</Descriptions.Item>}
+                                    </Descriptions>
+                                )}
+                            </Card>
+                        </Col>
+                    )}
 
-                    {/* Situación Económica */}
-                    <Col span={12}>
-                        <Card
-                            title={editCardTitle(<BankOutlined />, 'Situación Económica y Laboral', 'economica')}
-                            size="small"
-                            variant="borderless"
-                            style={{ background: '#f5f5f5', borderRadius: 12, height: '100%' }}
-                        >
-                            {editingSection === 'economica' ? (
-                                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Empresa Actual</Text>
-                                        <Input value={editForm.currentCompany} onChange={e => setEditForm((f: any) => ({ ...f, currentCompany: e.target.value }))} size="small" /></div>
-                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Empresas Previas</Text>
-                                        <Input.TextArea rows={2} value={editForm.previousCompanies} onChange={e => setEditForm((f: any) => ({ ...f, previousCompanies: e.target.value }))} size="small" /></div>
-                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Ingreso Mensual Actual (USD)</Text>
-                                        <InputNumber
-                                            size="small" min={0} style={{ width: '100%' }}
-                                            value={editForm.currentMonthlyIncome}
-                                            onChange={v => setEditForm((f: any) => ({ ...f, currentMonthlyIncome: v }))}
-                                            prefix="$"
-                                        /></div>
-                                    <div><Text type="secondary" style={{ fontSize: 11 }}>Aspiración Salarial (USD)</Text>
-                                        <InputNumber
-                                            size="small" min={0} style={{ width: '100%' }}
-                                            value={editForm.salaryAspiration}
-                                            onChange={v => setEditForm((f: any) => ({ ...f, salaryAspiration: v }))}
-                                            prefix="$"
-                                        /></div>
-                                </Space>
-                            ) : (
-                                <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
-                                    <Descriptions.Item label="Empresa Actual">{activeCandidate.currentCompany || 'N/A'}</Descriptions.Item>
-                                    <Descriptions.Item label="Empresas Previas">{activeCandidate.previousCompanies || 'N/A'}</Descriptions.Item>
-                                    <Descriptions.Item label="Ingreso Actual">{activeCandidate.currentMonthlyIncome ? `${activeCandidate.currentMonthlyIncome} USD` : 'N/A'}</Descriptions.Item>
-                                    <Descriptions.Item label="Aspiración">{activeCandidate.salaryAspiration ? `${activeCandidate.salaryAspiration} USD` : 'N/A'}</Descriptions.Item>
-                                </Descriptions>
-                            )}
-                        </Card>
-                    </Col>
-
-                    {/* Referencias */}
+                    {/* Referencias Administrativas */}
                     <Col span={24}>
                         <Card
                             title={editCardTitle(<TeamOutlined />, 'Referencias', 'referencias')}
@@ -876,82 +888,71 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                             style={{ background: '#f0f2f5', borderRadius: 12 }}
                         >
                             {editingSection === 'referencias' ? (
-                                <Row gutter={24}>
-                                    {(['personalReferences', 'workReferences'] as const).map((field) => (
-                                        <Col span={12} key={field}>
-                                            <Title level={5} style={{ fontSize: 13, color: '#2b457c', marginBottom: 8 }}>{field === 'personalReferences' ? 'Personales' : 'Laborales'}</Title>
-                                            <Space direction="vertical" style={{ width: '100%' }} size={8}>
-                                                {(editForm[field] as any[]).map((ref: any, i: number) => (
-                                                    <div key={i} style={{ padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
-                                                        <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                                                            <Input
-                                                                size="small" placeholder="Nombre"
-                                                                value={ref.name}
-                                                                onChange={e => {
-                                                                    const updated = [...editForm[field]];
-                                                                    updated[i] = { ...updated[i], name: e.target.value };
-                                                                    setEditForm((f: any) => ({ ...f, [field]: updated }));
-                                                                }}
-                                                            />
-                                                            <Input
-                                                                size="small" placeholder="Teléfono"
-                                                                value={ref.phone}
-                                                                onChange={e => {
-                                                                    const updated = [...editForm[field]];
-                                                                    updated[i] = { ...updated[i], phone: e.target.value };
-                                                                    setEditForm((f: any) => ({ ...f, [field]: updated }));
-                                                                }}
-                                                            />
-                                                            <Input
-                                                                size="small" placeholder="Empresa (opcional)"
-                                                                value={ref.company || ''}
-                                                                onChange={e => {
-                                                                    const updated = [...editForm[field]];
-                                                                    updated[i] = { ...updated[i], company: e.target.value };
-                                                                    setEditForm((f: any) => ({ ...f, [field]: updated }));
-                                                                }}
-                                                            />
-                                                            <Button
-                                                                size="small" danger type="text" icon={<DeleteOutlined />}
-                                                                onClick={() => {
-                                                                    const updated = (editForm[field] as any[]).filter((_: any, idx: number) => idx !== i);
-                                                                    setEditForm((f: any) => ({ ...f, [field]: updated }));
-                                                                }}
-                                                            >Eliminar</Button>
-                                                        </Space>
-                                                    </div>
-                                                ))}
+                                <Space direction="vertical" style={{ width: '100%' }} size={8}>
+                                    {(editForm.adminReferences as any[] || []).map((ref: any, i: number) => (
+                                        <div key={i} style={{ padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
+                                            <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                                <Input
+                                                    size="small" placeholder="Nombre"
+                                                    value={ref.name}
+                                                    onChange={e => {
+                                                        const updated = [...editForm.adminReferences];
+                                                        updated[i] = { ...updated[i], name: e.target.value };
+                                                        setEditForm((f: any) => ({ ...f, adminReferences: updated }));
+                                                    }}
+                                                />
+                                                <Input
+                                                    size="small" placeholder="Teléfono"
+                                                    value={ref.phone}
+                                                    onChange={e => {
+                                                        const updated = [...editForm.adminReferences];
+                                                        updated[i] = { ...updated[i], phone: e.target.value };
+                                                        setEditForm((f: any) => ({ ...f, adminReferences: updated }));
+                                                    }}
+                                                />
+                                                <Input
+                                                    size="small" placeholder="Empresa"
+                                                    value={ref.company || ''}
+                                                    onChange={e => {
+                                                        const updated = [...editForm.adminReferences];
+                                                        updated[i] = { ...updated[i], company: e.target.value };
+                                                        setEditForm((f: any) => ({ ...f, adminReferences: updated }));
+                                                    }}
+                                                />
+                                                <Input
+                                                    size="small" placeholder="Relación"
+                                                    value={ref.relationship || ''}
+                                                    onChange={e => {
+                                                        const updated = [...editForm.adminReferences];
+                                                        updated[i] = { ...updated[i], relationship: e.target.value };
+                                                        setEditForm((f: any) => ({ ...f, adminReferences: updated }));
+                                                    }}
+                                                />
                                                 <Button
-                                                    size="small" type="dashed" block icon={<PlusOutlined />}
-                                                    onClick={() => setEditForm((f: any) => ({ ...f, [field]: [...(f[field] || []), { name: '', phone: '', company: '' }] }))}
-                                                >Agregar Referencia</Button>
+                                                    size="small" danger type="text" icon={<DeleteOutlined />}
+                                                    onClick={() => {
+                                                        const updated = (editForm.adminReferences as any[]).filter((_: any, idx: number) => idx !== i);
+                                                        setEditForm((f: any) => ({ ...f, adminReferences: updated }));
+                                                    }}
+                                                >Eliminar</Button>
                                             </Space>
-                                        </Col>
+                                        </div>
                                     ))}
-                                </Row>
+                                    <Button
+                                        size="small" type="dashed" block icon={<PlusOutlined />}
+                                        onClick={() => setEditForm((f: any) => ({ ...f, adminReferences: [...(f.adminReferences || []), { name: '', phone: '', company: '', relationship: '' }] }))}
+                                    >Agregar Referencia</Button>
+                                </Space>
                             ) : (
-                                <Row gutter={24}>
-                                    <Col span={12}>
-                                        <Title level={5} style={{ fontSize: 13, color: '#2b457c', marginBottom: 8 }}>Personales</Title>
-                                        {(Array.isArray(activeCandidate.personalReferences) ? activeCandidate.personalReferences : []).filter(Boolean).map((ref: any, i: number) => (
-                                            <div key={i} style={{ marginBottom: 8, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
-                                                <Text strong style={{ fontSize: 12 }}>{ref?.name || 'N/A'}</Text><br />
-                                                <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref?.phone || 'N/A'} {ref?.company ? `| 🏢 ${ref.company}` : ''}</Text>
-                                            </div>
-                                        ))}
-                                        {(!activeCandidate.personalReferences || (activeCandidate.personalReferences as any[]).filter(Boolean).length === 0) && <Text type="secondary">Sin referencias</Text>}
-                                    </Col>
-                                    <Col span={12}>
-                                        <Title level={5} style={{ fontSize: 13, color: '#2b457c', marginBottom: 8 }}>Laborales</Title>
-                                        {(Array.isArray(activeCandidate.workReferences) ? activeCandidate.workReferences : []).filter(Boolean).map((ref: any, i: number) => (
-                                            <div key={i} style={{ marginBottom: 8, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
-                                                <Text strong style={{ fontSize: 12 }}>{ref?.name || 'N/A'}</Text><br />
-                                                <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref?.phone || 'N/A'} {ref?.company ? `| 🏢 ${ref.company}` : ''}</Text>
-                                            </div>
-                                        ))}
-                                        {(!activeCandidate.workReferences || (activeCandidate.workReferences as any[]).filter(Boolean).length === 0) && <Text type="secondary">Sin referencias</Text>}
-                                    </Col>
-                                </Row>
+                                <div>
+                                    {(Array.isArray(activeCandidate.adminReferences) ? activeCandidate.adminReferences : []).filter(Boolean).map((ref: any, i: number) => (
+                                        <div key={i} style={{ marginBottom: 8, padding: 8, background: '#fff', borderRadius: 8, border: '1px solid #e8e8e8' }}>
+                                            <Text strong style={{ fontSize: 12 }}>{ref?.name || 'N/A'}</Text><br />
+                                            <Text type="secondary" style={{ fontSize: 11 }}>📞 {ref?.phone || 'N/A'} {ref?.company ? `| 🏢 ${ref.company}` : ''} {ref?.relationship ? `| 🤝 ${ref.relationship}` : ''}</Text>
+                                        </div>
+                                    ))}
+                                    {(!activeCandidate.adminReferences || (activeCandidate.adminReferences as any[]).filter(Boolean).length === 0) && <Text type="secondary">Sin referencias</Text>}
+                                </div>
                             )}
                         </Card>
                     </Col>
@@ -1078,8 +1079,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                             </Button>
                         </Tooltip>
                     )}
-                    <Tag color={activeCandidate.hasVehicle ? 'cyan' : 'default'}>
-                        {activeCandidate.hasVehicle ? 'Con Vehículo' : 'Sin Vehículo'}
+                    <Tag color={activeCandidate.category === 'INTERNSHIP' ? 'purple' : 'geekblue'}>
+                        {activeCandidate.category === 'INTERNSHIP' ? 'Pasante' : 'Profesional'}
                     </Tag>
                 </Space>
             }
@@ -1292,9 +1293,15 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                                     </Tooltip>
                                                 </Space>
                                             </Descriptions.Item>
-                                            <Descriptions.Item label="Ubicación">
-                                                {activeCandidate.municipality ? `${activeCandidate.municipality.state?.name || ''}, ${activeCandidate.municipality.name}` : 'Sin ubicación'}
-                                            </Descriptions.Item>
+                                            {activeCandidate.municipality && (
+                                                <Descriptions.Item label="Ubicación">
+                                                    {[
+                                                        activeCandidate.country?.name,
+                                                        activeCandidate.municipality.state?.name,
+                                                        activeCandidate.municipality.name
+                                                    ].filter(Boolean).join(', ')}
+                                                </Descriptions.Item>
+                                            )}
                                         </Descriptions>
                                     </div>
                                 </Col>

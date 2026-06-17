@@ -150,7 +150,7 @@ const CandidateDetailPanel: React.FC<CandidateDetailPanelProps> = ({ candidate, 
                         </Avatar>
                         <Title level={4} style={{ margin: 0 }}>{activeCandidate.firstName} {activeCandidate.lastName}</Title>
                         <Tag color={isIntern ? 'purple' : 'geekblue'} style={{ marginTop: '8px', fontWeight: 600 }}>
-                            {isIntern ? 'Pasante' : 'Administrador'}
+                            {isIntern ? 'Pasante' : 'Profesional/Administrativo'}
                         </Tag>
                         <Text type="secondary" style={{ display: 'block', marginTop: '4px' }}>{activeCandidate.profession || 'Sin profesión especificada'}</Text>
                         <div style={{ marginTop: 8 }}>
@@ -282,7 +282,7 @@ const CandidateDetailPanel: React.FC<CandidateDetailPanelProps> = ({ candidate, 
             </Modal>
 
             <Modal
-                title={`Editar Candidato ${isIntern ? 'Pasante' : 'Administrador'}`}
+                title={`Editar Candidato ${isIntern ? 'Pasante' : 'Profesional/Administrativo'}`}
                 open={editModalOpen}
                 onCancel={() => setEditModalOpen(false)}
                 onOk={handleEditSave}
