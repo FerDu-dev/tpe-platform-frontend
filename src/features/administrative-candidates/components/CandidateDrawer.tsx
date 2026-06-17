@@ -27,7 +27,6 @@ import {
 import dayjs from 'dayjs';
 import type { Candidate, Requisition } from '../../../types';
 import { VENEZUELA_STATES } from '../../../constants/venezuela';
-import { countriesService, Country } from '../../../services/countriesService';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { loadCandidateById, selectSelectedCandidate, removeCandidate } from '../store/adminCandidatesSlice';
 import { selectStages } from '../../../store/workflowSlice';
