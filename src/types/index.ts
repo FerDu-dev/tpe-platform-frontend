@@ -116,6 +116,8 @@ export interface Candidate {
     birthDate?: string;
     altPhone?: string;
     address?: string;
+    countryId?: number;
+    country?: { id: number, name: string };
     municipalityId?: number;
     municipality?: Municipality;
     stateId?: number;

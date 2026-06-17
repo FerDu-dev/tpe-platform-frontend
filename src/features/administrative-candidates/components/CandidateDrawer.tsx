@@ -12,7 +12,7 @@ import {
     WhatsAppOutlined,
     SearchOutlined,
     TrophyOutlined,
-    BulbOutlined, CarOutlined, BankOutlined,
+    BulbOutlined, BankOutlined,
     TeamOutlined,
     UploadOutlined,
     MailOutlined,
@@ -137,11 +137,6 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
     const [editingSection, setEditingSection] = useState<EditSection>(null);
     const [editForm, setEditForm] = useState<Record<string, any>>({});
     const [saving, setSaving] = useState(false);
-    const [countriesList, setCountriesList] = useState<Country[]>([]);
-
-    useEffect(() => {
-        countriesService.getAllCountries().then(setCountriesList).catch(console.error);
-    }, []);
 
     useEffect(() => {
         if (open && candidate?.id) {
