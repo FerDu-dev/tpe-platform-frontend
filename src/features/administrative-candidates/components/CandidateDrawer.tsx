@@ -494,6 +494,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 payload.classShift = editForm.classShift;
                 payload.isInternshipMandatory = editForm.isInternshipMandatory;
                 payload.internshipHours = editForm.internshipHours;
+                payload.profession = editForm.profession;
             } else if (section === 'profesional') {
                 payload.yearsOfExperience = editForm.yearsOfExperience;
                 payload.areasOfWork = editForm.areasOfWork;
@@ -503,6 +504,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                 payload.preferredSchedule = editForm.preferredSchedule;
                 payload.currentIncome = editForm.currentIncome;
                 payload.expectedIncome = editForm.expectedIncome;
+                payload.profession = editForm.profession;
             } else if (section === 'idiomas') {
                 payload.englishLevel = editForm.englishLevel;
             } else if (section === 'ubicacion') {
@@ -769,6 +771,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                             >
                                 {editingSection === 'academica' ? (
                                     <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Carrera de Estudio</Text>
+                                            <Input value={editForm.profession} onChange={e => setEditForm((f: any) => ({ ...f, profession: e.target.value }))} size="small" placeholder="Ej: Administración de Empresas" /></div>
                                         <div><Text type="secondary" style={{ fontSize: 11 }}>Inicio Período Académico</Text>
                                             <DatePicker
                                                 size="small" style={{ width: '100%' }}
@@ -807,6 +811,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                     </Space>
                                 ) : (
                                     <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
+                                        {activeCandidate.profession && <Descriptions.Item label="Carrera">{activeCandidate.profession}</Descriptions.Item>}
                                         {activeCandidate.academicPeriodStart && <Descriptions.Item label="Inicio Período Académico">{dayjs(activeCandidate.academicPeriodStart).format('DD/MM/YYYY')}</Descriptions.Item>}
                                         {activeCandidate.currentStudyLevel && <Descriptions.Item label="Nivel de Estudio Actual">{activeCandidate.currentStudyLevel}</Descriptions.Item>}
                                         {activeCandidate.studyModality && <Descriptions.Item label="Modalidad de Estudio">{activeCandidate.studyModality}</Descriptions.Item>}
@@ -828,6 +833,8 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                             >
                                 {editingSection === 'profesional' ? (
                                     <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                        <div><Text type="secondary" style={{ fontSize: 11 }}>Profesión</Text>
+                                            <Input value={editForm.profession} onChange={e => setEditForm((f: any) => ({ ...f, profession: e.target.value }))} size="small" placeholder="Ej: Administrador" /></div>
                                         <div><Text type="secondary" style={{ fontSize: 11 }}>Años de Experiencia</Text>
                                             <Input value={editForm.yearsOfExperience} onChange={e => setEditForm((f: any) => ({ ...f, yearsOfExperience: e.target.value }))} size="small" /></div>
                                         <div><Text type="secondary" style={{ fontSize: 11 }}>Áreas de Trabajo</Text>
@@ -859,6 +866,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                     </Space>
                                 ) : (
                                     <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
+                                        {activeCandidate.profession && <Descriptions.Item label="Profesión">{activeCandidate.profession}</Descriptions.Item>}
                                         {activeCandidate.yearsOfExperience && <Descriptions.Item label="Años de Experiencia">{activeCandidate.yearsOfExperience}</Descriptions.Item>}
                                         {activeCandidate.areasOfWork && <Descriptions.Item label="Áreas de Trabajo">{activeCandidate.areasOfWork}</Descriptions.Item>}
                                         <Descriptions.Item label="¿Trabaja Actualmente?">{activeCandidate.isWorkingNow ? 'Sí' : 'No'}</Descriptions.Item>
@@ -1287,12 +1295,12 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                                     </Tooltip>
                                                 </Space>
                                             </Descriptions.Item>
-                                            {activeCandidate.municipality && (
+                                            {(activeCandidate.municipality || activeCandidate.country) && (
                                                 <Descriptions.Item label="Ubicación">
                                                     {[
                                                         activeCandidate.country?.name,
-                                                        activeCandidate.municipality.state?.name,
-                                                        activeCandidate.municipality.name
+                                                        activeCandidate.municipality?.state?.name,
+                                                        activeCandidate.municipality?.name
                                                     ].filter(Boolean).join(', ')}
                                                 </Descriptions.Item>
                                             )}

@@ -170,6 +170,8 @@ export const adminCandidateService = {
             state: c.municipality?.state || c.state,
             municipality: c.municipality,
             municipalityId: c.municipalityId,
+            country: c.country,
+            countryId: c.countryId,
             zone: activeApp?.administrativeRequisition?.company?.name || 'N/A',
             applications: c.applications,
             logs: activeApp?.logs,

@@ -717,6 +717,7 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                     </Space>
                                 ) : (
                                     <Descriptions column={1} size="small" labelStyle={{ color: '#8c8c8c' }}>
+                                        {activeCandidate.country?.name && <Descriptions.Item label="País">{activeCandidate.country.name}</Descriptions.Item>}
                                         <Descriptions.Item label="Estado">{activeCandidate.municipality?.state?.name || 'N/A'}</Descriptions.Item>
                                         <Descriptions.Item label="Municipio">{activeCandidate.municipality?.name || 'N/A'}</Descriptions.Item>
                                     </Descriptions>
@@ -1292,7 +1293,11 @@ const CandidateDrawer: React.FC<CandidateDrawerProps> = ({ open, onClose, candid
                                                 </Space>
                                             </Descriptions.Item>
                                             <Descriptions.Item label="Ubicación">
-                                                {activeCandidate.municipality ? `${activeCandidate.municipality.state?.name || ''}, ${activeCandidate.municipality.name}` : 'Sin ubicación'}
+                                                {[
+                                                    activeCandidate.country?.name,
+                                                    activeCandidate.municipality?.state?.name,
+                                                    activeCandidate.municipality?.name
+                                                ].filter(Boolean).join(', ') || 'Sin ubicación'}
                                             </Descriptions.Item>
                                         </Descriptions>
                                     </div>

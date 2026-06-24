@@ -152,6 +152,8 @@ export const candidateService = {
             state: c.municipality?.state || c.state,
             municipality: c.municipality,
             municipalityId: c.municipalityId,
+            country: c.country,
+            countryId: c.countryId,
             zone: activeApp?.salesRequisition?.zone?.name || 'N/A',
             applications: c.applications,
             logs: activeApp?.logs,
